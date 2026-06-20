@@ -17,8 +17,8 @@ test = [
     "pytest",
 ]
 docs = [
-    "pydata-sphinx-theme",
     "Sphinx>=7",
+    "sphinx-nefertiti",
 ]
 
 [tool.pytest.ini_options]
