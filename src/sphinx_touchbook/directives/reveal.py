@@ -16,20 +16,20 @@ class TbRevealDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = False
     option_spec = {
-        "id": directives.unchanged_required,
-        "showtitle": directives.unchanged,
-        "hidetitle": directives.unchanged,
+        "name": directives.unchanged_required,
+        "showlabel": directives.unchanged,
+        "hidelabel": directives.unchanged,
+        "modal-titlebar": directives.unchanged,
         "modal": directives.flag,
-        "modaltitle": directives.unchanged,
     }
 
     def run(self):
         self.assert_has_content()
         node = TbRevealNode()
         assign_node_id(self, node)
-        node["showtitle"] = self.options.get("showtitle", "Show")
-        node["hidetitle"] = self.options.get("hidetitle", "Hide")
+        node["showlabel"] = self.options.get("showlabel", "Show")
+        node["hidelabel"] = self.options.get("hidelabel", "Hide")
         node["modal"] = "modal" in self.options
-        node["modaltitle"] = self.options.get("modaltitle", "Message from the author")
+        node["modal_titlebar"] = self.options.get("modal-titlebar", "Message from the author")
         self.state.nested_parse(self.content, self.content_offset, node)
         return [node]

@@ -11,10 +11,10 @@ The general format of the ``tb-group`` directive is:
 .. code-block:: rst
 
    .. tb-group::
-      :id: optional-id
+      :name: optional-name
 
       .. tb-tab:: Tab 1
-         :id: optional-tab-id
+         :name: optional-tab-name
 
          Content area 1
 
@@ -42,11 +42,13 @@ Content placed as an immediate child of ``tb-group`` that is not inside ``tb-tab
 Options
 -------
 
-``id``
+``name``
    ``String``. Optional.
    
-   Identifier for this group or tab. If omitted, docutils assigns a
-   deterministic generated ID derived from the document and node position.
+   Sphinx reference name for this group or tab. This is a `Docutils common
+   option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
+   If omitted, docutils assigns a deterministic generated ID derived from the
+   document and node position.
 
 Sphinx configuration options
 ----------------------------
@@ -56,7 +58,7 @@ No directive-specific configuration options exist.
 Accessibility and fallback behavior
 -----------------------------------
 
-The no-JS HTML fallback shows each tab as a titled content block. The enhanced Web Component creates an ARIA ``tablist`` with native ``button`` controls and keyboard support for Arrow Left, Arrow Right, Home, and End.
+The no-JS HTML fallback shows each tab as a labeled content block. The enhanced Web Component creates an ARIA ``tablist`` with native ``button`` controls and keyboard support for Arrow Left, Arrow Right, Home, and End.
 
 PDF and text builders render each tab as labeled static content.
 
@@ -72,15 +74,15 @@ Source
 .. code-block:: rst
 
    .. tb-group::
-      :id: tab-ex1
+      :name: tab-ex1
 
       .. tb-tab:: First tab
-         :id: tab-ex1-first
+         :name: tab-ex1-first
 
          This is the first tab.
 
       .. tb-tab:: Second tab
-         :id: tab-ex1-second
+         :name: tab-ex1-second
 
          This is the second tab.
 
@@ -88,15 +90,15 @@ Rendered
 ^^^^^^^^
 
 .. tb-group::
-   :id: tab-ex1
+   :name: tab-ex1
 
    .. tb-tab:: First tab
-      :id: tab-ex1-first
+      :name: tab-ex1-first
 
       This is the first tab.
 
    .. tb-tab:: Second tab
-      :id: tab-ex1-second
+      :name: tab-ex1-second
 
       This is the second tab.
 
@@ -109,17 +111,17 @@ Source
 .. code-block:: rst
 
    .. tb-group::
-      :id: tab-ex2
+      :name: tab-ex2
 
       .. tb-tab:: Python
-         :id: tab-ex2-python
+         :name: tab-ex2-python
 
          .. code-block:: python
 
             print("Hello from Python")
 
       .. tb-tab:: C++
-         :id: tab-ex2-cpp
+         :name: tab-ex2-cpp
 
          .. code-block:: cpp
 
@@ -133,17 +135,17 @@ Rendered
 ^^^^^^^^
 
 .. tb-group::
-   :id: tab-ex2
+   :name: tab-ex2
 
    .. tb-tab:: Python
-      :id: tab-ex2-python
+      :name: tab-ex2-python
 
       .. code-block:: python
 
          print("Hello from Python")
 
    .. tb-tab:: C++
-      :id: tab-ex2-cpp
+      :name: tab-ex2-cpp
 
       .. code-block:: cpp
 

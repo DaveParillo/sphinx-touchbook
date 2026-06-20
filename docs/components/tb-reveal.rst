@@ -11,11 +11,11 @@ The general format of the ``tb-reveal`` directive is:
 .. code-block:: rst
 
    .. tb-reveal::
-      :id: optional-id
-      :showtitle: Show
-      :hidetitle: Hide
+      :name: optional-name
+      :showlabel: Show
+      :hidelabel: Hide
       :modal:
-      :modaltitle: Message from the author
+      :modal-titlebar: Message from the author
 
       Content area
 
@@ -31,20 +31,20 @@ content area
 Options
 -------
 
-``id``
-   ``String``. Optional. Identifier for this reveal block. If omitted, docutils assigns a deterministic generated ID derived from the document and node position.
+``name``
+   ``String``. Optional. Sphinx reference name for this reveal block. This is a `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__. If omitted, docutils assigns a deterministic generated ID derived from the document and node position.
 
-``showtitle``
+``showlabel``
    ``String``. Optional. Defines the label for the show button. Default is ``Show``.
 
-``hidetitle``
+``hidelabel``
    ``String``. Optional. Defines the label for the hide or close button. Default is ``Hide``.
 
 ``modal``
    ``Boolean``. Optional. If included, the revealed content is presented in a modal dialog. The default behavior reveals content inline.
 
-``modaltitle``
-   ``String``. Optional. Title of the modal dialog window. Default is ``Message from the author``.
+``modal-titlebar``
+   ``String``. Optional. Text displayed in the modal dialog titlebar and used as the dialog's accessible label. Default is ``Message from the author``.
 
 Sphinx configuration options
 ----------------------------
@@ -70,7 +70,7 @@ Source
 .. code-block:: rst
 
    .. tb-reveal::
-      :id: re-ex1
+      :name: re-ex1
 
       This content starts out hidden.
 
@@ -82,7 +82,7 @@ Rendered
 ^^^^^^^^
 
 .. tb-reveal::
-   :id: re-ex1
+   :name: re-ex1
 
    This content starts out hidden.
 
@@ -99,9 +99,9 @@ Source
 .. code-block:: rst
 
    .. tb-reveal::
-      :id: re-ex2
-      :showtitle: Reveal Content
-      :hidetitle: Hide Content
+      :name: re-ex2
+      :showlabel: Reveal Content
+      :hidelabel: Hide Content
 
       The reveal block can contain other directives. This example uses a
       standard Sphinx code block until an ``activecode`` directive exists:
@@ -114,9 +114,9 @@ Rendered
 ^^^^^^^^
 
 .. tb-reveal::
-   :id: re-ex2
-   :showtitle: Reveal Content
-   :hidetitle: Hide Content
+   :name: re-ex2
+   :showlabel: Reveal Content
+   :hidelabel: Hide Content
 
    The reveal block can contain other directives. This example uses a
    standard Sphinx code block until an ``activecode`` directive exists:
@@ -144,9 +144,9 @@ Source
    What type is x?
 
    .. tb-reveal::
-      :id: reveal-ex3
+      :name: reveal-ex3
       :modal:
-      :modaltitle: Understanding auto type deduction
+      :modal-titlebar: Understanding auto type deduction
 
       If you said, ``int``, excellent job!
 
@@ -169,9 +169,9 @@ Given the following C++ statements:
 What type is x?
 
 .. tb-reveal::
-   :id: reveal-ex3
+   :name: reveal-ex3
    :modal:
-   :modaltitle: Understanding auto type deduction
+   :modal-titlebar: Understanding auto type deduction
 
    If you said, ``int``, excellent job!
 

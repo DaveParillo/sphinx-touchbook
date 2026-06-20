@@ -86,14 +86,14 @@ def test_directives_parse_semantic_nodes_without_group_id():
     assert "Second content." in tabs[1].astext()
 
 
-def test_group_accepts_optional_id():
+def test_group_accepts_optional_name():
     document = parse_rst(
         """
 .. tb-group::
-   :id: example-tabs
+   :name: example-tabs
 
    .. tb-tab:: First tab
-      :id: first-tab
+      :name: first-tab
 
       First content.
 """
@@ -147,6 +147,8 @@ Title
     assert len(tabs) == 2
     assert [tab["label"] for tab in tabs] == ["First", "Second"]
     assert group.find("div", class_="tb-group__fallback") is not None
+    assert group.find("p", class_="tb-tab__label") is not None
+    assert group.find("p", class_="tb-tab__title") is None
     assert "First" in group.get_text()
     assert "Second content" in group.get_text()
     assert (outdir / "_static" / "tb-group.js").exists()
@@ -155,7 +157,7 @@ Title
     assert "tb-group.css" in html
 
 
-def test_html_uses_group_id_option(tmp_path):
+def test_html_uses_group_name_option(tmp_path):
     outdir = build_sphinx(
         tmp_path,
         "html",
@@ -164,10 +166,10 @@ Title
 =====
 
 .. tb-group::
-   :id: group-one
+   :name: group-one
 
    .. tb-tab:: First
-      :id: first-tab
+      :name: first-tab
 
       First content.
 """,
@@ -217,4 +219,5 @@ def test_web_component_asset_defines_custom_element():
     assert 'panel.setAttribute("role", "tabpanel")' in source
     assert "ArrowRight" in source
     assert "ArrowLeft" in source
+    assert "tb-tab__title" not in source
     assert "Math.random" not in source

@@ -31,7 +31,7 @@ def visit_tb_tab_html(self: HTML5Translator, node: TbTabNode) -> None:
     label_text = escape(node["label"])
     self.body.append(f'<tb-tab id="{node_id}" label="{label}">\n')
     self.body.append('<section class="tb-tab__fallback">\n')
-    self.body.append(f'<p class="tb-tab__title"><strong>{label_text}</strong></p>\n')
+    self.body.append(f'<p class="tb-tab__label"><strong>{label_text}</strong></p>\n')
     self.body.append('<div class="tb-tab__content">\n')
 
 

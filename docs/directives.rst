@@ -17,7 +17,7 @@ plain text until they exist.
 ================= ===================================
 Categories        Directives
 ================= ===================================
-Working with Code ``tb-active-code`` (planned)
+Working with Code :doc:`components/tb-code`
                   ``tb-code-lens`` (planned)
                   ``tb-data-file`` (planned)
                   ``tb-show-eval`` (planned)
@@ -41,6 +41,7 @@ Renderers         ``tb-matrix-equation`` (planned)
    :hidden:
    :titlesonly:
 
+   components/tb-code
    components/tb-group
    components/tb-reveal
 
@@ -49,12 +50,12 @@ General Syntax
 
 All directives start with ``..``, then a single space, followed by the name of the directive, then ``::``.
 
-Every Touchbook directive accepts an optional ``id`` option. If omitted, docutils assigns a deterministic generated ID derived from the document and node position. Use an explicit ``id`` when you want a stable human-readable target for references, tests, or custom integration.
+Every Touchbook directive accepts the optional ``name`` `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__. If omitted, docutils assigns a deterministic generated ID derived from the document and node position. Use an explicit ``name`` when you want a stable human-readable target for references, tests, or custom integration.
 
 .. code-block:: rst
 
    .. tb-reveal::
-      :id: optional-id
+      :name: optional-name
 
       Content that can be revealed.
 
@@ -63,16 +64,16 @@ Many directives also accept options. Options are indented below the directive li
 .. code-block:: rst
 
    .. tb-reveal::
-      :showtitle: Show answer
-      :hidetitle: Hide answer
+      :showlabel: Show answer
+      :hidelabel: Hide answer
 
       The answer is 42.
 
 And this is how it looks in action:
 
 .. tb-reveal::
-   :showtitle: Show answer
-   :hidetitle: Hide answer
+   :showlabel: Show answer
+   :hidelabel: Hide answer
 
    The answer is 42.
 

@@ -1,0 +1,73 @@
+tb-code {
+  display: block;
+  margin: 1rem 0;
+}
+
+.tb-code__fallback {
+  margin: 0 0 0.75rem;
+}
+
+.tb-code__caption {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.tb-code__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.tb-code__button {
+  cursor: pointer;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+}
+
+.tb-code__editor-label,
+.tb-code__output-label {
+  display: block;
+  font-weight: 700;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.tb-code__editor {
+  box-sizing: border-box;
+  display: block;
+  font-family: var(--font-stack--monospace, monospace);
+  min-height: 12rem;
+  width: 100%;
+}
+
+.tb-code__revision-control {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: max-content minmax(8rem, 18rem) max-content;
+  margin: 0.5rem 0;
+}
+
+.tb-code__revision-label {
+  font-weight: 700;
+}
+
+.tb-code__revision-slider {
+  width: 100%;
+}
+
+.tb-code__revision-output {
+  min-width: 4rem;
+}
+
+.tb-code__status {
+  margin: 0.5rem 0;
+}
+
+.tb-code__output {
+  border: 1px solid var(--color-background-border, #999);
+  min-height: 3rem;
+  overflow: auto;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+}

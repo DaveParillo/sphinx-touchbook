@@ -5,9 +5,9 @@ class TbReveal extends HTMLElement {
     }
     this.dataset.enhanced = "true";
     this.modal = this.hasAttribute("modal");
-    this.showTitle = this.getAttribute("showtitle") || "Show";
-    this.hideTitle = this.getAttribute("hidetitle") || "Hide";
-    this.modalTitle = this.getAttribute("modaltitle") || "Message from the author";
+    this.showLabel = this.getAttribute("showlabel") || "Show";
+    this.hideLabel = this.getAttribute("hidelabel") || "Hide";
+    this.modalTitlebar = this.getAttribute("modal-titlebar") || "Message from the author";
     this.fallback = this.querySelector(".tb-reveal__fallback");
     if (!this.fallback) {
       return;
@@ -26,7 +26,7 @@ class TbReveal extends HTMLElement {
     const panelId = this.contentId();
     button.type = "button";
     button.className = "tb-reveal__button";
-    button.textContent = this.showTitle;
+    button.textContent = this.showLabel;
     button.setAttribute("aria-expanded", "false");
     button.setAttribute("aria-controls", panelId);
 
@@ -41,7 +41,7 @@ class TbReveal extends HTMLElement {
     button.addEventListener("click", () => {
       const expanded = button.getAttribute("aria-expanded") === "true";
       button.setAttribute("aria-expanded", String(!expanded));
-      button.textContent = expanded ? this.showTitle : this.hideTitle;
+      button.textContent = expanded ? this.showLabel : this.hideLabel;
       panel.hidden = expanded;
     });
 
@@ -54,25 +54,25 @@ class TbReveal extends HTMLElement {
     const openButton = document.createElement("button");
     openButton.type = "button";
     openButton.className = "tb-reveal__button";
-    openButton.textContent = this.showTitle;
+    openButton.textContent = this.showLabel;
     openButton.setAttribute("aria-haspopup", "dialog");
 
     const dialog = document.createElement("dialog");
     dialog.className = "tb-reveal__dialog";
-    dialog.setAttribute("aria-labelledby", this.titleId());
+    dialog.setAttribute("aria-labelledby", this.labelId());
 
     const header = document.createElement("div");
     header.className = "tb-reveal__dialog-header";
 
-    const title = document.createElement("div");
-    title.className = "tb-reveal__dialog-title";
-    title.id = dialog.getAttribute("aria-labelledby");
-    title.textContent = this.modalTitle;
+    const label = document.createElement("div");
+    label.className = "tb-reveal__dialog-label";
+    label.id = dialog.getAttribute("aria-labelledby");
+    label.textContent = this.modalTitlebar;
 
     const closeButton = document.createElement("button");
     closeButton.type = "button";
     closeButton.className = "tb-reveal__button";
-    closeButton.textContent = this.hideTitle;
+    closeButton.textContent = this.hideLabel;
 
     const body = document.createElement("div");
     body.className = "tb-reveal__panel";
@@ -95,16 +95,16 @@ class TbReveal extends HTMLElement {
       }
     });
 
-    header.append(title, closeButton);
+    header.append(label, closeButton);
     dialog.append(header, body);
     this.append(openButton, dialog);
   }
 
-  titleId() {
+  labelId() {
     if (!this.id) {
       this.id = `tb-reveal-${TbReveal.nextId++}`;
     }
-    return `${this.id}-title`;
+    return `${this.id}-label`;
   }
 
   contentId() {

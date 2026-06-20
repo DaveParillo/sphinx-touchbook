@@ -16,7 +16,7 @@ class TbGroupDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = False
     option_spec = {
-        "id": directives.unchanged_required,
+        "name": directives.unchanged_required,
     }
 
     def run(self):
@@ -42,7 +42,7 @@ class TbTabDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = True
     option_spec = {
-        "id": directives.unchanged_required,
+        "name": directives.unchanged_required,
     }
 
     def run(self):

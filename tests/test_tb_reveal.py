@@ -64,10 +64,10 @@ def test_directive_parses_semantic_node_defaults():
     node = next(document.findall(TbRevealNode))
     assert len(node["ids"]) == 1
     assert node["ids"][0].startswith("tbrevealnode-")
-    assert node["showtitle"] == "Show"
-    assert node["hidetitle"] == "Hide"
+    assert node["showlabel"] == "Show"
+    assert node["hidelabel"] == "Hide"
     assert node["modal"] is False
-    assert node["modaltitle"] == "Message from the author"
+    assert node["modal_titlebar"] == "Message from the author"
     assert "Hidden content." in node.astext()
 
 
@@ -75,20 +75,20 @@ def test_directive_parses_modal_options():
     document = parse_rst(
         """
 .. tb-reveal::
-   :showtitle: Open
-   :hidetitle: Close
+   :showlabel: Open
+   :hidelabel: Close
    :modal:
-   :modaltitle: Author note
+   :modal-titlebar: Author note
 
    Hidden content.
 """
     )
 
     node = next(document.findall(TbRevealNode))
-    assert node["showtitle"] == "Open"
-    assert node["hidetitle"] == "Close"
+    assert node["showlabel"] == "Open"
+    assert node["hidelabel"] == "Close"
     assert node["modal"] is True
-    assert node["modaltitle"] == "Author note"
+    assert node["modal_titlebar"] == "Author note"
 
 
 def test_html_build_emits_one_custom_element_and_assets(tmp_path):
@@ -100,8 +100,8 @@ Title
 =====
 
 .. tb-reveal::
-   :showtitle: Open
-   :hidetitle: Close
+   :showlabel: Open
+   :hidelabel: Close
 
    Hidden **content**.
 """,
@@ -112,8 +112,10 @@ Title
     elements = soup.find_all("tb-reveal")
     assert len(elements) == 1
     element = elements[0]
-    assert element["showtitle"] == "Open"
-    assert element["hidetitle"] == "Close"
+    assert element["showlabel"] == "Open"
+    assert element["hidelabel"] == "Close"
+    assert "showtitle" not in element.attrs
+    assert "hidetitle" not in element.attrs
     assert "modal" not in element.attrs
     assert element.find("details", class_="tb-reveal__fallback") is not None
     assert element.find("summary").get_text(strip=True) == "Open"
@@ -144,7 +146,7 @@ Title
     assert element["id"]
 
 
-def test_html_uses_id_option(tmp_path):
+def test_html_uses_name_option(tmp_path):
     outdir = build_sphinx(
         tmp_path,
         "html",
@@ -153,7 +155,7 @@ Title
 =====
 
 .. tb-reveal::
-   :id: reveal-id
+   :name: reveal-id
 
    Hidden content.
 """,
@@ -175,7 +177,7 @@ Title
 
 .. tb-reveal::
    :modal:
-   :modaltitle: Author note
+   :modal-titlebar: Author note
 
    Hidden content.
 """,
@@ -186,7 +188,9 @@ Title
     assert len(elements) == 1
     element = elements[0]
     assert "modal" in element.attrs
-    assert element["modaltitle"] == "Author note"
+    assert element["modal-titlebar"] == "Author note"
+    assert "modaltitle" not in element.attrs
+    assert "modallabel" not in element.attrs
 
 
 def test_text_builder_preserves_content(tmp_path):
@@ -198,7 +202,7 @@ Title
 =====
 
 .. tb-reveal::
-   :showtitle: Explanation
+   :showlabel: Explanation
 
    Hidden content for static output.
 """,
@@ -215,5 +219,11 @@ def test_web_component_asset_defines_custom_element():
     assert 'button.setAttribute("aria-expanded", "false")' in source
     assert 'button.setAttribute("aria-controls", panelId)' in source
     assert 'openButton.setAttribute("aria-haspopup", "dialog")' in source
+    assert "showtitle" not in source
+    assert "hidetitle" not in source
+    assert "modaltitle" not in source
+    assert "modallabel" not in source
+    assert "modal-titlebar" in source
+    assert "tb-reveal__dialog-title" not in source
     assert "showModal" in source
     assert "Math.random" not in source

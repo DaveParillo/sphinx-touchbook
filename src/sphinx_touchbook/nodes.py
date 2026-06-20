@@ -15,3 +15,7 @@ class TbGroupNode(nodes.General, nodes.Element):
 
 class TbTabNode(nodes.General, nodes.Element):
     """Semantic node for one tab inside a tab group."""
+
+
+class TbCodeNode(nodes.General, nodes.Element):
+    """Semantic node for runnable source code."""
