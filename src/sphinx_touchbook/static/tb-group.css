@@ -1,0 +1,36 @@
+tb-group,
+tb-tab {
+  display: block;
+}
+
+tb-group {
+  margin: 1rem 0;
+}
+
+.tb-group__tablist {
+  border-bottom: 1px solid var(--color-background-border, #999);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.tb-group__tab {
+  border: 1px solid var(--color-background-border, #999);
+  border-bottom: 0;
+  cursor: pointer;
+  padding: 0.4rem 0.75rem;
+}
+
+.tb-group__tab[aria-selected="true"] {
+  font-weight: 700;
+}
+
+.tb-group__panel {
+  border: 1px solid var(--color-background-border, #999);
+  padding: 1rem;
+}
+
+.tb-tab__title {
+  margin-bottom: 0.5rem;
+}

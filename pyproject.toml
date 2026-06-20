@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sphinx-touchbook"
+version = "0.1.0"
+description = "Sphinx directives and Web Components for interactive textbook content."
+requires-python = ">=3.10"
+dependencies = [
+    "Sphinx>=7",
+]
+
+[project.optional-dependencies]
+test = [
+    "beautifulsoup4",
+    "pytest",
+]
+docs = [
+    "pydata-sphinx-theme",
+    "Sphinx>=7",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

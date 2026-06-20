@@ -1,0 +1,111 @@
+Touchbook Directives Documentation
+==================================
+
+Every Touchbook directive has a single purpose.
+Each is detailed below, including:
+
+- What each directive allows you to create
+- The syntax for using each directive and parameter
+- Examples, or links to examples, of how instructors can use these directives
+  in interactive textbook work
+- Available additional developer documentation or notes
+
+Custom Touchbook directives exist in the following general categories.
+Implemented directives link to detailed pages. Planned directives are listed as
+plain text until they exist.
+
+================= ===================================
+Categories        Directives
+================= ===================================
+Working with Code ``tb-active-code`` (planned)
+                  ``tb-code-lens`` (planned)
+                  ``tb-data-file`` (planned)
+                  ``tb-show-eval`` (planned)
+Containers        :doc:`components/tb-group`
+                  :doc:`components/tb-reveal`
+                  ``tb-timed`` (planned)
+                  ``tb-video`` (planned)
+Assessments       ``tb-clickable`` (planned)
+                  ``tb-dnd`` (planned)
+                  ``tb-fitb`` (planned)
+                  ``tb-choice`` (planned)
+                  ``tb-parsons`` (planned)
+                  ``tb-poll`` (planned)
+                  ``tb-short-answer`` (planned)
+                  ``tb-question-number`` (planned)
+Renderers         ``tb-matrix-equation`` (planned)
+                  ``tb-wave-drom`` (planned)
+================= ===================================
+
+.. toctree::
+   :hidden:
+   :titlesonly:
+
+   components/tb-group
+   components/tb-reveal
+
+General Syntax
+==============
+
+All directives start with ``..``, then a single space, followed by the name of the directive, then ``::``.
+
+Every Touchbook directive accepts an optional ``id`` option. If omitted, docutils assigns a deterministic generated ID derived from the document and node position. Use an explicit ``id`` when you want a stable human-readable target for references, tests, or custom integration.
+
+.. code-block:: rst
+
+   .. tb-reveal::
+      :id: optional-id
+
+      Content that can be revealed.
+
+Many directives also accept options. Options are indented below the directive line and begin with ``:``:
+
+.. code-block:: rst
+
+   .. tb-reveal::
+      :showtitle: Show answer
+      :hidetitle: Hide answer
+
+      The answer is 42.
+
+And this is how it looks in action:
+
+.. tb-reveal::
+   :showtitle: Show answer
+   :hidetitle: Hide answer
+
+   The answer is 42.
+
+Container directives can contain other directives:
+
+.. code-block:: rst
+
+   .. tb-group::
+
+      .. tb-tab:: First tab
+
+         Content for the first tab.
+
+      .. tb-tab:: Useful forms
+
+         Here is a useful summation, along with the closed-form solution:
+
+         .. math::
+
+            \sum_{k = 1}^{n} k = \frac{n (n+1)}{2}.
+
+And this is how it looks in action:
+
+.. tb-group::
+
+   .. tb-tab:: First tab
+
+      Content for the first tab.
+
+   .. tb-tab:: Useful forms
+
+      Here is a useful summation, along with the closed-form solution:
+
+      .. math::
+
+         \sum_{k = 1}^{n} k = \frac{n (n+1)}{2}.

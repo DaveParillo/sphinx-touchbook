@@ -1,0 +1,44 @@
+tb-reveal {
+  display: block;
+  margin: 1rem 0;
+}
+
+tb-reveal .tb-reveal__fallback {
+  margin: 0;
+}
+
+tb-reveal .tb-reveal__content {
+  margin-top: 0.75rem;
+}
+
+.tb-reveal__button {
+  cursor: pointer;
+}
+
+.tb-reveal__panel {
+  margin-top: 0.75rem;
+}
+
+.tb-reveal__dialog {
+  max-width: min(42rem, calc(100vw - 2rem));
+  border: 1px solid var(--color-background-border, #999);
+  border-radius: 0.25rem;
+  padding: 1rem;
+}
+
+.tb-reveal__dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.tb-reveal__dialog-header {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.tb-reveal__dialog-title {
+  font-weight: 700;
+}
+
