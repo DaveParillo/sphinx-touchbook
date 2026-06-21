@@ -50,7 +50,7 @@ jobs:
         run: npm run test:web-components
 
       - name: Build HTML author guide
-        run: python -m sphinx -W -b html docs build/authorguide
+        run: python -m sphinx -M html -W docs build/authorguide
 
       - name: Build PDF author guide
         run: |
@@ -58,7 +58,7 @@ jobs:
             -v "$PWD:/docs" \
             -w /docs \
             sphinxdoc/sphinx-latexpdf:latest \
-            sh -c 'python -m pip install ".[docs]" && python -m sphinx -W -M latexpdf docs build/latexpdf'
+            sh -c 'python -m pip install ".[docs]" && python -m sphinx -M latexpdf -W docs build/latexpdf'
           mkdir -p build/authorguide/_downloads
           find build/latexpdf/latex -name '*.pdf' -exec cp {} build/authorguide/_downloads/ \;
 
