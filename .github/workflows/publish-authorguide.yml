@@ -50,7 +50,7 @@ jobs:
         run: npm run test:web-components
 
       - name: Build HTML author guide
-        run: python -m sphinx -M html docs build/authorguide --fail-on-warning
+        run: python -m sphinx -b html docs build/authorguide --fail-on-warning
 
       - name: Build PDF author guide
         run: |
@@ -61,6 +61,9 @@ jobs:
             sh -c 'python -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
           mkdir -p build/authorguide/_downloads
           find build/latexpdf/latex -name '*.pdf' -exec cp {} build/authorguide/_downloads/ \;
+
+      - name: Verify Pages artifact root
+        run: test -f build/authorguide/index.html
 
       - name: Disable Jekyll processing
         run: touch build/authorguide/.nojekyll
