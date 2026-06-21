@@ -178,7 +178,7 @@ Jobe parameters
 ---------------
 
 Code that cannot be compiled natively in a browser is sent to a
-`Jobe server` <https://github.com/trampgeek/jobeinabox>` for processing.
+`Jobe server <https://github.com/trampgeek/jobeinabox>`__ for processing.
 
 ``tb-code`` sends a Jobe-compatible request shaped like this:
 

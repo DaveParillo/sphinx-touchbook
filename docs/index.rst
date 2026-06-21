@@ -6,3 +6,7 @@ Sphinx Touchbook Author Guide
 
    intro
    directives
+
+
+Download the `PDF version <_downloads/sphinxtouchbookauthorguide.pdf>`__.
+
