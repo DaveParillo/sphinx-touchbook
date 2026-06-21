@@ -3,11 +3,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from bs4 import BeautifulSoup
 from docutils.frontend import get_default_settings
 from docutils.parsers.rst import Parser, directives
 from docutils.utils import new_document
 from sphinx.application import Sphinx
+from sphinx.errors import ExtensionError
 
 from sphinx_touchbook.directives.code import DEFAULT_ENDPOINT, DEFAULT_LANGUAGES_ENDPOINT, TbCodeDirective
 from sphinx_touchbook.nodes import TbCodeNode
@@ -41,6 +43,39 @@ def build_sphinx(tmp_path: Path, builder: str, index: str, conf_extra: str = "")
         encoding="utf-8",
     )
     (srcdir / "index.rst").write_text(index, encoding="utf-8")
+    app = Sphinx(
+        srcdir=str(srcdir),
+        confdir=str(srcdir),
+        outdir=str(outdir),
+        doctreedir=str(doctreedir),
+        buildername=builder,
+        warningiserror=True,
+        freshenv=True,
+    )
+    app.build()
+    return outdir
+
+
+def build_sphinx_files(
+    tmp_path: Path,
+    builder: str,
+    files: dict[str, str],
+    conf_extra: str = "",
+) -> Path:
+    srcdir = tmp_path / "src"
+    outdir = tmp_path / f"_build_{builder}"
+    doctreedir = tmp_path / f"_doctree_{builder}"
+    srcdir.mkdir()
+    (srcdir / "conf.py").write_text(
+        'extensions = ["sphinx_touchbook"]\n'
+        'html_theme = "alabaster"\n'
+        f"{conf_extra}\n",
+        encoding="utf-8",
+    )
+    for relative_path, content in files.items():
+        path = srcdir / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
     app = Sphinx(
         srcdir=str(srcdir),
         confdir=str(srcdir),
@@ -313,6 +348,87 @@ Title
     assert "int balance_;" in element.get_text()
 
 
+def test_include_replaces_placeholder_from_named_literalinclude(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "html",
+        {
+            "index.rst": """
+Title
+=====
+
+.. literalinclude:: account-methods.cpp
+   :name: account-methods
+   :language: cpp
+
+.. tb-code:: cpp
+   :name: account-class
+   :include: PUBLIC_MEMBERS: account-methods
+
+   class account {
+     {{PUBLIC_MEMBERS}}
+   };
+""",
+            "account-methods.cpp": """
+public:
+  int balance() const;
+""".lstrip(),
+        },
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    element = soup.find("tb-code", id="account-class")
+    config = json.loads(element.find("script", class_="tb-code__config").string)
+    assert config["source"] == (
+        "class account {\n"
+        "  public:\n"
+        "    int balance() const;\n"
+        "};"
+    )
+    assert "{{PUBLIC_MEMBERS}}" not in config["source"]
+
+
+def test_include_replaces_placeholder_from_captioned_named_literalinclude(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "html",
+        {
+            "index.rst": """
+Title
+=====
+
+.. literalinclude:: account-fields.cpp
+   :name: account-fields
+   :caption: Account fields
+   :language: cpp
+
+.. tb-code:: cpp
+   :name: account-class
+   :include: PRIVATE_MEMBERS: account-fields
+
+   class account {
+     {{PRIVATE_MEMBERS}}
+   };
+""",
+            "account-fields.cpp": """
+private:
+  int balance_;
+""".lstrip(),
+        },
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    element = soup.find("tb-code", id="account-class")
+    config = json.loads(element.find("script", class_="tb-code__config").string)
+    assert config["source"] == (
+        "class account {\n"
+        "  private:\n"
+        "    int balance_;\n"
+        "};"
+    )
+    assert "{{PRIVATE_MEMBERS}}" not in config["source"]
+
+
 def test_text_builder_uses_included_code(tmp_path):
     outdir = build_sphinx(
         tmp_path,
@@ -370,6 +486,103 @@ Title
     assert text.count("def helper():") == 1
     assert "print(helper())" in text
     assert "{{HELPER}}" not in text
+
+
+def test_include_replaces_placeholders_from_named_code_in_another_document(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "html",
+        {
+            "index.rst": """
+Title
+=====
+
+.. toctree::
+
+   fragments
+   example
+""",
+            "fragments.rst": """
+Fragments
+=========
+
+.. tb-code:: cpp
+   :name: account-methods
+   :hidden:
+
+   public:
+     int balance() const;
+
+.. code-block:: cpp
+   :name: account-fields
+
+   private:
+     int balance_;
+""",
+            "example.rst": """
+Example
+=======
+
+.. tb-code:: cpp
+   :name: account-class
+   :include:
+      PUBLIC_MEMBERS: account-methods
+      PRIVATE_MEMBERS: account-fields
+
+   class account {
+     {{PUBLIC_MEMBERS}}
+     {{PRIVATE_MEMBERS}}
+   };
+""",
+        },
+    )
+
+    soup = BeautifulSoup((outdir / "example.html").read_text(encoding="utf-8"), "html.parser")
+    element = soup.find("tb-code", id="account-class")
+    config = json.loads(element.find("script", class_="tb-code__config").string)
+    assert "int balance() const;" in config["source"]
+    assert "int balance_;" in config["source"]
+    assert "{{PUBLIC_MEMBERS}}" not in config["source"]
+    assert "{{PRIVATE_MEMBERS}}" not in config["source"]
+    fragments = BeautifulSoup((outdir / "fragments.html").read_text(encoding="utf-8"), "html.parser")
+    assert fragments.find("tb-code", id="account-methods") is None
+
+
+def test_duplicate_include_fragment_names_stop_the_build(tmp_path):
+    with pytest.raises(ExtensionError, match="duplicate tb-code include fragment name"):
+        build_sphinx_files(
+            tmp_path,
+            "html",
+            {
+                "index.rst": """
+Title
+=====
+
+.. toctree::
+
+   first
+   second
+""",
+                "first.rst": """
+First
+=====
+
+.. tb-code:: python
+   :name: duplicate-fragment
+
+   print("first")
+""",
+                "second.rst": """
+Second
+======
+
+.. code-block:: python
+   :name: duplicate-fragment
+
+   print("second")
+""",
+            },
+        )
 
 
 def test_text_builder_preserves_source(tmp_path):

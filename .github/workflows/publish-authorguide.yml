@@ -52,6 +52,16 @@ jobs:
       - name: Build HTML author guide
         run: python -m sphinx -W -b html docs build/authorguide
 
+      - name: Build PDF author guide
+        run: |
+          docker run --rm \
+            -v "$PWD:/docs" \
+            -w /docs \
+            sphinxdoc/sphinx-latexpdf:latest \
+            sh -c 'python -m pip install ".[docs]" && python -m sphinx -W -M latexpdf docs build/latexpdf'
+          mkdir -p build/authorguide/_downloads
+          find build/latexpdf/latex -name '*.pdf' -exec cp {} build/authorguide/_downloads/ \;
+
       - name: Disable Jekyll processing
         run: touch build/authorguide/.nojekyll
 

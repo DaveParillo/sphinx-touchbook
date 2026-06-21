@@ -32,19 +32,29 @@ Options
 -------
 
 ``name``
-   ``String``. Optional. Sphinx reference name for this reveal block. This is a `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__. If omitted, docutils assigns a deterministic generated ID derived from the document and node position.
+   ``String``. Optional. Sphinx reference name for this reveal block.
+   This is a `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
+   If omitted, docutils assigns a deterministic generated ID derived from the
+   document and node position.
 
 ``showlabel``
-   ``String``. Optional. Defines the label for the show button. Default is ``Show``.
+   ``String``. Optional. Label for the show button.
+   Default is ``Show``.
 
 ``hidelabel``
-   ``String``. Optional. Defines the label for the hide or close button. Default is ``Hide``.
+   ``String``. Optional. Label for the hide or close button.
+   Default is ``Hide``.
 
 ``modal``
-   ``Boolean``. Optional. If included, the revealed content is presented in a modal dialog. The default behavior reveals content inline.
+   ``Boolean``. Optional.
+   If included, the revealed content is presented in a modal dialog.
+   The default behavior reveals content inline.
 
 ``modal-titlebar``
-   ``String``. Optional. Text displayed in the modal dialog titlebar and used as the dialog's accessible label. Default is ``Message from the author``.
+   ``String``. Optional.
+   Text displayed in the modal dialog titlebar and used as the dialog's
+   accessible label.
+   Default is ``Message from the author``.
 
 Sphinx configuration options
 ----------------------------
@@ -54,7 +64,10 @@ No directive-specific configuration options exist.
 Accessibility and fallback behavior
 -----------------------------------
 
-The no-JS HTML fallback uses native ``details`` and ``summary``. Inline HTML uses a native ``button`` and synchronizes ``aria-expanded``. Modal content uses a native ``dialog`` element when available and includes an accessible dialog label.
+The no-JS HTML fallback uses native ``details`` and ``summary``. Inline HTML
+uses a native ``button`` and synchronizes ``aria-expanded``. Modal content uses
+a native ``dialog`` element when available and includes an accessible dialog
+label.
 
 PDF and text builders render the content as labeled static content.
 

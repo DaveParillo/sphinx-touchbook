@@ -48,7 +48,12 @@ from .generators.tabs import (
     visit_tb_tab_latex,
     visit_tb_tab_text,
 )
-from .transforms import TbCodeIncludeTransform
+from .transforms import (
+    TbCodeIncludeTransform,
+    collect_tb_code_snippets,
+    merge_tb_code_snippets,
+    purge_tb_code_snippets,
+)
 
 
 def _add_static_path(app: Sphinx) -> None:
@@ -102,6 +107,9 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_directive("tb-group", TbGroupDirective)
     app.add_directive("tb-tab", TbTabDirective)
     app.add_post_transform(TbCodeIncludeTransform)
+    app.connect("env-purge-doc", purge_tb_code_snippets)
+    app.connect("doctree-read", collect_tb_code_snippets)
+    app.connect("env-merge-info", merge_tb_code_snippets)
     app.connect("builder-inited", _add_static_path)
     app.add_css_file("tb-reveal.css")
     app.add_css_file("tb-group.css")

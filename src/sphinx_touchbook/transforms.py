@@ -6,8 +6,64 @@ import re
 
 from docutils import nodes
 from docutils.transforms import Transform
+from sphinx.application import Sphinx
+from sphinx.environment import BuildEnvironment
+from sphinx.errors import ExtensionError
 
 from sphinx_touchbook.nodes import TbCodeNode
+
+
+def purge_tb_code_snippets(app: Sphinx, env: BuildEnvironment, docname: str) -> None:
+    snippets = getattr(env, "tb_code_snippets", {})
+    env.tb_code_snippets = {
+        name: snippet for name, snippet in snippets.items() if snippet["docname"] != docname
+    }
+
+
+def collect_tb_code_snippets(app: Sphinx, doctree: nodes.document) -> None:
+    env = app.env
+    if not hasattr(env, "tb_code_snippets"):
+        env.tb_code_snippets = {}
+    docname = env.docname
+    for node, source in _iter_named_code(doctree):
+        for raw_name in node.get("names", []):
+            name = nodes.fully_normalize_name(raw_name)
+            existing = env.tb_code_snippets.get(name)
+            if existing is not None:
+                raise ExtensionError(
+                    "duplicate tb-code include fragment name "
+                    f"{name!r} in {docname!r}; already defined in {existing['docname']!r}"
+                )
+            env.tb_code_snippets[name] = {
+                "docname": docname,
+                "source": source,
+            }
+
+
+def merge_tb_code_snippets(app: Sphinx, env: BuildEnvironment, docnames, other: BuildEnvironment) -> None:
+    if not hasattr(env, "tb_code_snippets"):
+        env.tb_code_snippets = {}
+    for name, snippet in getattr(other, "tb_code_snippets", {}).items():
+        existing = env.tb_code_snippets.get(name)
+        if existing is not None:
+            raise ExtensionError(
+                "duplicate tb-code include fragment name "
+                f"{name!r} in {snippet['docname']!r}; already defined in {existing['docname']!r}"
+            )
+        env.tb_code_snippets[name] = snippet
+
+
+def _iter_named_code(doctree: nodes.document):
+    for node in doctree.findall(nodes.Element):
+        if isinstance(node, TbCodeNode):
+            yield node, node.get("source", "")
+        elif isinstance(node, nodes.literal_block):
+            if node.get("names"):
+                yield node, node.astext()
+        elif isinstance(node, nodes.container):
+            literal = next((child for child in node.children if isinstance(child, nodes.literal_block)), None)
+            if literal is not None:
+                yield node, literal.astext()
 
 
 class TbCodeIncludeTransform(Transform):
@@ -16,7 +72,8 @@ class TbCodeIncludeTransform(Transform):
     default_priority = 500
 
     def apply(self) -> None:
-        code_by_name = self._collect_named_code()
+        env = getattr(self.document.settings, "env", None)
+        code_by_name = getattr(env, "tb_code_snippets", {}) if env is not None else {}
         for node in self.document.findall(TbCodeNode):
             specs = node.get("include_specs", [])
             if not specs:
@@ -29,31 +86,15 @@ class TbCodeIncludeTransform(Transform):
                         line=node.line,
                     )
                     continue
-                if source_name not in code_by_name:
+                normalized_source_name = nodes.fully_normalize_name(source_name)
+                if normalized_source_name not in code_by_name:
                     self.document.reporter.warning(
                         f"tb-code include could not find named code block {source_name!r}.",
                         line=node.line,
                     )
                     continue
-                source = self._replace_placeholder(source, placeholder, code_by_name[source_name])
+                source = self._replace_placeholder(source, placeholder, code_by_name[normalized_source_name]["source"])
             node["source"] = source
-
-    def _collect_named_code(self) -> dict[str, str]:
-        code_by_name: dict[str, str] = {}
-        for node in self.document.findall(nodes.Element):
-            if isinstance(node, TbCodeNode):
-                self._add_names(code_by_name, node, node.get("source", ""))
-            elif isinstance(node, nodes.literal_block):
-                self._add_names(code_by_name, node, node.astext())
-            elif isinstance(node, nodes.container):
-                literal = next((child for child in node.children if isinstance(child, nodes.literal_block)), None)
-                if literal is not None:
-                    self._add_names(code_by_name, node, literal.astext())
-        return code_by_name
-
-    def _add_names(self, code_by_name: dict[str, str], node: nodes.Element, source: str) -> None:
-        for name in node.get("names", []):
-            code_by_name.setdefault(name, source)
 
     def _replace_placeholder(self, source: str, placeholder: str, replacement: str) -> str:
         token = f"{{{{{placeholder}}}}}"
