@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from html import escape
 
+from docutils import nodes
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
@@ -53,6 +54,8 @@ def _highlight(self: HTML5Translator, node: TbCodeNode) -> str:
 
 
 def visit_tb_code_html(self: HTML5Translator, node: TbCodeNode) -> None:
+    if node.get("hidden"):
+        raise nodes.SkipNode
     node_id = escape(_node_id(node), quote=True)
     language = escape(node["language"], quote=True)
     editable = "true" if node["editable"] else "false"
@@ -74,6 +77,8 @@ def depart_tb_code_html(self: HTML5Translator, node: TbCodeNode) -> None:
 
 
 def visit_tb_code_latex(self: LaTeXTranslator, node: TbCodeNode) -> None:
+    if node.get("hidden"):
+        raise nodes.SkipNode
     if node["caption"]:
         self.body.append("\n\\begin{sphinxadmonition}{note}{")
         self.body.append(self.encode(node["caption"]))
@@ -89,6 +94,8 @@ def depart_tb_code_latex(self: LaTeXTranslator, node: TbCodeNode) -> None:
 
 
 def visit_tb_code_text(self: TextTranslator, node: TbCodeNode) -> None:
+    if node.get("hidden"):
+        raise nodes.SkipNode
     if node["caption"]:
         self.add_text(f"\n[{node['caption']}]\n")
     self.add_text(f"\n{node['source']}\n")

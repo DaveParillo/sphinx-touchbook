@@ -66,6 +66,22 @@ def _as_arg_list(value) -> list[str]:
     return [str(value)]
 
 
+def _parse_include_specs(value: str | None) -> list[tuple[str, str]]:
+    if not value:
+        return []
+    specs = []
+    for line in value.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if ":" not in stripped:
+            specs.append((stripped, ""))
+            continue
+        placeholder, source_name = stripped.split(":", 1)
+        specs.append((placeholder.strip(), source_name.strip()))
+    return specs
+
+
 def _language_defaults(config, language: str, jobe_language: str) -> dict[str, object]:
     defaults = _config_value(config, "tb_code_language_defaults", DEFAULT_LANGUAGE_DEFAULTS)
     if language in defaults:
@@ -74,7 +90,7 @@ def _language_defaults(config, language: str, jobe_language: str) -> dict[str, o
 
 
 def _code_block_defaults(config) -> dict[str, object]:
-    defaults = _config_value(config, "tb_code_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS)
+    defaults = _config_value(config, "tb_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS)
     return {key: value for key, value in dict(defaults).items() if key in CODE_BLOCK_OPTION_NAMES}
 
 
@@ -161,10 +177,12 @@ class TbCodeDirective(Directive):
         "interpreterargs": directives.unchanged,
         "editable": directives.flag,
         "readonly": directives.flag,
+        "hidden": directives.flag,
         "run-label": directives.unchanged,
         "edit-label": directives.unchanged,
         "hide-edit-label": directives.unchanged,
         "revision-label": directives.unchanged,
+        "include": directives.unchanged,
     }
 
     def run(self):
@@ -184,6 +202,8 @@ class TbCodeDirective(Directive):
             code_block_options,
         )
         node["source"] = source
+        node["include_specs"] = _parse_include_specs(self.options.get("include"))
+        node["hidden"] = "hidden" in self.options
         node["caption"] = code_block_options.get("caption")
         node["code_block_options"] = normalized_code_block_options
         node["endpoint"] = self.options.get("endpoint") or _config_value(

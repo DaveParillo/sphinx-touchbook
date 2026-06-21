@@ -54,7 +54,7 @@ No directive-specific configuration options exist.
 Accessibility and fallback behavior
 -----------------------------------
 
-The no-JS HTML fallback uses native ``details`` and ``summary``. The enhanced inline control uses a native ``button`` and synchronizes ``aria-expanded``. Modal content uses a native ``dialog`` element when available and includes an accessible dialog label.
+The no-JS HTML fallback uses native ``details`` and ``summary``. Inline HTML uses a native ``button`` and synchronizes ``aria-expanded``. Modal content uses a native ``dialog`` element when available and includes an accessible dialog label.
 
 PDF and text builders render the content as labeled static content.
 

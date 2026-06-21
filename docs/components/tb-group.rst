@@ -1,7 +1,7 @@
 tb-group
 ========
 
-The ``tb-group`` directive is a container that splits related content into selectable tabs, viewable one at a time in enhanced HTML output.
+The ``tb-group`` directive is a container that splits related content into selectable tabs, viewable one at a time in HTML output.
 
 Synopsis
 --------
@@ -32,7 +32,7 @@ Required content
 The ``tb-group`` directive must contain at least one immediate ``tb-tab``
 directive and may contain only ``tb-tab``\ s.
 
-Content placed as an immediate child of ``tb-group`` that is not inside ``tb-tab`` is ignored by the enhanced tab interface.
+Content placed as an immediate child of ``tb-group`` that is not inside ``tb-tab`` is ignored by the tab interface.
 
 ``tb-tab`` label
    ``String``. Creates a new tab and labels it with the provided string. A label is required and may contain spaces.
@@ -58,7 +58,7 @@ No directive-specific configuration options exist.
 Accessibility and fallback behavior
 -----------------------------------
 
-The no-JS HTML fallback shows each tab as a labeled content block. The enhanced Web Component creates an ARIA ``tablist`` with native ``button`` controls and keyboard support for Arrow Left, Arrow Right, Home, and End.
+The no-JS HTML fallback shows each tab as a labeled content block. HTML creates an ARIA ``tablist`` with native ``button`` controls and keyboard support for Arrow Left, Arrow Right, Home, and End.
 
 PDF and text builders render each tab as labeled static content.
 

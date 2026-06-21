@@ -47,7 +47,7 @@ Progressive enhancement
 
 Every component should start as useful static content. JavaScript may improve the experience, but it should not be the only way to reach essential content.
 
-For example, ``tb-reveal`` emits a native ``details`` and ``summary`` fallback inside the custom element. Without JavaScript, readers can still open the disclosure. With JavaScript, the Web Component replaces that fallback with the enhanced inline or modal behavior.
+For example, ``tb-reveal`` emits a native ``details`` and ``summary`` fallback inside the custom element. Without JavaScript, readers can still open the disclosure. With JavaScript, the fallback is replaced with inline or modal behavior.
 
 This approach also supports non-HTML builders. A reveal block can become labeled static content in text output and a readable block in PDF-oriented output. The reader loses the interaction, but not the information.
 

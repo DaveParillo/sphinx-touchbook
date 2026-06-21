@@ -91,6 +91,31 @@ class TbCode extends HTMLElement {
     this.revisionControl.append(this.revisionLabel, this.revisionSlider, this.revisionOutput);
     this.updateRevisionControl();
 
+    this.runtimeInputs = document.createElement("div");
+    this.runtimeInputs.className = "tb-code__runtime-inputs";
+    this.runtimeInputs.hidden = !this.hasRuntimeInputs();
+
+    if (this.config.stdin) {
+      const stdinField = this.createRuntimeInput(
+        "stdin",
+        "Standard input",
+        this.config.stdin,
+      );
+      this.stdinInput = stdinField.input;
+      this.runtimeInputs.appendChild(stdinField.wrapper);
+    }
+
+    const runargs = this.cleanArgumentList(this.config.parameters?.runargs || []);
+    if (runargs.length > 0) {
+      const runargsField = this.createRuntimeInput(
+        "runargs",
+        "Run arguments",
+        runargs.join(" "),
+      );
+      this.runargsInput = runargsField.input;
+      this.runtimeInputs.appendChild(runargsField.wrapper);
+    }
+
     this.status = document.createElement("div");
     this.status.className = "tb-code__status";
     this.status.setAttribute("role", "status");
@@ -106,7 +131,39 @@ class TbCode extends HTMLElement {
     this.output.tabIndex = 0;
     this.output.setAttribute("aria-labelledby", outputLabel.id);
 
-    this.append(controls, editorLabel, this.editor, this.revisionControl, this.status, outputLabel, this.output);
+    this.append(
+      controls,
+      editorLabel,
+      this.editor,
+      this.revisionControl,
+      this.runtimeInputs,
+      this.status,
+      outputLabel,
+      this.output,
+    );
+  }
+
+  hasRuntimeInputs() {
+    return Boolean(this.config.stdin) || this.cleanArgumentList(this.config.parameters?.runargs || []).length > 0;
+  }
+
+  createRuntimeInput(name, labelText, value) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "tb-code__runtime-field";
+
+    const label = document.createElement("label");
+    label.className = "tb-code__runtime-label";
+    label.htmlFor = `${this.safeId()}-${name}`;
+    label.textContent = labelText;
+
+    const input = document.createElement("input");
+    input.id = label.htmlFor;
+    input.className = "tb-code__runtime-input";
+    input.type = "text";
+    input.value = value;
+
+    wrapper.append(label, input);
+    return { wrapper, input };
   }
 
   toggleEditor() {
@@ -187,10 +244,12 @@ class TbCode extends HTMLElement {
       run_spec: {
         language_id: languageId,
         sourcecode: source,
-        parameters: this.cleanParameters(this.config.parameters || {}),
+        parameters: this.runtimeParameters(),
       },
     };
-    if (this.config.stdin) {
+    if (this.stdinInput) {
+      payload.run_spec.input = this.stdinInput.value;
+    } else if (this.config.stdin) {
       payload.run_spec.input = this.config.stdin;
     }
 
@@ -226,11 +285,71 @@ class TbCode extends HTMLElement {
   cleanParameters(parameters) {
     const cleaned = {};
     for (const [key, value] of Object.entries(parameters)) {
-      if (Array.isArray(value) && value.length > 0) {
-        cleaned[key] = value;
+      const cleanedValue = this.cleanArgumentList(value);
+      if (cleanedValue.length > 0) {
+        cleaned[key] = cleanedValue;
       }
     }
     return cleaned;
+  }
+
+  runtimeParameters() {
+    const parameters = this.cleanParameters(this.config.parameters || {});
+    if (this.runargsInput) {
+      const runargs = this.splitArguments(this.runargsInput.value);
+      if (runargs.length > 0) {
+        parameters.runargs = runargs;
+      } else {
+        delete parameters.runargs;
+      }
+    }
+    return parameters;
+  }
+
+  cleanArgumentList(value) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.map((item) => String(item)).filter((item) => item.length > 0);
+  }
+
+  splitArguments(value) {
+    const args = [];
+    let current = "";
+    let quote = null;
+    let escaped = false;
+
+    for (const character of value.trim()) {
+      if (escaped) {
+        current += character;
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (quote) {
+        if (character === quote) {
+          quote = null;
+        } else {
+          current += character;
+        }
+      } else if (character === '"' || character === "'") {
+        quote = character;
+      } else if (/\s/.test(character)) {
+        if (current) {
+          args.push(current);
+          current = "";
+        }
+      } else {
+        current += character;
+      }
+    }
+
+    if (escaped) {
+      current += "\\";
+    }
+    if (current) {
+      args.push(current);
+    }
+    return args;
   }
 
   async fetchSupportedLanguages() {

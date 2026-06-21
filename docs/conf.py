@@ -12,6 +12,6 @@ html_theme = "sphinx_nefertiti"
 #     "pygments_dark_style": "solarized-dark",
 # }
 
-tb_code_code_block_defaults = {
+tb_code_block_defaults = {
     "linenos": True,
 }

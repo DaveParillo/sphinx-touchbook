@@ -88,6 +88,7 @@ def test_directive_accepts_language_argument_and_options():
    :emphasize-lines: 1
    :class: sample-code
    :readonly:
+   :hidden:
 
    #include <iostream>
 """
@@ -101,6 +102,7 @@ def test_directive_accepts_language_argument_and_options():
     assert node["stdin"] == "input text"
     assert node["parameters"]["compileargs"] == ["-Wall"]
     assert node["editable"] is False
+    assert node["hidden"] is True
     assert node["code_block_options"]["linenos"] is True
     assert node["code_block_options"]["highlight_args"]["linenostart"] == 10
     assert node["code_block_options"]["highlight_args"]["hl_lines"] == [1]
@@ -200,7 +202,7 @@ Title
    print("two")
 """,
         conf_extra=(
-            'tb_code_code_block_defaults = {"linenos": True, "lineno-start": 25, "emphasize-lines": "2", "class": ["from-conf"]}\n'
+            'tb_code_block_defaults = {"linenos": True, "lineno-start": 25, "emphasize-lines": "2", "class": ["from-conf"]}\n'
         ),
     )
 
@@ -260,6 +262,116 @@ Title
     assert config["parameters"]["compileargs"] == ["-std=c++11"]
 
 
+def test_include_replaces_placeholders_from_named_tb_code_and_code_block(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-code:: cpp
+   :name: account-methods
+   :hidden:
+
+   public:
+     int balance() const;
+
+.. code-block:: cpp
+   :name: account-fields
+
+   private:
+     int balance_;
+
+.. tb-code:: cpp
+   :name: account-class
+   :include:
+      PUBLIC_MEMBERS: account-methods
+      PRIVATE_MEMBERS: account-fields
+
+   class account {
+     {{PUBLIC_MEMBERS}}
+     {{PRIVATE_MEMBERS}}
+   };
+""",
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    assert soup.find("tb-code", id="account-methods") is None
+    element = soup.find("tb-code", id="account-class")
+    config = json.loads(element.find("script", class_="tb-code__config").string)
+    assert config["source"] == (
+        "class account {\n"
+        "  public:\n"
+        "    int balance() const;\n"
+        "  private:\n"
+        "    int balance_;\n"
+        "};"
+    )
+    assert "{{PUBLIC_MEMBERS}}" not in element.get_text()
+    assert "int balance() const;" in element.get_text()
+    assert "int balance_;" in element.get_text()
+
+
+def test_text_builder_uses_included_code(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "text",
+        """
+Title
+=====
+
+.. code-block:: python
+   :name: helper-function
+
+   def helper():
+       return 42
+
+.. tb-code:: python
+   :include: HELPER: helper-function
+
+   {{HELPER}}
+
+   print(helper())
+""",
+    )
+
+    text = (outdir / "index.txt").read_text(encoding="utf-8")
+    assert "def helper():" in text
+    assert "print(helper())" in text
+    assert "{{HELPER}}" not in text
+
+
+def test_hidden_tb_code_is_available_for_includes_but_not_rendered_in_text(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "text",
+        """
+Title
+=====
+
+.. tb-code:: python
+   :name: hidden-helper
+   :hidden:
+
+   def helper():
+       return 42
+
+.. tb-code:: python
+   :include: HELPER: hidden-helper
+
+   {{HELPER}}
+
+   print(helper())
+""",
+    )
+
+    text = (outdir / "index.txt").read_text(encoding="utf-8")
+    assert text.count("def helper():") == 1
+    assert "print(helper())" in text
+    assert "{{HELPER}}" not in text
+
+
 def test_text_builder_preserves_source(tmp_path):
     outdir = build_sphinx(
         tmp_path,
@@ -298,6 +410,10 @@ def test_web_component_contract():
     assert "captureCurrentRevision" in source
     assert "loadRevision" in source
     assert "revisionSlider.type = \"range\"" in source
+    assert "createRuntimeInput" in source
+    assert "runtimeParameters" in source
+    assert "splitArguments" in source
+    assert "tb-code__runtime-input" in source
     assert "resetButton" not in source
     assert "resetCode" not in source
     assert "resetLabel" not in source

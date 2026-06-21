@@ -60,6 +60,26 @@ tb-code {
   min-width: 4rem;
 }
 
+.tb-code__runtime-inputs {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.tb-code__runtime-field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.tb-code__runtime-label {
+  font-weight: 700;
+}
+
+.tb-code__runtime-input {
+  box-sizing: border-box;
+  width: 100%;
+}
+
 .tb-code__status {
   margin: 0.5rem 0;
 }

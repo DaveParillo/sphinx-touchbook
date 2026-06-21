@@ -48,6 +48,7 @@ from .generators.tabs import (
     visit_tb_tab_latex,
     visit_tb_tab_text,
 )
+from .transforms import TbCodeIncludeTransform
 
 
 def _add_static_path(app: Sphinx) -> None:
@@ -67,7 +68,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_code_default_language", DEFAULT_LANGUAGE, "env")
     app.add_config_value("tb_code_language_map", DEFAULT_LANGUAGE_MAP, "env")
     app.add_config_value("tb_code_language_defaults", DEFAULT_LANGUAGE_DEFAULTS, "env")
-    app.add_config_value("tb_code_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS, "env")
+    app.add_config_value("tb_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS, "env")
     app.add_config_value("tb_code_run_label", "Run", "html")
     app.add_config_value("tb_code_edit_label", "Edit", "html")
     app.add_config_value("tb_code_hide_edit_label", "Hide editor", "html")
@@ -100,6 +101,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_directive("tb-reveal", TbRevealDirective)
     app.add_directive("tb-group", TbGroupDirective)
     app.add_directive("tb-tab", TbTabDirective)
+    app.add_post_transform(TbCodeIncludeTransform)
     app.connect("builder-inited", _add_static_path)
     app.add_css_file("tb-reveal.css")
     app.add_css_file("tb-group.css")
