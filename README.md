@@ -1,8 +1,7 @@
 # sphinx-touchbook
 [![Tests](https://img.shields.io/github/actions/workflow/status/daveparillo/sphinx-touchbook/publish-authorguide.yml?branch=main&label=tests)](https://github.com/daveparillo/sphinx-touchbook/actions/workflows/publish-authorguide.yml)
 [![Author Guide](https://img.shields.io/github/actions/workflow/status/daveparillo/sphinx-touchbook/publish-authorguide.yml?branch=main&label=docs)](https://github.com/daveparillo/sphinx-touchbook/actions/workflows/publish-authorguide.yml)
-[![License](https://img.shields.io/github/license/daveparillo/sphinx-
-  touchbook)](LICENSE)
+[![License](https://img.shields.io/github/license/daveparillo/sphinx-touchbook)](LICENSE)
 
 `sphinx-touchbook` is a Sphinx extension project for authors who want
 interactive textbook pages without giving up ordinary Sphinx documents.
