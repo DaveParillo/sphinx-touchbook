@@ -13,6 +13,7 @@ class TbCode extends HTMLElement {
     this.revisions = [this.source];
     this.revisionIndex = 0;
     this.editorDirty = false;
+    this.fileEditors = new Map();
     this.renderControls();
     this.preloadSupportedLanguages();
   }
@@ -116,6 +117,13 @@ class TbCode extends HTMLElement {
       this.runtimeInputs.appendChild(runargsField.wrapper);
     }
 
+    this.attachedFiles = document.createElement("div");
+    this.attachedFiles.className = "tb-code__attached-files";
+    this.attachedFiles.hidden = !this.hasAttachedFiles();
+    if (this.hasAttachedFiles()) {
+      this.renderAttachedFiles();
+    }
+
     this.status = document.createElement("div");
     this.status.className = "tb-code__status";
     this.status.setAttribute("role", "status");
@@ -137,6 +145,7 @@ class TbCode extends HTMLElement {
       this.editor,
       this.revisionControl,
       this.runtimeInputs,
+      this.attachedFiles,
       this.status,
       outputLabel,
       this.output,
@@ -145,6 +154,48 @@ class TbCode extends HTMLElement {
 
   hasRuntimeInputs() {
     return Boolean(this.config.stdin) || this.cleanArgumentList(this.config.parameters?.runargs || []).length > 0;
+  }
+
+  hasAttachedFiles() {
+    return this.attachedFileConfigs().length > 0;
+  }
+
+  attachedFileConfigs() {
+    return Array.isArray(this.config.files) ? this.config.files : [];
+  }
+
+  renderAttachedFiles() {
+    const heading = document.createElement("div");
+    heading.className = "tb-code__attached-files-label";
+    heading.textContent = "Attached files";
+    this.attachedFiles.appendChild(heading);
+
+    for (const file of this.attachedFileConfigs()) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "tb-code__attached-file";
+
+      const label = document.createElement("label");
+      label.className = "tb-code__attached-file-label";
+      label.textContent = file.filename;
+
+      if (file.is_text) {
+        const editor = document.createElement("textarea");
+        editor.className = "tb-code__attached-file-editor";
+        editor.value = file.content || "";
+        editor.readOnly = file.editable === false;
+        editor.id = `${this.safeId()}-file-${this.fileEditors.size + 1}`;
+        label.htmlFor = editor.id;
+        this.fileEditors.set(file.filename, editor);
+        wrapper.append(label, editor);
+      } else {
+        const note = document.createElement("div");
+        note.className = "tb-code__attached-file-note";
+        note.textContent = `${file.mime_type || "application/octet-stream"} file`;
+        wrapper.append(label, note);
+      }
+
+      this.attachedFiles.appendChild(wrapper);
+    }
   }
 
   createRuntimeInput(name, labelText, value) {
@@ -262,6 +313,10 @@ class TbCode extends HTMLElement {
       }
 
       this.status.textContent = "Running...";
+      const fileList = await this.uploadRuntimeFiles();
+      if (fileList.length > 0) {
+        payload.run_spec.file_list = fileList;
+      }
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -304,6 +359,102 @@ class TbCode extends HTMLElement {
       }
     }
     return parameters;
+  }
+
+  runtimeFiles() {
+    return this.attachedFileConfigs().map((file) => {
+      const content = file.is_text
+        ? this.textFileContent(file)
+        : this.base64FromDataUrl(file.data_url || "");
+      const runtimeFile = {
+        id: this.fileIdentifier(file.filename, content),
+        filename: file.filename,
+        mime_type: file.mime_type || "text/plain",
+      };
+      if (file.is_text) {
+        runtimeFile.encoding = "text";
+        runtimeFile.content = content;
+      } else {
+        runtimeFile.encoding = "base64";
+        runtimeFile.content = content;
+      }
+      return runtimeFile;
+    });
+  }
+
+  textFileContent(file) {
+    const editor = this.fileEditors.get(file.filename);
+    return editor ? editor.value : file.content || "";
+  }
+
+  async uploadRuntimeFiles() {
+    const files = this.runtimeFiles();
+    if (files.length === 0) {
+      return [];
+    }
+    const endpoint = this.fileUploadEndpoint();
+    if (!endpoint) {
+      throw new Error("No execution file endpoint is configured.");
+    }
+    const fileList = [];
+    for (const file of files) {
+      await this.uploadRuntimeFile(endpoint, file);
+      fileList.push([file.id, file.filename]);
+    }
+    return fileList;
+  }
+
+  async uploadRuntimeFile(endpoint, file) {
+    const base64Content = file.encoding === "base64" ? file.content : this.base64EncodeText(file.content);
+    const response = await fetch(`${endpoint}${file.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ file_contents: base64Content }),
+    });
+    if (!response.ok) {
+      throw new Error(`Execution service could not upload ${file.filename}.`);
+    }
+  }
+
+  fileUploadEndpoint() {
+    if (this.config.filesEndpoint) {
+      return this.config.filesEndpoint.endsWith("/") ? this.config.filesEndpoint : `${this.config.filesEndpoint}/`;
+    }
+    if (!this.config.endpoint) {
+      return "";
+    }
+    return this.config.endpoint.replace(/runs\/?$/, "files/");
+  }
+
+  fileIdentifier(filename, content) {
+    const hashInput = `${filename}\u0000${content}`;
+    let hash = 2166136261;
+    for (let index = 0; index < hashInput.length; index += 1) {
+      hash ^= hashInput.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return `tbfile${(hash >>> 0).toString(36)}${content.length.toString(36)}`;
+  }
+
+  base64EncodeText(value) {
+    const bytes = new TextEncoder().encode(value);
+    let binary = "";
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return btoa(binary);
+  }
+
+  base64FromDataUrl(value) {
+    const marker = ";base64,";
+    const index = value.indexOf(marker);
+    if (index === -1) {
+      return value;
+    }
+    return value.slice(index + marker.length);
   }
 
   cleanArgumentList(value) {

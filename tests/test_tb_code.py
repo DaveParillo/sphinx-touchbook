@@ -11,7 +11,7 @@ from docutils.utils import new_document
 from sphinx.application import Sphinx
 from sphinx.errors import ExtensionError
 
-from sphinx_touchbook.directives.code import DEFAULT_ENDPOINT, DEFAULT_LANGUAGES_ENDPOINT, TbCodeDirective
+from sphinx_touchbook.directives.code import DEFAULT_ENDPOINT, DEFAULT_FILES_ENDPOINT, DEFAULT_LANGUAGES_ENDPOINT, TbCodeDirective
 from sphinx_touchbook.nodes import TbCodeNode
 
 
@@ -174,6 +174,7 @@ Title
     assert config["language"] == "python"
     assert config["jobeLanguage"] == "python3"
     assert config["endpoint"] == DEFAULT_ENDPOINT
+    assert config["filesEndpoint"] == DEFAULT_FILES_ENDPOINT
     assert config["languagesEndpoint"] == DEFAULT_LANGUAGES_ENDPOINT
     assert config["validateLanguage"] is True
     assert config["runLabel"] == "Execute"
@@ -201,6 +202,7 @@ Title
 """,
         conf_extra=(
             'tb_code_default_endpoint = "https://example.test/runs/"\n'
+            'tb_code_files_endpoint = "https://example.test/files/"\n'
             'tb_code_languages_endpoint = "https://example.test/languages"\n'
             'tb_code_language_map = {"js": "nodejs"}\n'
             'tb_code_language_defaults = {"js": {"interpreterargs": ["--trace-warnings"]}}\n'
@@ -214,6 +216,7 @@ Title
     soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
     config = json.loads(soup.find("script", class_="tb-code__config").string)
     assert config["endpoint"] == "https://example.test/runs/"
+    assert config["filesEndpoint"] == "https://example.test/files/"
     assert config["languagesEndpoint"] == "https://example.test/languages"
     assert config["jobeLanguage"] == "nodejs"
     assert config["validateLanguage"] is False
@@ -546,6 +549,111 @@ Example
     assert "{{PRIVATE_MEMBERS}}" not in config["source"]
     fragments = BeautifulSoup((outdir / "fragments.html").read_text(encoding="utf-8"), "html.parser")
     assert fragments.find("tb-code", id="account-methods") is None
+
+
+def test_tb_code_attaches_named_tb_files(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "html",
+        {
+            "index.rst": """
+Title
+=====
+
+.. tb-file::
+   :filename: input.txt
+   :hidden:
+
+   Alice Bob
+
+.. tb-code:: python
+   :name: file-reader
+   :files: input.txt
+
+   print(open("input.txt").read())
+""",
+        },
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    assert soup.find("tb-file") is None
+    element = soup.find("tb-code", id="file-reader")
+    config = json.loads(element.find("script", class_="tb-code__config").string)
+    assert config["files"] == [
+        {
+            "filename": "input.txt",
+            "content": "Alice Bob",
+            "data_url": None,
+            "mime_type": "text/plain",
+            "is_text": True,
+            "editable": True,
+        }
+    ]
+
+
+def test_tb_code_attaches_tb_files_from_another_document(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "html",
+        {
+            "index.rst": """
+Title
+=====
+
+.. toctree::
+
+   files
+   example
+""",
+            "files.rst": """
+Files
+=====
+
+.. tb-file::
+   :filename: data/input.txt
+   :hidden:
+
+   42
+""",
+            "example.rst": """
+Example
+=======
+
+.. tb-code:: python
+   :name: cross-doc-file-reader
+   :files: data/input.txt
+
+   print(open("data/input.txt").read())
+""",
+        },
+    )
+
+    soup = BeautifulSoup((outdir / "example.html").read_text(encoding="utf-8"), "html.parser")
+    config = json.loads(soup.find("tb-code", id="cross-doc-file-reader").find("script", class_="tb-code__config").string)
+    assert config["files"][0]["filename"] == "data/input.txt"
+    assert config["files"][0]["content"] == "42"
+
+
+def test_tb_code_missing_file_reference_warns(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "html",
+        {
+            "index.rst": """
+Title
+=====
+
+.. tb-code:: python
+   :files: missing.txt
+
+   print("missing")
+""",
+        },
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    config = json.loads(soup.find("tb-code").find("script", class_="tb-code__config").string)
+    assert config["files"] == []
 
 
 def test_duplicate_include_fragment_names_stop_the_build(tmp_path):

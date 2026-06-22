@@ -44,6 +44,8 @@ function appendCode(config = {}) {
 async function flushPromises() {
   await Promise.resolve();
   await Promise.resolve();
+  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 describe("tb-code Web Component", () => {
@@ -174,6 +176,67 @@ describe("tb-code Web Component", () => {
     expect(runButton.getAttribute("aria-busy")).toBe("false");
     expect(output.textContent).toBe("two\n");
     expect(status.textContent).toBe("Run complete.");
+  });
+
+  it("renders attached file editors and sends current file contents with runs", async () => {
+    const uploadedIds = [];
+    const fetchMock = vi.fn(async (url, options) => {
+      if (options.method === "PUT") {
+        const fileId = url.split("/").pop();
+        uploadedIds.push(fileId);
+        expect(fileId).toMatch(/^[a-z0-9]{8,}$/);
+        expect(url).toMatch(/^https:\/\/example\.test\/files\/[a-z0-9]+$/);
+        const payload = JSON.parse(options.body);
+        expect(payload).toEqual({
+          file_contents: uploadedIds.length === 1 ? "ZWRpdGVkIGZpbGU=" : "QUJD",
+        });
+        return { ok: true, status: 204 };
+      }
+      const payload = JSON.parse(options.body);
+      expect(payload.run_spec.file_list).toEqual([
+        [uploadedIds[0], "input.txt"],
+        [uploadedIds[1], "images/pic.png"],
+      ]);
+      return {
+        ok: true,
+        json: async () => ({ outcome: 15, stdout: "done\n", stderr: "", cmpinfo: "" }),
+      };
+    });
+    globalThis.fetch = fetchMock;
+
+    const element = appendCode({
+      filesEndpoint: "https://example.test/files/",
+      files: [
+        {
+          filename: "input.txt",
+          content: "original file",
+          mime_type: "text/plain",
+          is_text: true,
+          editable: true,
+        },
+        {
+          filename: "images/pic.png",
+          data_url: "data:image/png;base64,QUJD",
+          mime_type: "image/png",
+          is_text: false,
+          editable: false,
+        },
+      ],
+    });
+    const attachedFiles = element.querySelector(".tb-code__attached-files");
+    const fileEditor = element.querySelector("textarea.tb-code__attached-file-editor");
+    const fileNote = element.querySelector(".tb-code__attached-file-note");
+    const runButton = element.querySelectorAll("button.tb-code__button")[0];
+
+    expect(attachedFiles.hidden).toBe(false);
+    expect(fileEditor.value).toBe("original file");
+    expect(fileNote.textContent).toBe("image/png file");
+
+    fileEditor.value = "edited file";
+    await click(runButton);
+    await flushPromises();
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it("preloads languages and reports unsupported service languages", async () => {

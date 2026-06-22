@@ -19,3 +19,7 @@ class TbTabNode(nodes.General, nodes.Element):
 
 class TbCodeNode(nodes.General, nodes.Element):
     """Semantic node for runnable source code."""
+
+
+class TbFileNode(nodes.General, nodes.Element):
+    """Semantic node for a simulated local file."""

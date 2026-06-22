@@ -9,11 +9,13 @@ from docutils.parsers.rst import Directive, directives
 from sphinx.directives.code import CodeBlock, dedent_lines, parse_line_num_spec
 
 from sphinx_touchbook.directives.common import assign_node_id
+from sphinx_touchbook.directives.file import validate_filename
 from sphinx_touchbook.nodes import TbCodeNode
 
 DEFAULT_REST_API = "https://delicate-frost-8843.fly.dev/jobe/index.php/restapi"
 DEFAULT_ENDPOINT = f"{DEFAULT_REST_API}/runs/"
 DEFAULT_LANGUAGES_ENDPOINT = f"{DEFAULT_REST_API}/languages"
+DEFAULT_FILES_ENDPOINT = f"{DEFAULT_REST_API}/files/"
 DEFAULT_LANGUAGE = "python3"
 DEFAULT_LANGUAGE_MAP = {
     "python": "python3",
@@ -80,6 +82,16 @@ def _parse_include_specs(value: str | None) -> list[tuple[str, str]]:
         placeholder, source_name = stripped.split(":", 1)
         specs.append((placeholder.strip(), source_name.strip()))
     return specs
+
+
+def _parse_file_specs(value: str | None) -> list[str]:
+    if not value:
+        return []
+    filenames = []
+    for line in value.splitlines():
+        for raw_filename in line.replace(",", " ").split():
+            filenames.append(validate_filename(raw_filename))
+    return filenames
 
 
 def _language_defaults(config, language: str, jobe_language: str) -> dict[str, object]:
@@ -170,6 +182,7 @@ class TbCodeDirective(Directive):
         **CodeBlock.option_spec,
         "language": directives.unchanged,
         "endpoint": directives.uri,
+        "files-endpoint": directives.uri,
         "stdin": directives.unchanged,
         "compileargs": directives.unchanged,
         "linkargs": directives.unchanged,
@@ -183,6 +196,7 @@ class TbCodeDirective(Directive):
         "hide-edit-label": directives.unchanged,
         "revision-label": directives.unchanged,
         "include": directives.unchanged,
+        "files": directives.unchanged,
     }
 
     def run(self):
@@ -203,6 +217,8 @@ class TbCodeDirective(Directive):
         )
         node["source"] = source
         node["include_specs"] = _parse_include_specs(self.options.get("include"))
+        node["file_specs"] = _parse_file_specs(self.options.get("files"))
+        node["files"] = []
         node["hidden"] = "hidden" in self.options
         node["caption"] = code_block_options.get("caption")
         node["code_block_options"] = normalized_code_block_options
@@ -210,6 +226,11 @@ class TbCodeDirective(Directive):
             config,
             "tb_code_default_endpoint",
             DEFAULT_ENDPOINT,
+        )
+        node["files_endpoint"] = self.options.get("files-endpoint") or _config_value(
+            config,
+            "tb_code_files_endpoint",
+            DEFAULT_FILES_ENDPOINT,
         )
         node["languages_endpoint"] = _config_value(
             config,

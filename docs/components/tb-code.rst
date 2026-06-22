@@ -102,6 +102,23 @@ Options
    code in another source file.
    Duplicate include fragment names stop the build.
 
+``files``
+   ``String``. Optional. Attaches one or more ``tb-file`` artifacts to the run
+   request. Use filenames from the ``tb-file`` ``filename`` option, separated
+   by spaces, commas, or new lines.
+
+   .. code-block:: rst
+
+      :files: input.txt data/config.json
+
+   Text files appear in HTML as editable file textareas unless the ``tb-file``
+   was marked ``readonly``. Binary files are attached as read-only base64
+   content.
+
+``files-endpoint``
+   ``String``. Optional. Jobe-compatible ``files`` endpoint used to upload
+   support files before a run. Defaults to ``tb_code_files_endpoint``.
+
 Sphinx configuration options
 ----------------------------
 
@@ -112,6 +129,10 @@ Sphinx configuration options
 ``tb_code_languages_endpoint``
    ``String``. Jobe-compatible language discovery endpoint. The project default
    is ``https://delicate-frost-8843.fly.dev/jobe/index.php/restapi/languages``.
+
+``tb_code_files_endpoint``
+   ``String``. Jobe-compatible file upload endpoint. The project default
+   is ``https://delicate-frost-8843.fly.dev/jobe/index.php/restapi/files/``.
 
 ``tb_code_validate_language``
    ``Boolean``. If true, query the languages supported before running code.
@@ -189,6 +210,7 @@ Code that cannot be compiled natively in a browser is sent to a
        "language_id": "cpp",
        "sourcecode": "int main() { return 0; }",
        "input": "Alice",
+       "file_list": [["tbfileabc123", "input.txt"]],
        "parameters": {
          "compileargs": ["-Wall", "-std=c++11"],
          "linkargs": [],
@@ -208,6 +230,11 @@ If ``stdin`` or ``runargs`` are configured, HTML presents editable text inputs
 initialized from those values.
 The current input values are used when the reader presses Run.
 These runtime inputs are separate from the source-code revision history.
+
+When ``files`` is configured, each attached file is uploaded to the configured
+Jobe ``files`` endpoint before the run request is sent. The run request then
+uses Jobe's ``file_list`` field to map each uploaded file identifier to the
+filename visible inside the execution workspace.
 
 Accessibility and fallback behavior
 -----------------------------------

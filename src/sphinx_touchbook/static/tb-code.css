@@ -80,6 +80,34 @@ tb-code {
   width: 100%;
 }
 
+.tb-code__attached-files {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.tb-code__attached-files-label,
+.tb-code__attached-file-label {
+  font-weight: 700;
+}
+
+.tb-code__attached-file {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.tb-code__attached-file-editor {
+  box-sizing: border-box;
+  font-family: var(--font-stack--monospace, monospace);
+  min-height: 6rem;
+  width: 100%;
+}
+
+.tb-code__attached-file-note {
+  border: 1px solid var(--color-background-border, #999);
+  padding: 0.5rem;
+}
+
 .tb-code__status {
   margin: 0.5rem 0;
 }

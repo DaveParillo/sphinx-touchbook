@@ -18,8 +18,8 @@ plain text until they exist.
 Categories        Directives
 ================= ===================================
 Working with Code :doc:`components/tb-code`
+                  :doc:`components/tb-file`
                   ``tb-code-lens`` (planned)
-                  ``tb-data-file`` (planned)
                   ``tb-show-eval`` (planned)
 Containers        :doc:`components/tb-group`
                   :doc:`components/tb-reveal`
@@ -42,6 +42,7 @@ Renderers         ``tb-matrix-equation`` (planned)
    :titlesonly:
 
    components/tb-code
+   components/tb-file
    components/tb-group
    components/tb-reveal
 

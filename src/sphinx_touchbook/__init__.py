@@ -9,15 +9,17 @@ from sphinx.application import Sphinx
 from .directives.code import (
     DEFAULT_CODE_BLOCK_OPTIONS,
     DEFAULT_ENDPOINT,
+    DEFAULT_FILES_ENDPOINT,
     DEFAULT_LANGUAGE,
     DEFAULT_LANGUAGE_DEFAULTS,
     DEFAULT_LANGUAGE_MAP,
     DEFAULT_LANGUAGES_ENDPOINT,
     TbCodeDirective,
 )
+from .directives.file import TbFileDirective
 from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
-from .nodes import TbCodeNode, TbRevealNode, TbGroupNode, TbTabNode
+from .nodes import TbCodeNode, TbFileNode, TbRevealNode, TbGroupNode, TbTabNode
 from .generators.code import (
     depart_tb_code_html,
     depart_tb_code_latex,
@@ -25,6 +27,14 @@ from .generators.code import (
     visit_tb_code_html,
     visit_tb_code_latex,
     visit_tb_code_text,
+)
+from .generators.file import (
+    depart_tb_file_html,
+    depart_tb_file_latex,
+    depart_tb_file_text,
+    visit_tb_file_html,
+    visit_tb_file_latex,
+    visit_tb_file_text,
 )
 from .generators.reveal import (
     depart_tb_reveal_html,
@@ -50,8 +60,11 @@ from .generators.tabs import (
 )
 from .transforms import (
     TbCodeIncludeTransform,
+    collect_tb_files,
     collect_tb_code_snippets,
+    merge_tb_files,
     merge_tb_code_snippets,
+    purge_tb_files,
     purge_tb_code_snippets,
 )
 
@@ -68,6 +81,7 @@ def setup(app: Sphinx) -> dict[str, object]:
         DEFAULT_ENDPOINT,
         "html",
     )
+    app.add_config_value("tb_code_files_endpoint", DEFAULT_FILES_ENDPOINT, "html")
     app.add_config_value("tb_code_languages_endpoint", DEFAULT_LANGUAGES_ENDPOINT, "html")
     app.add_config_value("tb_code_validate_language", True, "html")
     app.add_config_value("tb_code_default_language", DEFAULT_LANGUAGE, "env")
@@ -83,6 +97,12 @@ def setup(app: Sphinx) -> dict[str, object]:
         html=(visit_tb_code_html, depart_tb_code_html),
         latex=(visit_tb_code_latex, depart_tb_code_latex),
         text=(visit_tb_code_text, depart_tb_code_text),
+    )
+    app.add_node(
+        TbFileNode,
+        html=(visit_tb_file_html, depart_tb_file_html),
+        latex=(visit_tb_file_latex, depart_tb_file_latex),
+        text=(visit_tb_file_text, depart_tb_file_text),
     )
     app.add_node(
         TbRevealNode,
@@ -103,20 +123,26 @@ def setup(app: Sphinx) -> dict[str, object]:
         text=(visit_tb_tab_text, depart_tb_tab_text),
     )
     app.add_directive("tb-code", TbCodeDirective)
+    app.add_directive("tb-file", TbFileDirective)
     app.add_directive("tb-reveal", TbRevealDirective)
     app.add_directive("tb-group", TbGroupDirective)
     app.add_directive("tb-tab", TbTabDirective)
     app.add_post_transform(TbCodeIncludeTransform)
     app.connect("env-purge-doc", purge_tb_code_snippets)
+    app.connect("env-purge-doc", purge_tb_files)
     app.connect("doctree-read", collect_tb_code_snippets)
+    app.connect("doctree-read", collect_tb_files)
     app.connect("env-merge-info", merge_tb_code_snippets)
+    app.connect("env-merge-info", merge_tb_files)
     app.connect("builder-inited", _add_static_path)
     app.add_css_file("tb-reveal.css")
     app.add_css_file("tb-group.css")
     app.add_css_file("tb-code.css")
+    app.add_css_file("tb-file.css")
     app.add_js_file("tb-reveal.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
     app.add_js_file("tb-code.js", loading_method="defer")
+    app.add_js_file("tb-file.js", loading_method="defer")
     return {
         "version": "0.1.0",
         "parallel_read_safe": True,

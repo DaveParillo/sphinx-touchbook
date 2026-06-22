@@ -4,7 +4,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 project = 'Sphinx Touchbook Author Guide'
-copyright = '2026 Dave Parillo'
+author = 'Dave Parillo'
+project_copyright = '2026, ' + author
 version = '0.1.0'
 release = version + '-alpha'
 

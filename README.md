@@ -100,5 +100,14 @@ Run isolated JavaScript component tests:
 npm run test:web-components
 ```
 
+## Current Directives
+
+The current extension includes:
+
+- `tb-reveal`: hidden content that can be revealed inline or in a modal.
+- `tb-group`: grouped tab-like content.
+- `tb-code`: code listings that can be edited, compiled, and run through a configured execution service.
+- `tb-file`: simulated local files that can be displayed, hidden, or prepared for later execution use.
+
 See the author guide in `docs/` for directive syntax, options, examples,
 accessibility notes, and fallback behavior.
