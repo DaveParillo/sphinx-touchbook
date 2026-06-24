@@ -11,63 +11,61 @@ The general format of the ``tb-reveal`` directive is:
 .. code-block:: rst
 
    .. tb-reveal::
-      :name: optional-name
-      :showlabel: Show
-      :hidelabel: Hide
-      :modal:
-      :modal-titlebar: Message from the author
+      :optional parameter: value
 
-      Content area
+      + --- Content area ---
+      |
+      | one or more lines of initially hidden content
+      | which can include any Touchbook or Sphinx supported directives.
+      |
+      + --------------------
 
-      One or more lines of initially hidden content.
-      Content can include ordinary Sphinx markup and directives.
-
-Required content
-----------------
-
-content area
-   The ``tb-reveal`` directive must contain at least one line of content.
+The content area is required.
 
 Options
 -------
 
-``name``
-   ``String``. Optional. Sphinx reference name for this reveal block.
-   This is a `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
-
-``showlabel``
-   ``String``. Optional. Label for the show button.
-   Default is ``Show``.
-
-``hidelabel``
+**hidelabel**
    ``String``. Optional. Label for the hide or close button.
    Default is ``Hide``.
 
-``modal``
+**modal**
    ``Boolean``. Optional.
    If included, the revealed content is presented in a modal dialog.
    The default behavior reveals content inline.
 
-``modal-titlebar``
+**modal-titlebar**
    ``String``. Optional.
    Text displayed in the modal dialog titlebar and used as the dialog's
    accessible label.
    Default is ``Message from the author``.
+
+**name**
+   ``String``. Optional. Sphinx reference name for this reveal block.
+   This is a
+   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
+   If omitted, docutils assigns a deterministic generated ID derived from the
+   document and node position.
+
+**showlabel**
+   ``String``. Optional. Label for the show button.
+   Default is ``Show``.
 
 Sphinx configuration options
 ----------------------------
 
 No directive-specific configuration options exist.
 
-Accessibility and fallback behavior
------------------------------------
+Accessibility behavior
+----------------------
 
 The no-JS HTML fallback uses native ``details`` and ``summary``. Inline HTML
 uses a native ``button`` and synchronizes ``aria-expanded``. Modal content uses
 a native ``dialog`` element when available and includes an accessible dialog
 label.
+
+Fallback behavior
+-----------------
 
 PDF and text builders render the content as labeled static content.
 
@@ -77,118 +75,122 @@ Examples
 Example 1: Basic reveal
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Source
-^^^^^^
+.. tb-group::
+   :name: reveal-ex1-tabs
 
-.. code-block:: rst
+   .. tb-tab:: Source
 
-   .. tb-reveal::
-      :name: re-ex1
+      .. code-block:: rst
 
-      This content starts out hidden.
+         .. tb-reveal::
 
-      - *Any* valid `Sphinx markup <http://www.sphinx-doc.org>`__ can be included.
-      - Hidden content can be shown by using the Show button.
-      - When shown, a Hide button appears at the end of the hidden content.
+            This content starts out hidden.
 
-Rendered
-^^^^^^^^
+            - *Any* valid `Sphinx markup <http://www.sphinx-doc.org>`__ can be
+              included.
+            - Hidden content can be shown by using the Show button.
+            - When shown, a Hide button appears at the end of the hidden
+              content.
 
-.. tb-reveal::
-   :name: re-ex1
+   .. tb-tab:: Rendered
 
-   This content starts out hidden.
+      .. tb-reveal::
 
-   - *Any* valid `Sphinx markup <http://www.sphinx-doc.org>`__ can be included.
-   - Hidden content can be shown by using the Show button.
-   - When shown, a Hide button appears at the end of the hidden content.
+         This content starts out hidden.
+
+         - *Any* valid `Sphinx markup <http://www.sphinx-doc.org>`__ can be
+           included.
+         - Hidden content can be shown by using the Show button.
+         - When shown, a Hide button appears at the end of the hidden content.
 
 Example 2: Custom button labels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Source
-^^^^^^
+.. tb-group::
+   :name: reveal-ex2-tabs
 
-.. code-block:: rst
+   .. tb-tab:: Source
 
-   .. tb-reveal::
-      :name: re-ex2
-      :showlabel: Reveal Content
-      :hidelabel: Hide Content
+      .. code-block:: rst
 
-      The reveal block can contain other directives. This example uses a
-      standard Sphinx code block until an ``activecode`` directive exists:
+         .. tb-reveal::
+            :name: re-ex2
+            :showlabel: Reveal Content
+            :hidelabel: Hide Content
 
-      .. code-block:: python
+            The reveal block can contain other directives. This example uses a
+            standard Sphinx code block until an ``activecode`` directive exists:
 
-         print("Hello, world")
+            .. code-block:: python
 
-Rendered
-^^^^^^^^
+               print("Hello, world")
 
-.. tb-reveal::
-   :name: re-ex2
-   :showlabel: Reveal Content
-   :hidelabel: Hide Content
+   .. tb-tab:: Rendered
 
-   The reveal block can contain other directives. This example uses a
-   standard Sphinx code block until an ``activecode`` directive exists:
+      .. tb-reveal::
+         :name: re-ex2
+         :showlabel: Reveal Content
+         :hidelabel: Hide Content
 
-   .. code-block:: python
+         The reveal block can contain other directives. This example uses a
+         standard Sphinx code block until an ``activecode`` directive exists:
 
-      print("Hello, world")
+         .. code-block:: python
+
+            print("Hello, world")
 
 Example 3: Modal reveal
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Source
-^^^^^^
+.. tb-group::
+   :name: reveal-ex3-tabs
 
-.. code-block:: rst
+   .. tb-tab:: Source
 
-   Given the following C++ statements:
+      .. code-block:: rst
 
-   .. code-block:: cpp
+         Given the following C++ statements:
 
-      int  val = 0;
-      int& ir  = val;
-      auto x   = ir;
+         .. code-block:: cpp
 
-   What type is x?
+            int  val = 0;
+            int& ir  = val;
+            auto x   = ir;
 
-   .. tb-reveal::
-      :name: reveal-ex3
-      :modal:
-      :modal-titlebar: Understanding auto type deduction
+         What type is x?
 
-      If you said, ``int``, excellent job!
+         .. tb-reveal::
+            :name: reveal-ex3
+            :modal:
+            :modal-titlebar: Understanding auto type deduction
 
-      ``ir`` is a reference to ``val``,
-      which makes ``ir`` just another name for ``val``.
-      ``auto x = ir;`` is exactly the same as if we had written
-      ``auto x = val;`` here.
+            If you said, ``int``, excellent job!
 
-Rendered
-^^^^^^^^
+            ``ir`` is a reference to ``val``,
+            which makes ``ir`` just another name for ``val``.
+            ``auto x = ir;`` is exactly the same as if we had written
+            ``auto x = val;`` here.
 
-Given the following C++ statements:
+   .. tb-tab:: Rendered
 
-.. code-block:: cpp
+      Given the following C++ statements:
 
-   int  val = 0;
-   int& ir  = val;
-   auto x   = ir;
+      .. code-block:: cpp
 
-What type is x?
+         int  val = 0;
+         int& ir  = val;
+         auto x   = ir;
 
-.. tb-reveal::
-   :name: reveal-ex3
-   :modal:
-   :modal-titlebar: Understanding auto type deduction
+      What type is x?
 
-   If you said, ``int``, excellent job!
+      .. tb-reveal::
+         :name: reveal-ex3
+         :modal:
+         :modal-titlebar: Understanding auto type deduction
 
-   ``ir`` is a reference to ``val``,
-   which makes ``ir`` just another name for ``val``.
-   ``auto x = ir;`` is exactly the same as if we had written
-   ``auto x = val;`` here.
+         If you said, ``int``, excellent job!
+
+         ``ir`` is a reference to ``val``,
+         which makes ``ir`` just another name for ``val``.
+         ``auto x = ir;`` is exactly the same as if we had written
+         ``auto x = val;`` here.

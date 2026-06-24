@@ -107,7 +107,12 @@ def test_directive_parses_semantic_node_defaults():
     assert node["editable"] is True
     assert node["edit_label"] == "Edit"
     assert node["hide_edit_label"] == "Hide editor"
-    assert node["revision_label"] == "Editor revision"
+    assert node["revision_label"] == "Source version"
+    assert node["run_before_names"] == []
+    assert node["run_after_names"] == []
+    assert node["run_before"] == []
+    assert node["run_after"] == []
+    assert node["show_tutor"] is False
 
 
 def test_directive_accepts_language_argument_and_options():
@@ -158,6 +163,7 @@ Title
    :edit-label: Change
    :hide-edit-label: Done
    :revision-label: Version
+   :show-tutor:
 
    print("Hello, world")
 """,
@@ -181,6 +187,7 @@ Title
     assert config["editLabel"] == "Change"
     assert config["hideEditLabel"] == "Done"
     assert config["revisionLabel"] == "Version"
+    assert config["showTutor"] is True
     assert config["source"] == 'print("Hello, world")'
     assert (outdir / "_static" / "tb-code.js").exists()
     assert (outdir / "_static" / "tb-code.css").exists()
@@ -349,6 +356,50 @@ Title
     assert "{{PUBLIC_MEMBERS}}" not in element.get_text()
     assert "int balance() const;" in element.get_text()
     assert "int balance_;" in element.get_text()
+
+
+def test_run_before_and_run_after_are_execution_only_fragments(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-code:: cpp
+   :name: test-header
+   :hidden:
+
+   #include <cassert>
+
+.. code-block:: cpp
+   :name: test-main
+
+   int main() {
+     assert(answer() == 42);
+   }
+
+.. tb-code:: cpp
+   :name: answer-function
+   :run-before: test-header
+   :run-after: test-main
+
+   int answer() {
+     return 42;
+   }
+""",
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    assert soup.find("tb-code", id="test-header") is None
+    element = soup.find("tb-code", id="answer-function")
+    config = json.loads(element.find("script", class_="tb-code__config").string)
+    assert config["source"] == "int answer() {\n  return 42;\n}"
+    assert config["runBefore"] == ["#include <cassert>"]
+    assert config["runAfter"] == ["int main() {\n  assert(answer() == 42);\n}"]
+    assert "#include <cassert>" not in element.get_text()
+    assert "assert(answer() == 42)" not in element.get_text()
+    assert "int answer()" in element.get_text()
 
 
 def test_include_replaces_placeholder_from_named_literalinclude(tmp_path):

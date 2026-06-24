@@ -94,6 +94,18 @@ def _parse_file_specs(value: str | None) -> list[str]:
     return filenames
 
 
+def _parse_run_fragment_names(value: str | None) -> list[str]:
+    if not value:
+        return []
+    names = []
+    for line in value.splitlines():
+        for raw_name in line.split(","):
+            name = raw_name.strip()
+            if name:
+                names.append(name)
+    return names
+
+
 def _language_defaults(config, language: str, jobe_language: str) -> dict[str, object]:
     defaults = _config_value(config, "tb_code_language_defaults", DEFAULT_LANGUAGE_DEFAULTS)
     if language in defaults:
@@ -191,11 +203,14 @@ class TbCodeDirective(Directive):
         "editable": directives.flag,
         "readonly": directives.flag,
         "hidden": directives.flag,
+        "show-tutor": directives.flag,
         "run-label": directives.unchanged,
         "edit-label": directives.unchanged,
         "hide-edit-label": directives.unchanged,
         "revision-label": directives.unchanged,
         "include": directives.unchanged,
+        "run-before": directives.unchanged,
+        "run-after": directives.unchanged,
         "files": directives.unchanged,
     }
 
@@ -217,9 +232,14 @@ class TbCodeDirective(Directive):
         )
         node["source"] = source
         node["include_specs"] = _parse_include_specs(self.options.get("include"))
+        node["run_before_names"] = _parse_run_fragment_names(self.options.get("run-before"))
+        node["run_after_names"] = _parse_run_fragment_names(self.options.get("run-after"))
+        node["run_before"] = []
+        node["run_after"] = []
         node["file_specs"] = _parse_file_specs(self.options.get("files"))
         node["files"] = []
         node["hidden"] = "hidden" in self.options
+        node["show_tutor"] = "show-tutor" in self.options
         node["caption"] = code_block_options.get("caption")
         node["code_block_options"] = normalized_code_block_options
         node["endpoint"] = self.options.get("endpoint") or _config_value(
@@ -256,6 +276,6 @@ class TbCodeDirective(Directive):
         node["revision_label"] = self.options.get("revision-label") or _config_value(
             config,
             "tb_code_revision_label",
-            "Editor revision",
+            "Source version",
         )
         return [node]

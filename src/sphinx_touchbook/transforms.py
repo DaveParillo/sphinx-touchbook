@@ -140,6 +140,19 @@ class TbCodeIncludeTransform(Transform):
                     source = self._replace_placeholder(source, placeholder, code_by_name[normalized_source_name]["source"])
                 node["source"] = source
 
+            node["run_before"] = self._resolve_run_fragments(
+                node,
+                node.get("run_before_names", []),
+                code_by_name,
+                "run-before",
+            )
+            node["run_after"] = self._resolve_run_fragments(
+                node,
+                node.get("run_after_names", []),
+                code_by_name,
+                "run-after",
+            )
+
             attached_files = []
             for filename in node.get("file_specs", []):
                 if filename not in file_by_filename:
@@ -152,6 +165,19 @@ class TbCodeIncludeTransform(Transform):
                 file_info.pop("docname", None)
                 attached_files.append(file_info)
             node["files"] = attached_files
+
+    def _resolve_run_fragments(self, node: TbCodeNode, names: list[str], code_by_name: dict, option_name: str) -> list[str]:
+        fragments = []
+        for source_name in names:
+            normalized_source_name = nodes.fully_normalize_name(source_name)
+            if normalized_source_name not in code_by_name:
+                self.document.reporter.warning(
+                    f"tb-code {option_name} could not find named code block {source_name!r}.",
+                    line=node.line,
+                )
+                continue
+            fragments.append(code_by_name[normalized_source_name]["source"])
+        return fragments
 
     def _replace_placeholder(self, source: str, placeholder: str, replacement: str) -> str:
         token = f"{{{{{placeholder}}}}}"

@@ -9,6 +9,8 @@ class TbCode extends HTMLElement {
     this.dataset.enhanced = "true";
     this.config = this.readConfig();
     this.source = this.config.source || "";
+    this.sourceDisplay = this.querySelector(":scope > .tb-code__fallback code")
+      || this.querySelector(":scope > .tb-code__fallback pre");
     this.editing = false;
     this.revisions = [this.source];
     this.revisionIndex = 0;
@@ -40,6 +42,13 @@ class TbCode extends HTMLElement {
     this.runButton.textContent = this.config.runLabel || "Run";
     this.runButton.addEventListener("click", () => this.runCode());
 
+    this.tutorButton = document.createElement("button");
+    this.tutorButton.type = "button";
+    this.tutorButton.className = "tb-code__button";
+    this.tutorButton.textContent = `Show in ${this.tutorLanguageLabel()} Tutor`;
+    this.tutorButton.hidden = !this.canShowTutor();
+    this.tutorButton.addEventListener("click", () => this.openTutor());
+
     this.editButton = document.createElement("button");
     this.editButton.type = "button";
     this.editButton.className = "tb-code__button";
@@ -49,7 +58,7 @@ class TbCode extends HTMLElement {
     this.editButton.setAttribute("aria-controls", `${this.safeId()}-editor`);
     this.editButton.addEventListener("click", () => this.toggleEditor());
 
-    controls.append(this.runButton, this.editButton);
+    controls.append(this.runButton, this.editButton, this.tutorButton);
 
     const editorLabel = document.createElement("label");
     editorLabel.className = "tb-code__editor-label";
@@ -74,7 +83,7 @@ class TbCode extends HTMLElement {
     this.revisionLabel = document.createElement("label");
     this.revisionLabel.className = "tb-code__revision-label";
     this.revisionLabel.htmlFor = `${this.safeId()}-revision`;
-    this.revisionLabel.textContent = this.config.revisionLabel || "Editor revision";
+    this.revisionLabel.textContent = this.config.revisionLabel || "Source version";
 
     this.revisionSlider = document.createElement("input");
     this.revisionSlider.id = this.revisionLabel.htmlFor;
@@ -229,7 +238,7 @@ class TbCode extends HTMLElement {
     this.editing = true;
     this.editor.hidden = false;
     this.editorLabel.hidden = false;
-    this.revisionControl.hidden = false;
+    this.updateRevisionControl();
     this.editButton.textContent = this.config.hideEditLabel || "Hide editor";
     this.editButton.setAttribute("aria-expanded", "true");
     this.editor.focus();
@@ -240,7 +249,6 @@ class TbCode extends HTMLElement {
     this.editing = false;
     this.editor.hidden = true;
     this.editorLabel.hidden = true;
-    this.revisionControl.hidden = true;
     this.editButton.textContent = this.config.editLabel || "Edit";
     this.editButton.setAttribute("aria-expanded", "false");
   }
@@ -256,6 +264,7 @@ class TbCode extends HTMLElement {
     this.revisions = retained;
     this.revisionIndex = this.revisions.length - 1;
     this.editorDirty = false;
+    this.updateSourceDisplay(source);
     this.updateRevisionControl();
   }
 
@@ -266,8 +275,130 @@ class TbCode extends HTMLElement {
     this.revisionIndex = index;
     this.editor.value = this.revisions[index];
     this.editorDirty = false;
+    this.updateSourceDisplay(this.revisions[index]);
     this.updateRevisionControl();
-    this.status.textContent = `Loaded editor revision ${index + 1}.`;
+    this.status.textContent = `Loaded source version ${index + 1}.`;
+  }
+
+  updateSourceDisplay(source) {
+    if (!this.sourceDisplay) {
+      return;
+    }
+    this.sourceDisplay.replaceChildren(...this.highlightSource(source));
+  }
+
+  highlightSource(source) {
+    const fragment = document.createDocumentFragment();
+    const lines = source.split("\n");
+    lines.forEach((line, lineIndex) => {
+      this.appendHighlightedLine(fragment, line);
+      if (lineIndex < lines.length - 1) {
+        fragment.appendChild(document.createTextNode("\n"));
+      }
+    });
+    return Array.from(fragment.childNodes);
+  }
+
+  appendHighlightedLine(parent, line) {
+    const language = (this.config.language || "").toLowerCase();
+    const tokens = this.tokenizeSourceLine(line, language);
+    tokens.forEach((token) => {
+      if (!token.className) {
+        parent.appendChild(document.createTextNode(token.text));
+        return;
+      }
+      const span = document.createElement("span");
+      span.className = token.className;
+      span.textContent = token.text;
+      parent.appendChild(span);
+    });
+  }
+
+  tokenizeSourceLine(line, language) {
+    const tokens = [];
+    const keywordClasses = this.keywordClasses(language);
+    let index = 0;
+
+    while (index < line.length) {
+      const rest = line.slice(index);
+      const whitespace = rest.match(/^\s+/);
+      if (whitespace) {
+        tokens.push({ text: whitespace[0] });
+        index += whitespace[0].length;
+        continue;
+      }
+
+      const comment = this.commentMatch(rest, language);
+      if (comment) {
+        tokens.push({ text: comment, className: "c1" });
+        break;
+      }
+
+      const string = rest.match(/^([rubf]*("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'))/i);
+      if (string) {
+        tokens.push({ text: string[0], className: "s2" });
+        index += string[0].length;
+        continue;
+      }
+
+      const number = rest.match(/^\b\d+(?:\.\d+)?\b/);
+      if (number) {
+        tokens.push({ text: number[0], className: "mi" });
+        index += number[0].length;
+        continue;
+      }
+
+      const name = rest.match(/^[A-Za-z_][A-Za-z0-9_]*/);
+      if (name) {
+        const word = name[0];
+        tokens.push({ text: word, className: keywordClasses.get(word) || "n" });
+        index += word.length;
+        continue;
+      }
+
+      const operator = rest.match(/^(==|!=|<=|>=|&&|\|\||::|->|\+\+|--|[-+*/%=<>!&|^~]+)/);
+      if (operator) {
+        tokens.push({ text: operator[0], className: "o" });
+        index += operator[0].length;
+        continue;
+      }
+
+      tokens.push({ text: line[index], className: "p" });
+      index += 1;
+    }
+
+    return tokens;
+  }
+
+  keywordClasses(language) {
+    const keywords = new Map();
+    const add = (words, className) => words.forEach((word) => keywords.set(word, className));
+    if (["python", "py", "python3"].includes(language)) {
+      add(["False", "None", "True"], "kc");
+      add(["and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield"], "k");
+      add(["print", "len", "range", "str", "int", "float", "list", "dict", "set", "tuple"], "nb");
+      return keywords;
+    }
+    if (["cpp", "c++", "c", "java", "js", "javascript", "nodejs"].includes(language)) {
+      add(["auto", "bool", "break", "case", "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "false", "float", "for", "if", "int", "long", "new", "private", "protected", "public", "return", "short", "static", "struct", "switch", "this", "throw", "true", "try", "void", "while"], "k");
+      add(["include", "import", "package"], "kn");
+      add(["std", "System", "String", "Scanner"], "nc");
+      return keywords;
+    }
+    if (language === "octave") {
+      add(["break", "case", "catch", "continue", "else", "elseif", "end", "for", "function", "if", "otherwise", "return", "switch", "try", "while"], "k");
+    }
+    return keywords;
+  }
+
+  commentMatch(rest, language) {
+    if (["python", "py", "python3", "octave"].includes(language) && rest.startsWith("#")) {
+      return rest;
+    }
+    if (rest.startsWith("//")) {
+      return rest;
+    }
+    return "";
   }
 
   updateRevisionControl() {
@@ -277,6 +408,7 @@ class TbCode extends HTMLElement {
     this.revisionSlider.max = String(this.revisions.length);
     this.revisionSlider.value = String(this.revisionIndex + 1);
     this.revisionOutput.value = `${this.revisionIndex + 1} of ${this.revisions.length}`;
+    this.revisionControl.hidden = this.revisions.length <= 1;
   }
 
   async runCode() {
@@ -286,15 +418,13 @@ class TbCode extends HTMLElement {
       return;
     }
 
-    if (!this.editor.hidden) {
-      this.captureCurrentRevision();
-    }
-    const source = this.editor.hidden ? this.revisions[this.revisionIndex] : this.editor.value;
+    const source = this.currentSource();
+    const executionSource = this.executionSource(source);
     const languageId = this.config.jobeLanguage || this.config.language || "python3";
     const payload = {
       run_spec: {
         language_id: languageId,
-        sourcecode: source,
+        sourcecode: executionSource,
         parameters: this.runtimeParameters(),
       },
     };
@@ -335,6 +465,79 @@ class TbCode extends HTMLElement {
     } finally {
       this.setBusy(false);
     }
+  }
+
+  currentSource() {
+    if (!this.editor.hidden) {
+      this.captureCurrentRevision();
+    }
+    return this.editor.hidden ? this.revisions[this.revisionIndex] : this.editor.value;
+  }
+
+  executionSource(source) {
+    const parts = [
+      ...this.sourceFragments(this.config.runBefore),
+      source,
+      ...this.sourceFragments(this.config.runAfter),
+    ].filter((part) => part.length > 0);
+    return parts.join("\n");
+  }
+
+  sourceFragments(value) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.map((fragment) => String(fragment));
+  }
+
+  canShowTutor() {
+    return Boolean(this.config.showTutor) && Boolean(this.tutorLanguage());
+  }
+
+  tutorLanguage() {
+    const candidates = [this.config.jobeLanguage, this.config.language]
+      .filter(Boolean)
+      .map((language) => String(language).toLowerCase());
+    for (const language of candidates) {
+      if (["python", "python3", "py"].includes(language)) {
+        return "3";
+      }
+      if (["cpp", "c++"].includes(language)) {
+        return "cpp";
+      }
+      if (language === "c") {
+        return "c";
+      }
+      if (language === "java") {
+        return "java";
+      }
+      if (["javascript", "js", "node", "nodejs"].includes(language)) {
+        return "js";
+      }
+    }
+    return "";
+  }
+
+  tutorLanguageLabel() {
+    const tutorLanguage = this.tutorLanguage();
+    const labels = {
+      "3": "Python",
+      "c": "C",
+      "cpp": "C++",
+      "java": "Java",
+      "js": "JavaScript",
+    };
+    return labels[tutorLanguage] || "Python";
+  }
+
+  openTutor() {
+    const tutorLanguage = this.tutorLanguage();
+    if (!tutorLanguage) {
+      return;
+    }
+    const source = this.executionSource(this.currentSource());
+    const url = `https://pythontutor.com/visualize.html#code=${encodeURIComponent(source)}&curInstr=0&mode=display&py=${encodeURIComponent(tutorLanguage)}`;
+    window.open(url, "_blank", "noopener");
   }
 
   cleanParameters(parameters) {

@@ -17,24 +17,17 @@ plain text until they exist.
 ================= ===================================
 Categories        Directives
 ================= ===================================
-Working with Code :doc:`components/tb-code`
-                  :doc:`components/tb-file`
-                  ``tb-code-lens`` (planned)
-                  ``tb-show-eval`` (planned)
-Containers        :doc:`components/tb-group`
-                  :doc:`components/tb-reveal`
-                  ``tb-timed`` (planned)
-                  ``tb-video`` (planned)
-Assessments       ``tb-clickable`` (planned)
-                  ``tb-dnd`` (planned)
-                  ``tb-fitb`` (planned)
-                  ``tb-choice`` (planned)
-                  ``tb-parsons`` (planned)
-                  ``tb-poll`` (planned)
-                  ``tb-short-answer`` (planned)
-                  ``tb-question-number`` (planned)
-Renderers         ``tb-matrix-equation`` (planned)
-                  ``tb-wave-drom`` (planned)
+Working with Code - :doc:`components/tb-code`
+                  - :doc:`components/tb-file`
+                  - ``tb-show-eval`` (planned)
+Containers        - :doc:`components/tb-group`
+                  - :doc:`components/tb-reveal`
+                  - ``tb-video`` (planned)
+Assessments       - ``tb-clickable`` (planned)
+                  - ``tb-dnd`` (planned)
+                  - ``tb-fitb`` (planned)
+                  - ``tb-choice`` (planned)
+                  - ``tb-parsons`` (planned)
 ================= ===================================
 
 .. toctree::
@@ -49,9 +42,14 @@ Renderers         ``tb-matrix-equation`` (planned)
 General Syntax
 ==============
 
-All directives start with ``..``, then a single space, followed by the name of the directive, then ``::``.
+All directives start with ``..``, then a single space, followed by the name of
+the directive, then ``::``.
 
-Every Touchbook directive accepts the optional ``name`` `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__. If omitted, docutils assigns a deterministic generated ID derived from the document and node position. Use an explicit ``name`` when you want a stable human-readable target for references, tests, or custom integration.
+Every Touchbook directive accepts the optional ``name``
+`Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
+If omitted, docutils assigns a deterministic generated ID derived from the
+document and node position. Use an explicit ``name`` when you want a stable
+human-readable target for references, tests, or custom integration.
 
 .. code-block:: rst
 
@@ -60,54 +58,65 @@ Every Touchbook directive accepts the optional ``name`` `Docutils common option 
 
       Content that can be revealed.
 
-Many directives also accept options. Options are indented below the directive line and begin with ``:``:
+Many directives also accept options. Options are indented below the directive
+line and begin with ``:``:
 
-.. code-block:: rst
+.. tb-group::
+   :name: directives-reveal-tabs
 
-   .. tb-reveal::
-      :showlabel: Show answer
-      :hidelabel: Hide answer
+   .. tb-tab:: Source
 
-      The answer is 42.
+      .. code-block:: rst
 
-And this is how it looks in action:
+         .. tb-reveal::
+            :showlabel: Show answer
+            :hidelabel: Hide answer
 
-.. tb-reveal::
-   :showlabel: Show answer
-   :hidelabel: Hide answer
+            The answer is 42.
 
-   The answer is 42.
+   .. tb-tab:: Rendered
+
+      .. tb-reveal::
+         :showlabel: Show answer
+         :hidelabel: Hide answer
+
+         The answer is 42.
 
 Container directives can contain other directives:
 
-.. code-block:: rst
-
-   .. tb-group::
-
-      .. tb-tab:: First tab
-
-         Content for the first tab.
-
-      .. tb-tab:: Useful forms
-
-         Here is a useful summation, along with the closed-form solution:
-
-         .. math::
-
-            \sum_{k = 1}^{n} k = \frac{n (n+1)}{2}.
-
-And this is how it looks in action:
-
 .. tb-group::
+   :name: directives-group-tabs
 
-   .. tb-tab:: First tab
+   .. tb-tab:: Source
 
-      Content for the first tab.
+      .. code-block:: rst
 
-   .. tb-tab:: Useful forms
+         .. tb-group::
 
-      Here is a useful summation, along with the closed-form solution:
+            .. tb-tab:: First tab
 
-      .. math::
+               Content for the first tab.
 
-         \sum_{k = 1}^{n} k = \frac{n (n+1)}{2}.
+            .. tb-tab:: Useful forms
+
+               Here is a useful summation, along with the closed-form solution:
+
+               .. math::
+
+                  \sum_{k = 1}^{n} k = \frac{n (n+1)}{2}.
+
+   .. tb-tab:: Rendered
+
+      .. tb-group::
+
+         .. tb-tab:: First tab
+
+            Content for the first tab.
+
+         .. tb-tab:: Useful forms
+
+            Here is a useful summation, along with the closed-form solution:
+
+            .. math::
+
+               \sum_{k = 1}^{n} k = \frac{n (n+1)}{2}.

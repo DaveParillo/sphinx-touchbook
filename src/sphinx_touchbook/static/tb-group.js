@@ -57,11 +57,12 @@ class TbGroup extends HTMLElement {
     });
 
     this.append(tablist, panels);
+    this.activateNestedGroups(panels[0]);
   }
 
-  selectTab(index) {
-    const tabs = Array.from(this.querySelectorAll(".tb-group__tab"));
-    const panels = Array.from(this.querySelectorAll(".tb-group__panel"));
+  selectTab(index, options = {}) {
+    const tabs = this.ownTabs();
+    const panels = this.ownPanels();
 
     tabs.forEach((tab, tabIndex) => {
       const selected = tabIndex === index;
@@ -73,11 +74,15 @@ class TbGroup extends HTMLElement {
       panel.hidden = panelIndex !== index;
     });
 
-    tabs[index].focus();
+    this.activateNestedGroups(panels[index]);
+
+    if (options.focus !== false) {
+      tabs[index].focus();
+    }
   }
 
   onKeydown(event, index) {
-    const tabs = this.querySelectorAll(".tb-group__tab");
+    const tabs = this.ownTabs();
     const last = tabs.length - 1;
     let next = null;
 
@@ -95,6 +100,32 @@ class TbGroup extends HTMLElement {
       event.preventDefault();
       this.selectTab(next);
     }
+  }
+
+  ownTabs() {
+    return Array.from(this.querySelectorAll(":scope > .tb-group__tablist > .tb-group__tab"));
+  }
+
+  ownPanels() {
+    return Array.from(this.querySelectorAll(":scope > .tb-group__panels > .tb-group__panel"));
+  }
+
+  activateNestedGroups(panel) {
+    if (!panel) {
+      return;
+    }
+
+    panel.querySelectorAll("tb-group").forEach((group) => {
+      if (group.dataset.enhanced !== "true") {
+        return;
+      }
+
+      const tabs = group.ownTabs ? group.ownTabs() : [];
+      const hasSelectedTab = tabs.some((tab) => tab.getAttribute("aria-selected") === "true");
+      if (!hasSelectedTab && tabs.length > 0) {
+        group.selectTab(0, { focus: false });
+      }
+    });
   }
 
   safeId() {

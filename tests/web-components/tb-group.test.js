@@ -29,6 +29,14 @@ function appendGroup() {
   return element;
 }
 
+function ownTabs(element) {
+  return Array.from(element.querySelectorAll(":scope > .tb-group__tablist > .tb-group__tab"));
+}
+
+function ownPanels(element) {
+  return Array.from(element.querySelectorAll(":scope > .tb-group__panels > .tb-group__panel"));
+}
+
 describe("tb-group Web Component", () => {
   it("creates an ARIA tab interface from fallback tab content", () => {
     const element = appendGroup();
@@ -81,5 +89,54 @@ describe("tb-group Web Component", () => {
 
     keydown(tabs[2], "Home");
     expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("keeps a nested group selected when its enclosing tab is selected", () => {
+    const outer = document.createElement("tb-group");
+    outer.id = "outer-tabs";
+    outer.innerHTML = `
+      <div class="tb-group__fallback">
+        <tb-tab label="Source">
+          <div class="tb-tab__content"><p>Source content</p></div>
+        </tb-tab>
+        <tb-tab label="Rendered">
+          <div class="tb-tab__content">
+            <tb-group id="inner-tabs">
+              <div class="tb-group__fallback">
+                <tb-tab label="First inner">
+                  <div class="tb-tab__content"><p>First inner content</p></div>
+                </tb-tab>
+                <tb-tab label="Second inner">
+                  <div class="tb-tab__content"><p>Second inner content</p></div>
+                </tb-tab>
+              </div>
+            </tb-group>
+          </div>
+        </tb-tab>
+      </div>
+    `;
+
+    document.body.appendChild(outer);
+
+    const outerTabs = ownTabs(outer);
+    const outerPanels = ownPanels(outer);
+    const inner = outer.querySelector("#inner-tabs");
+    const innerTabs = ownTabs(inner);
+    const innerPanels = ownPanels(inner);
+
+    expect(outerTabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(outerPanels[1].hidden).toBe(true);
+    expect(innerTabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(innerPanels[0].hidden).toBe(false);
+
+    click(outerTabs[1]);
+
+    expect(outerTabs[1].getAttribute("aria-selected")).toBe("true");
+    expect(outerPanels[1].hidden).toBe(false);
+    expect(innerTabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(innerTabs[1].getAttribute("aria-selected")).toBe("false");
+    expect(innerPanels[0].hidden).toBe(false);
+    expect(innerPanels[1].hidden).toBe(true);
+    expect(innerPanels[0].textContent).toContain("First inner content");
   });
 });

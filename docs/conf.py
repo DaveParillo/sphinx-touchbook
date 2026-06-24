@@ -14,9 +14,24 @@ extensions = ['sphinx_touchbook']
 language = 'en'
 html_theme = 'sphinx_nefertiti'
 # html_theme_options = {
-#     "pygments_light_style": "solarized-light",
-#     "pygments_dark_style": "solarized-dark",
+#     'pygments_light_style': 'solarized-light',
+#     'pygments_dark_style': 'solarized-dark',
 # }
+html_theme_options = {
+    'header_links': [
+        {
+            'text': 'Home',
+            'link': 'index',
+        },
+        {
+            'text': 'GitHub',
+            'link': 'https://github.com/DaveParillo/sphinx-touchbook',
+        },
+    ],
+    'logo': 'hand-index-thumb.svg',
+    'logo_width': 40,
+    'logo_height': 24,
+}
 
 tb_code_block_defaults = {
     'linenos': True,

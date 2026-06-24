@@ -91,7 +91,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_code_run_label", "Run", "html")
     app.add_config_value("tb_code_edit_label", "Edit", "html")
     app.add_config_value("tb_code_hide_edit_label", "Hide editor", "html")
-    app.add_config_value("tb_code_revision_label", "Editor revision", "html")
+    app.add_config_value("tb_code_revision_label", "Source version", "html")
     app.add_node(
         TbCodeNode,
         html=(visit_tb_code_html, depart_tb_code_html),
