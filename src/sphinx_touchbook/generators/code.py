@@ -40,7 +40,7 @@ def _config(node: TbCodeNode) -> dict[str, object]:
     }
 
 
-def _highlight(self: HTML5Translator, node: TbCodeNode) -> str:
+def _highlight_html(self: HTML5Translator, node: TbCodeNode) -> str:
     code_options = node.get("code_block_options", {})
     linenos = code_options.get("linenos", False)
     if linenos and self.config.html_codeblock_linenos_style:
@@ -58,6 +58,25 @@ def _highlight(self: HTML5Translator, node: TbCodeNode) -> str:
     )
 
 
+def _highlight_latex(self: LaTeXTranslator, node: TbCodeNode) -> str:
+    code_options = node.get("code_block_options", {})
+    highlight_args = dict(code_options.get("highlight_args", {}))
+    highlight_args["force"] = code_options.get("force", False)
+    opts = self.config.highlight_options.get(node["language"], {})
+    hlcode = self.highlighter.highlight_block(
+        node["source"],
+        node["language"],
+        opts=opts,
+        linenos=code_options.get("linenos", False),
+        location=node,
+        **highlight_args,
+    )
+    return hlcode.replace(r"\begin{Verbatim}", r"\begin{sphinxVerbatim}").replace(
+        r"\end{Verbatim}",
+        r"\end{sphinxVerbatim}",
+    )
+
+
 def visit_tb_code_html(self: HTML5Translator, node: TbCodeNode) -> None:
     if node.get("hidden"):
         raise nodes.SkipNode
@@ -71,7 +90,7 @@ def visit_tb_code_html(self: HTML5Translator, node: TbCodeNode) -> None:
     self.body.append(f'<figure class="{fallback_class}">\n')
     if node["caption"]:
         self.body.append(f'<figcaption class="tb-code__caption">{escape(node["caption"])}</figcaption>\n')
-    self.body.append(_highlight(self, node))
+    self.body.append(_highlight_html(self, node))
     self.body.append("</figure>\n")
     payload = json.dumps(_config(node), ensure_ascii=False).replace("</", "<\\/")
     self.body.append(f'<script type="application/json" class="tb-code__config">{payload}</script>\n')
@@ -88,14 +107,15 @@ def visit_tb_code_latex(self: LaTeXTranslator, node: TbCodeNode) -> None:
         self.body.append("\n\\begin{sphinxadmonition}{note}{")
         self.body.append(self.encode(node["caption"]))
         self.body.append("}\n")
-    self.body.append("\n\\begin{sphinxVerbatim}[commandchars=\\\\\\{\\}]\n")
-    self.body.append(self.encode(node["source"]))
+    self.body.append("\n")
+    self.body.append(_highlight_latex(self, node))
+    if node["caption"]:
+        self.body.append("\n\\end{sphinxadmonition}\n")
+    raise nodes.SkipNode
 
 
 def depart_tb_code_latex(self: LaTeXTranslator, node: TbCodeNode) -> None:
-    self.body.append("\n\\end{sphinxVerbatim}\n")
-    if node["caption"]:
-        self.body.append("\n\\end{sphinxadmonition}\n")
+    pass
 
 
 def visit_tb_code_text(self: TextTranslator, node: TbCodeNode) -> None:

@@ -89,6 +89,12 @@ def build_sphinx_files(
     return outdir
 
 
+def read_latex_output(outdir: Path) -> str:
+    tex_files = sorted(path for path in outdir.glob("*.tex") if path.name != "sphinxmessages.sty")
+    assert tex_files
+    return tex_files[0].read_text(encoding="utf-8")
+
+
 def test_directive_parses_semantic_node_defaults():
     document = parse_rst(
         """
@@ -762,6 +768,28 @@ Title
     text = (outdir / "index.txt").read_text(encoding="utf-8")
     assert "Static listing" in text
     assert 'print("Hello")' in text
+
+
+def test_latex_builder_uses_pygments_highlighting(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "latex",
+        """
+Title
+=====
+
+.. tb-code:: python
+   :caption: Static listing
+
+   print("Hello")
+""",
+    )
+
+    latex = read_latex_output(outdir)
+    assert "Static listing" in latex
+    assert r"\begin{sphinxVerbatim}" in latex
+    assert r"\PYG" in latex
+    assert "Hello" in latex
 
 
 def test_web_component_contract():
