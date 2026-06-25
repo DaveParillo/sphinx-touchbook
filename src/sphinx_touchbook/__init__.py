@@ -19,7 +19,8 @@ from .directives.code import (
 from .directives.file import TbFileDirective
 from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
-from .nodes import TbCodeNode, TbFileNode, TbRevealNode, TbGroupNode, TbTabNode
+from .directives.video import TbVideoDirective
+from .nodes import TbCodeNode, TbFileNode, TbRevealNode, TbGroupNode, TbTabNode, TbVideoNode
 from .generators.code import (
     depart_tb_code_html,
     depart_tb_code_latex,
@@ -43,6 +44,14 @@ from .generators.reveal import (
     visit_tb_reveal_html,
     visit_tb_reveal_latex,
     visit_tb_reveal_text,
+)
+from .generators.video import (
+    depart_tb_video_html,
+    depart_tb_video_latex,
+    depart_tb_video_text,
+    visit_tb_video_html,
+    visit_tb_video_latex,
+    visit_tb_video_text,
 )
 from .generators.tabs import (
     depart_tb_group_html,
@@ -92,6 +101,8 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_code_edit_label", "Edit", "html")
     app.add_config_value("tb_code_hide_edit_label", "Hide editor", "html")
     app.add_config_value("tb_code_revision_label", "Source version", "html")
+    app.add_config_value("tb_video_default_width", "560", "env")
+    app.add_config_value("tb_video_default_height", "315", "env")
     app.add_node(
         TbCodeNode,
         html=(visit_tb_code_html, depart_tb_code_html),
@@ -122,11 +133,18 @@ def setup(app: Sphinx) -> dict[str, object]:
         latex=(visit_tb_tab_latex, depart_tb_tab_latex),
         text=(visit_tb_tab_text, depart_tb_tab_text),
     )
+    app.add_node(
+        TbVideoNode,
+        html=(visit_tb_video_html, depart_tb_video_html),
+        latex=(visit_tb_video_latex, depart_tb_video_latex),
+        text=(visit_tb_video_text, depart_tb_video_text),
+    )
     app.add_directive("tb-code", TbCodeDirective)
     app.add_directive("tb-file", TbFileDirective)
     app.add_directive("tb-reveal", TbRevealDirective)
     app.add_directive("tb-group", TbGroupDirective)
     app.add_directive("tb-tab", TbTabDirective)
+    app.add_directive("tb-video", TbVideoDirective)
     app.add_post_transform(TbCodeIncludeTransform)
     app.connect("env-purge-doc", purge_tb_code_snippets)
     app.connect("env-purge-doc", purge_tb_files)
@@ -139,10 +157,12 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_css_file("tb-group.css")
     app.add_css_file("tb-code.css")
     app.add_css_file("tb-file.css")
+    app.add_css_file("tb-video.css")
     app.add_js_file("tb-reveal.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
     app.add_js_file("tb-code.js", loading_method="defer")
     app.add_js_file("tb-file.js", loading_method="defer")
+    app.add_js_file("tb-video.js", loading_method="defer")
     return {
         "version": "0.1.0",
         "parallel_read_safe": True,

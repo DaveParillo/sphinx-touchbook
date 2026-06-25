@@ -23,3 +23,7 @@ class TbCodeNode(nodes.General, nodes.Element):
 
 class TbFileNode(nodes.General, nodes.Element):
     """Semantic node for a simulated local file."""
+
+
+class TbVideoNode(nodes.General, nodes.Element):
+    """Semantic node for an instructional video."""

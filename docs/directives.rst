@@ -22,7 +22,7 @@ Working with Code - :doc:`components/tb-code`
                   - ``tb-show-eval`` (planned)
 Containers        - :doc:`components/tb-group`
                   - :doc:`components/tb-reveal`
-                  - ``tb-video`` (planned)
+                  - :doc:`components/tb-video`
 Assessments       - ``tb-clickable`` (planned)
                   - ``tb-dnd`` (planned)
                   - ``tb-fitb`` (planned)
@@ -38,6 +38,7 @@ Assessments       - ``tb-clickable`` (planned)
    components/tb-file
    components/tb-group
    components/tb-reveal
+   components/tb-video
 
 General Syntax
 ==============
