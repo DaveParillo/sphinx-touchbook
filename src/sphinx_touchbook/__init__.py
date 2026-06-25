@@ -16,11 +16,56 @@ from .directives.code import (
     DEFAULT_LANGUAGES_ENDPOINT,
     TbCodeDirective,
 )
+from .directives.choice import TbChoiceDirective
 from .directives.file import TbFileDirective
 from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
 from .directives.video import TbVideoDirective
-from .nodes import TbCodeNode, TbFileNode, TbRevealNode, TbGroupNode, TbTabNode, TbVideoNode
+from .nodes import (
+    TbChoiceAnswerNode,
+    TbChoiceFeedbackNode,
+    TbChoiceNode,
+    TbChoiceOptionNode,
+    TbChoicePromptNode,
+    TbCodeNode,
+    TbFileNode,
+    TbRevealNode,
+    TbGroupNode,
+    TbTabNode,
+    TbVideoNode,
+)
+from .generators.choice import (
+    depart_tb_choice_answer_html,
+    depart_tb_choice_answer_latex,
+    depart_tb_choice_answer_text,
+    depart_tb_choice_feedback_html,
+    depart_tb_choice_feedback_latex,
+    depart_tb_choice_feedback_text,
+    depart_tb_choice_html,
+    depart_tb_choice_latex,
+    depart_tb_choice_option_html,
+    depart_tb_choice_option_latex,
+    depart_tb_choice_option_text,
+    depart_tb_choice_prompt_html,
+    depart_tb_choice_prompt_latex,
+    depart_tb_choice_prompt_text,
+    depart_tb_choice_text,
+    visit_tb_choice_answer_html,
+    visit_tb_choice_answer_latex,
+    visit_tb_choice_answer_text,
+    visit_tb_choice_feedback_html,
+    visit_tb_choice_feedback_latex,
+    visit_tb_choice_feedback_text,
+    visit_tb_choice_html,
+    visit_tb_choice_latex,
+    visit_tb_choice_option_html,
+    visit_tb_choice_option_latex,
+    visit_tb_choice_option_text,
+    visit_tb_choice_prompt_html,
+    visit_tb_choice_prompt_latex,
+    visit_tb_choice_prompt_text,
+    visit_tb_choice_text,
+)
 from .generators.code import (
     depart_tb_code_html,
     depart_tb_code_latex,
@@ -139,7 +184,38 @@ def setup(app: Sphinx) -> dict[str, object]:
         latex=(visit_tb_video_latex, depart_tb_video_latex),
         text=(visit_tb_video_text, depart_tb_video_text),
     )
+    app.add_node(
+        TbChoiceNode,
+        html=(visit_tb_choice_html, depart_tb_choice_html),
+        latex=(visit_tb_choice_latex, depart_tb_choice_latex),
+        text=(visit_tb_choice_text, depart_tb_choice_text),
+    )
+    app.add_node(
+        TbChoicePromptNode,
+        html=(visit_tb_choice_prompt_html, depart_tb_choice_prompt_html),
+        latex=(visit_tb_choice_prompt_latex, depart_tb_choice_prompt_latex),
+        text=(visit_tb_choice_prompt_text, depart_tb_choice_prompt_text),
+    )
+    app.add_node(
+        TbChoiceOptionNode,
+        html=(visit_tb_choice_option_html, depart_tb_choice_option_html),
+        latex=(visit_tb_choice_option_latex, depart_tb_choice_option_latex),
+        text=(visit_tb_choice_option_text, depart_tb_choice_option_text),
+    )
+    app.add_node(
+        TbChoiceAnswerNode,
+        html=(visit_tb_choice_answer_html, depart_tb_choice_answer_html),
+        latex=(visit_tb_choice_answer_latex, depart_tb_choice_answer_latex),
+        text=(visit_tb_choice_answer_text, depart_tb_choice_answer_text),
+    )
+    app.add_node(
+        TbChoiceFeedbackNode,
+        html=(visit_tb_choice_feedback_html, depart_tb_choice_feedback_html),
+        latex=(visit_tb_choice_feedback_latex, depart_tb_choice_feedback_latex),
+        text=(visit_tb_choice_feedback_text, depart_tb_choice_feedback_text),
+    )
     app.add_directive("tb-code", TbCodeDirective)
+    app.add_directive("tb-choice", TbChoiceDirective)
     app.add_directive("tb-file", TbFileDirective)
     app.add_directive("tb-reveal", TbRevealDirective)
     app.add_directive("tb-group", TbGroupDirective)
@@ -156,11 +232,13 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_css_file("tb-reveal.css")
     app.add_css_file("tb-group.css")
     app.add_css_file("tb-code.css")
+    app.add_css_file("tb-choice.css")
     app.add_css_file("tb-file.css")
     app.add_css_file("tb-video.css")
     app.add_js_file("tb-reveal.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
     app.add_js_file("tb-code.js", loading_method="defer")
+    app.add_js_file("tb-choice.js", loading_method="defer")
     app.add_js_file("tb-file.js", loading_method="defer")
     app.add_js_file("tb-video.js", loading_method="defer")
     return {

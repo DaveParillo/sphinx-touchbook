@@ -19,14 +19,13 @@ Categories        Directives
 ================= ===================================
 Working with Code - :doc:`components/tb-code`
                   - :doc:`components/tb-file`
-                  - ``tb-show-eval`` (planned)
 Containers        - :doc:`components/tb-group`
                   - :doc:`components/tb-reveal`
                   - :doc:`components/tb-video`
 Assessments       - ``tb-clickable`` (planned)
                   - ``tb-dnd`` (planned)
                   - ``tb-fitb`` (planned)
-                  - ``tb-choice`` (planned)
+                  - :doc:`components/tb-choice`
                   - ``tb-parsons`` (planned)
 ================= ===================================
 
@@ -35,6 +34,7 @@ Assessments       - ``tb-clickable`` (planned)
    :titlesonly:
 
    components/tb-code
+   components/tb-choice
    components/tb-file
    components/tb-group
    components/tb-reveal
