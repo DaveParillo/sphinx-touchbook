@@ -440,7 +440,7 @@ Title
     assert options[1].find("div", class_="tb-choice__feedback") is None
 
 
-def test_text_builder_renders_question_without_answers_or_feedback(tmp_path):
+def test_text_builder_renders_question_and_unmarked_answers_without_feedback(tmp_path):
     outdir = build_sphinx(
         tmp_path,
         "text",
@@ -455,13 +455,16 @@ Title
     text = (outdir / "index.txt").read_text(encoding="utf-8")
     assert "[Question]" in text
     assert "What is the result of comparing" in text
-    assert "negative" not in text
-    assert "positive" not in text
+    assert "Choices:" in text
+    assert "negative" in text
+    assert "positive" in text
+    assert "[*]" not in text
+    assert "[x]" not in text
     assert "This answer should not appear" not in text
     assert "This feedback should not appear" not in text
 
 
-def test_latex_builder_renders_question_without_answers_or_feedback(tmp_path):
+def test_latex_builder_renders_question_and_unmarked_answers_without_feedback(tmp_path):
     outdir = build_sphinx(
         tmp_path,
         "latex",
@@ -476,7 +479,11 @@ Title
     latex = read_latex_output(outdir)
     assert r"\begin{sphinxadmonition}{note}{Question}" in latex
     assert "What is the result of comparing" in latex
-    assert "negative" not in latex
-    assert "positive" not in latex
+    assert r"\begin{itemize}" in latex
+    assert r"\item" in latex
+    assert "negative" in latex
+    assert "positive" in latex
+    assert "[*]" not in latex
+    assert "[x]" not in latex
     assert "This answer should not appear" not in latex
     assert "This feedback should not appear" not in latex

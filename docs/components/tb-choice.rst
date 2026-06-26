@@ -100,9 +100,9 @@ Fallback behavior
 -----------------
 
 HTML without JavaScript renders the prompt, answers, and feedback in document
-order. Text and PDF-oriented builders render only the prompt. Answers and
-feedback are omitted from paper-oriented output so the printed document can ask
-the question without revealing the answer.
+order. Text and PDF-oriented builders render the prompt and choices without
+correctness markers. Feedback is omitted from paper-oriented output so the
+printed document can ask the complete question without revealing the answer.
 
 Examples
 --------

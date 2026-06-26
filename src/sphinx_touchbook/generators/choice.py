@@ -95,7 +95,7 @@ def visit_tb_choice_latex(self: LaTeXTranslator, node: TbChoiceNode) -> None:
 
 
 def depart_tb_choice_latex(self: LaTeXTranslator, node: TbChoiceNode) -> None:
-    self.body.append("\n\\end{sphinxadmonition}\n")
+    self.body.append("\n\\end{itemize}\n\\end{sphinxadmonition}\n")
 
 
 def visit_tb_choice_prompt_latex(self: LaTeXTranslator, node: TbChoicePromptNode) -> None:
@@ -103,15 +103,15 @@ def visit_tb_choice_prompt_latex(self: LaTeXTranslator, node: TbChoicePromptNode
 
 
 def depart_tb_choice_prompt_latex(self: LaTeXTranslator, node: TbChoicePromptNode) -> None:
-    self.body.append("\n")
+    self.body.append("\n\\begin{itemize}\n")
 
 
 def visit_tb_choice_option_latex(self: LaTeXTranslator, node: TbChoiceOptionNode) -> None:
-    raise nodes.SkipNode
+    self.body.append("\n\\item ")
 
 
 def depart_tb_choice_option_latex(self: LaTeXTranslator, node: TbChoiceOptionNode) -> None:
-    pass
+    self.body.append("\n")
 
 
 def visit_tb_choice_answer_latex(self: LaTeXTranslator, node: TbChoiceAnswerNode) -> None:
@@ -123,7 +123,7 @@ def depart_tb_choice_answer_latex(self: LaTeXTranslator, node: TbChoiceAnswerNod
 
 
 def visit_tb_choice_feedback_latex(self: LaTeXTranslator, node: TbChoiceFeedbackNode) -> None:
-    pass
+    raise nodes.SkipNode
 
 
 def depart_tb_choice_feedback_latex(self: LaTeXTranslator, node: TbChoiceFeedbackNode) -> None:
@@ -143,15 +143,15 @@ def visit_tb_choice_prompt_text(self: TextTranslator, node: TbChoicePromptNode) 
 
 
 def depart_tb_choice_prompt_text(self: TextTranslator, node: TbChoicePromptNode) -> None:
-    self.add_text("\n")
+    self.add_text("\nChoices:\n")
 
 
 def visit_tb_choice_option_text(self: TextTranslator, node: TbChoiceOptionNode) -> None:
-    raise nodes.SkipNode
+    self.add_text("- ")
 
 
 def depart_tb_choice_option_text(self: TextTranslator, node: TbChoiceOptionNode) -> None:
-    pass
+    self.add_text("\n")
 
 
 def visit_tb_choice_answer_text(self: TextTranslator, node: TbChoiceAnswerNode) -> None:
@@ -163,7 +163,7 @@ def depart_tb_choice_answer_text(self: TextTranslator, node: TbChoiceAnswerNode)
 
 
 def visit_tb_choice_feedback_text(self: TextTranslator, node: TbChoiceFeedbackNode) -> None:
-    pass
+    raise nodes.SkipNode
 
 
 def depart_tb_choice_feedback_text(self: TextTranslator, node: TbChoiceFeedbackNode) -> None:
