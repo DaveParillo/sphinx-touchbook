@@ -68,3 +68,19 @@ class TbChoiceAnswerNode(nodes.General, nodes.Element):
 
 class TbChoiceFeedbackNode(nodes.General, nodes.Element):
     """Feedback content for a choice option."""
+
+
+class TbClickNode(nodes.General, nodes.Element):
+    """Semantic node for a clickable-source assessment."""
+
+
+class TbClickPromptNode(nodes.General, nodes.Element):
+    """Prompt content for a clickable-source assessment."""
+
+
+class TbClickSourceNode(nodes.General, nodes.Element):
+    """Literal source content for a clickable-source assessment."""
+
+
+class TbClickRegionNode(nodes.General, nodes.Element):
+    """Feedback for one clickable source region."""

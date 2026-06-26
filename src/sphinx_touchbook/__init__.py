@@ -17,6 +17,12 @@ from .directives.code import (
     TbCodeDirective,
 )
 from .directives.choice import DEFAULT_FORCE_MULTIPLE, DEFAULT_RANDOM, TbChoiceDirective
+from .directives.click import (
+    DEFAULT_SHOW_HINTS,
+    TbClickDirective,
+    TbClickHitDirective,
+    TbClickMissDirective,
+)
 from .directives.file import TbFileDirective
 from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
@@ -27,12 +33,42 @@ from .nodes import (
     TbChoiceNode,
     TbChoiceOptionNode,
     TbChoicePromptNode,
+    TbClickNode,
+    TbClickPromptNode,
+    TbClickRegionNode,
+    TbClickSourceNode,
     TbCodeNode,
     TbFileNode,
     TbRevealNode,
     TbGroupNode,
     TbTabNode,
     TbVideoNode,
+)
+from .generators.click import (
+    depart_tb_click_html,
+    depart_tb_click_latex,
+    depart_tb_click_prompt_html,
+    depart_tb_click_prompt_latex,
+    depart_tb_click_prompt_text,
+    depart_tb_click_region_html,
+    depart_tb_click_region_latex,
+    depart_tb_click_region_text,
+    depart_tb_click_source_html,
+    depart_tb_click_source_latex,
+    depart_tb_click_source_text,
+    depart_tb_click_text,
+    visit_tb_click_html,
+    visit_tb_click_latex,
+    visit_tb_click_prompt_html,
+    visit_tb_click_prompt_latex,
+    visit_tb_click_prompt_text,
+    visit_tb_click_region_html,
+    visit_tb_click_region_latex,
+    visit_tb_click_region_text,
+    visit_tb_click_source_html,
+    visit_tb_click_source_latex,
+    visit_tb_click_source_text,
+    visit_tb_click_text,
 )
 from .generators.choice import (
     depart_tb_choice_answer_html,
@@ -148,6 +184,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_code_revision_label", "Source version", "html")
     app.add_config_value("tb_choice_random", DEFAULT_RANDOM, "env")
     app.add_config_value("tb_choice_force_multiple", DEFAULT_FORCE_MULTIPLE, "env")
+    app.add_config_value("tb_click_show_hints", DEFAULT_SHOW_HINTS, "html")
     app.add_config_value("tb_video_default_width", "560", "env")
     app.add_config_value("tb_video_default_height", "315", "env")
     app.add_node(
@@ -216,8 +253,35 @@ def setup(app: Sphinx) -> dict[str, object]:
         latex=(visit_tb_choice_feedback_latex, depart_tb_choice_feedback_latex),
         text=(visit_tb_choice_feedback_text, depart_tb_choice_feedback_text),
     )
+    app.add_node(
+        TbClickNode,
+        html=(visit_tb_click_html, depart_tb_click_html),
+        latex=(visit_tb_click_latex, depart_tb_click_latex),
+        text=(visit_tb_click_text, depart_tb_click_text),
+    )
+    app.add_node(
+        TbClickPromptNode,
+        html=(visit_tb_click_prompt_html, depart_tb_click_prompt_html),
+        latex=(visit_tb_click_prompt_latex, depart_tb_click_prompt_latex),
+        text=(visit_tb_click_prompt_text, depart_tb_click_prompt_text),
+    )
+    app.add_node(
+        TbClickSourceNode,
+        html=(visit_tb_click_source_html, depart_tb_click_source_html),
+        latex=(visit_tb_click_source_latex, depart_tb_click_source_latex),
+        text=(visit_tb_click_source_text, depart_tb_click_source_text),
+    )
+    app.add_node(
+        TbClickRegionNode,
+        html=(visit_tb_click_region_html, depart_tb_click_region_html),
+        latex=(visit_tb_click_region_latex, depart_tb_click_region_latex),
+        text=(visit_tb_click_region_text, depart_tb_click_region_text),
+    )
     app.add_directive("tb-code", TbCodeDirective)
     app.add_directive("tb-choice", TbChoiceDirective)
+    app.add_directive("tb-click", TbClickDirective)
+    app.add_directive("tb-hit", TbClickHitDirective)
+    app.add_directive("tb-miss", TbClickMissDirective)
     app.add_directive("tb-file", TbFileDirective)
     app.add_directive("tb-reveal", TbRevealDirective)
     app.add_directive("tb-group", TbGroupDirective)
@@ -235,12 +299,14 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_css_file("tb-group.css")
     app.add_css_file("tb-code.css")
     app.add_css_file("tb-choice.css")
+    app.add_css_file("tb-click.css")
     app.add_css_file("tb-file.css")
     app.add_css_file("tb-video.css")
     app.add_js_file("tb-reveal.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
     app.add_js_file("tb-code.js", loading_method="defer")
     app.add_js_file("tb-choice.js", loading_method="defer")
+    app.add_js_file("tb-click.js", loading_method="defer")
     app.add_js_file("tb-file.js", loading_method="defer")
     app.add_js_file("tb-video.js", loading_method="defer")
     return {

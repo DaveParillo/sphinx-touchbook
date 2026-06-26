@@ -27,7 +27,7 @@ Containers        - :doc:`components/tb-group`
                   - :doc:`components/tb-reveal`
                   - :doc:`components/tb-video`
 Assessments       - :doc:`components/tb-choice`
-                  - ``tb-click`` (planned)
+                  - :doc:`components/tb-click`
                   - ``tb-drop`` (planned)
                   - ``tb-blank`` (planned)
                   - ``tb-order`` (planned)
@@ -40,6 +40,7 @@ Assessments       - :doc:`components/tb-choice`
 
    components/tb-code
    components/tb-choice
+   components/tb-click
    components/tb-file
    components/tb-group
    components/tb-reveal
@@ -128,4 +129,3 @@ human-readable target for references, tests, or custom integration.
       :name: optional-name
 
       Content that can be revealed.
-
