@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
@@ -20,6 +21,19 @@ from sphinx_touchbook.nodes import (
     TbChoicePromptNode,
 )
 
+COMPACT_MARKER_RE = re.compile(r"^\[(?P<marker>[xX+\- ])\]\s*")
+DEFAULT_RANDOM = False
+DEFAULT_FORCE_MULTIPLE = False
+
+
+def _config(directive):
+    env = getattr(directive.state.document.settings, "env", None)
+    return getattr(env, "config", None)
+
+
+def _config_bool(config, name: str, default: bool) -> bool:
+    return bool(getattr(config, name, default)) if config is not None else default
+
 
 class TbChoiceDirective(Directive):
     """Parse a multiple choice or multiple answer assessment."""
@@ -29,6 +43,7 @@ class TbChoiceDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = False
     option_spec = {
+        "force-multiple": directives.flag,
         "name": directives.unchanged_required,
         "random": directives.flag,
     }
@@ -47,15 +62,27 @@ class TbChoiceDirective(Directive):
         if correct_count == 0:
             return [
                 self.state_machine.reporter.error(
-                    "tb-choice must contain at least one correct answer marked with '+'.",
+                    "tb-choice must contain at least one correct answer marked "
+                    "with '[x]', '[+]', or nested '+' feedback.",
                     line=self.lineno,
                 )
             ]
 
         node = TbChoiceNode()
         assign_node_id(self, node)
-        node["multiple"] = correct_count > 1
-        node["random"] = "random" in self.options
+        config = _config(self)
+        force_multiple = "force-multiple" in self.options or _config_bool(
+            config,
+            "tb_choice_force_multiple",
+            DEFAULT_FORCE_MULTIPLE,
+        )
+
+        node["multiple"] = correct_count > 1 or force_multiple
+        node["random"] = "random" in self.options or _config_bool(
+            config,
+            "tb_choice_random",
+            DEFAULT_RANDOM,
+        )
 
         prompt = TbChoicePromptNode()
         prompt.extend(prompt_children)
@@ -84,11 +111,38 @@ class TbChoiceDirective(Directive):
 
     def _answer_list_index(self, parsed: nodes.container) -> int | None:
         for index, child in enumerate(parsed.children):
-            if isinstance(child, nodes.bullet_list):
+            if isinstance(child, nodes.bullet_list) and self._is_answer_list(child):
                 return index
         return None
 
+    def _is_answer_list(self, answer_list: nodes.bullet_list) -> bool:
+        return all(
+            isinstance(item, nodes.list_item)
+            and (self._has_compact_marker(item) or self._has_feedback_list(item))
+            for item in answer_list.children
+        )
+
+    def _has_compact_marker(self, item: nodes.list_item) -> bool:
+        if not item.children or not isinstance(item.children[0], nodes.paragraph):
+            return False
+        paragraph = item.children[0]
+        return (
+            bool(paragraph.children)
+            and isinstance(paragraph.children[0], nodes.Text)
+            and bool(COMPACT_MARKER_RE.match(paragraph.children[0].astext()))
+        )
+
+    def _has_feedback_list(self, item: nodes.list_item) -> bool:
+        return any(
+            isinstance(child, nodes.bullet_list) and child.get("bullet") in {"+", "-"}
+            for child in item.children
+        )
+
     def _option_from_item(self, item: nodes.list_item, index: int) -> TbChoiceOptionNode:
+        compact = self._compact_option_from_item(item, index)
+        if compact is not None:
+            return compact
+
         feedback_lists = [
             child for child in item.children if isinstance(child, nodes.bullet_list) and child.get("bullet") in {"+", "-"}
         ]
@@ -121,3 +175,47 @@ class TbChoiceDirective(Directive):
         option += answer
         option += feedback
         return option
+
+    def _compact_option_from_item(self, item: nodes.list_item, index: int) -> TbChoiceOptionNode | None:
+        if not item.children or not isinstance(item.children[0], nodes.paragraph):
+            return None
+
+        first_paragraph = deepcopy(item.children[0])
+        marker = self._remove_compact_marker(first_paragraph)
+        if marker is None:
+            return None
+
+        option = TbChoiceOptionNode()
+        option["correct"] = marker in {"x", "X", "+"}
+        option["index"] = index
+
+        answer = TbChoiceAnswerNode()
+        if first_paragraph.children:
+            answer += first_paragraph
+        else:
+            raise ValueError("Each compact tb-choice answer must contain answer text after its marker.")
+
+        feedback = TbChoiceFeedbackNode()
+        feedback.extend(deepcopy(child) for child in item.children[1:])
+
+        option += answer
+        if feedback.children:
+            option += feedback
+        return option
+
+    def _remove_compact_marker(self, paragraph: nodes.paragraph) -> str | None:
+        if not paragraph.children or not isinstance(paragraph.children[0], nodes.Text):
+            return None
+
+        text_node = paragraph.children[0]
+        match = COMPACT_MARKER_RE.match(text_node.astext())
+        if not match:
+            return None
+
+        marker = match.group("marker")
+        remaining = text_node.astext()[match.end() :]
+        if remaining:
+            paragraph[0] = nodes.Text(remaining)
+        else:
+            paragraph.children.pop(0)
+        return marker

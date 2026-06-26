@@ -40,6 +40,21 @@ CHOICE_RST = """
 """
 
 
+CHOICE_FALLBACK_RST = """
+.. tb-choice::
+
+   What is the result of comparing ``187`` to zero?
+
+   - negative
+
+     - This answer should not appear in text or PDF output.
+
+   - positive
+
+     + This feedback should not appear in text or PDF output.
+"""
+
+
 def parse_rst(source: str):
     parser = Parser()
     settings = get_default_settings(Parser)
@@ -56,14 +71,15 @@ def parse_rst(source: str):
     return document
 
 
-def build_sphinx(tmp_path: Path, builder: str, index: str) -> Path:
+def build_sphinx(tmp_path: Path, builder: str, index: str, conf_extra: str = "") -> Path:
     srcdir = tmp_path / "src"
     outdir = tmp_path / f"_build_{builder}"
     doctreedir = tmp_path / f"_doctree_{builder}"
     srcdir.mkdir()
     (srcdir / "conf.py").write_text(
         'extensions = ["sphinx_touchbook"]\n'
-        'html_theme = "alabaster"\n',
+        'html_theme = "alabaster"\n'
+        f"{conf_extra}",
         encoding="utf-8",
     )
     (srcdir / "index.rst").write_text(index, encoding="utf-8")
@@ -125,6 +141,82 @@ def test_directive_parses_multiple_answer_choice():
     assert [option["correct"] for option in node.findall(TbChoiceOptionNode)] == [True, True, False]
 
 
+def test_directive_parses_compact_choice_syntax():
+    document = parse_rst(
+        """
+.. tb-choice::
+   :random:
+
+   What is the capital of Germany?
+
+   - [x] Berlin
+
+     This is the correct answer.
+
+   - [ ] Stuttgart
+
+   - [ ] Cologne
+
+     Cologne is the fourth largest city.
+"""
+    )
+
+    node = next(document.findall(TbChoiceNode))
+    options = list(node.findall(TbChoiceOptionNode))
+    assert node["multiple"] is False
+    assert node["random"] is True
+    assert [option["correct"] for option in options] == [True, False, False]
+    assert "Berlin" in options[0].astext()
+    assert "[x]" not in options[0].astext()
+    assert "This is the correct answer" in options[0].astext()
+    assert "Stuttgart" in options[1].astext()
+
+
+def test_directive_parses_compact_multiple_answer_syntax():
+    document = parse_rst(
+        """
+.. tb-choice::
+
+   Select prime numbers.
+
+   - [+] 2
+
+   - [X] 3
+
+   - [-] 4
+"""
+    )
+
+    node = next(document.findall(TbChoiceNode))
+    assert node["multiple"] is True
+    assert [option["correct"] for option in node.findall(TbChoiceOptionNode)] == [True, True, False]
+
+
+def test_directive_allows_list_markup_before_answer_choices():
+    document = parse_rst(
+        """
+.. tb-choice::
+
+   Review these observations:
+
+   - The accumulator starts at ``0``.
+   - The loop adds each number.
+
+   What is the final total?
+
+   - [ ] 3
+
+   - [x] 6
+"""
+    )
+
+    node = next(document.findall(TbChoiceNode))
+    options = list(node.findall(TbChoiceOptionNode))
+    assert len(options) == 2
+    assert [option["correct"] for option in options] == [False, True]
+    assert "The accumulator starts" in node[0].astext()
+
+
 def test_directive_parses_random_flag():
     document = parse_rst(
         """
@@ -145,6 +237,24 @@ def test_directive_parses_random_flag():
 
     node = next(document.findall(TbChoiceNode))
     assert node["random"] is True
+
+
+def test_directive_parses_force_multiple_flag():
+    document = parse_rst(
+        """
+.. tb-choice::
+   :force-multiple:
+
+   Pick one.
+
+   - [x] A
+
+   - [ ] B
+"""
+    )
+
+    node = next(document.findall(TbChoiceNode))
+    assert node["multiple"] is True
 
 
 def test_directive_reports_missing_correct_answer():
@@ -249,7 +359,88 @@ Title
     assert element["random"] == "true"
 
 
-def test_text_builder_renders_choice_and_feedback(tmp_path):
+def test_html_build_uses_checkbox_for_force_multiple(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-choice::
+   :force-multiple:
+
+   Pick one.
+
+   - [x] A
+
+   - [ ] B
+""",
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    element = soup.find("tb-choice")
+    assert element["mode"] == "multiple"
+    assert [item["type"] for item in element.find_all("input")] == ["checkbox", "checkbox"]
+
+
+def test_html_build_uses_choice_config_defaults(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-choice::
+
+   Pick one.
+
+   - [x] A
+
+   - [ ] B
+""",
+        conf_extra="tb_choice_random = True\ntb_choice_force_multiple = True\n",
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    element = soup.find("tb-choice")
+    assert element["mode"] == "multiple"
+    assert element["random"] == "true"
+    assert [item["type"] for item in element.find_all("input")] == ["checkbox", "checkbox"]
+
+
+def test_html_build_emits_compact_choice_without_required_feedback(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-choice::
+
+   What is the capital of Germany?
+
+   - [x] Berlin
+
+     This is the correct answer.
+
+   - [ ] Stuttgart
+""",
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    element = soup.find("tb-choice")
+    options = element.find_all("div", class_="tb-choice__option")
+    assert [option["data-correct"] for option in options] == ["true", "false"]
+    assert "Berlin" in options[0].find("div", class_="tb-choice__answer").get_text(" ", strip=True)
+    assert "[x]" not in options[0].get_text(" ", strip=True)
+    assert options[0].find("div", class_="tb-choice__feedback").get_text(" ", strip=True) == "This is the correct answer."
+    assert options[1].find("div", class_="tb-choice__feedback") is None
+
+
+def test_text_builder_renders_question_without_answers_or_feedback(tmp_path):
     outdir = build_sphinx(
         tmp_path,
         "text",
@@ -257,18 +448,20 @@ def test_text_builder_renders_choice_and_feedback(tmp_path):
 Title
 =====
 
-{CHOICE_RST}
+{CHOICE_FALLBACK_RST}
 """,
     )
 
     text = (outdir / "index.txt").read_text(encoding="utf-8")
     assert "[Question]" in text
-    assert "[*]" in text
-    assert "Feedback:" in text
-    assert "The first condition is false" in text
+    assert "What is the result of comparing" in text
+    assert "negative" not in text
+    assert "positive" not in text
+    assert "This answer should not appear" not in text
+    assert "This feedback should not appear" not in text
 
 
-def test_latex_builder_renders_choice_and_feedback(tmp_path):
+def test_latex_builder_renders_question_without_answers_or_feedback(tmp_path):
     outdir = build_sphinx(
         tmp_path,
         "latex",
@@ -276,11 +469,14 @@ def test_latex_builder_renders_choice_and_feedback(tmp_path):
 Title
 =====
 
-{CHOICE_RST}
+{CHOICE_FALLBACK_RST}
 """,
     )
 
     latex = read_latex_output(outdir)
     assert r"\begin{sphinxadmonition}{note}{Question}" in latex
-    assert "[*]" in latex
-    assert "Feedback" in latex
+    assert "What is the result of comparing" in latex
+    assert "negative" not in latex
+    assert "positive" not in latex
+    assert "This answer should not appear" not in latex
+    assert "This feedback should not appear" not in latex

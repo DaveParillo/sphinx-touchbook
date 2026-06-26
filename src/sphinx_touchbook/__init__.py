@@ -16,7 +16,7 @@ from .directives.code import (
     DEFAULT_LANGUAGES_ENDPOINT,
     TbCodeDirective,
 )
-from .directives.choice import TbChoiceDirective
+from .directives.choice import DEFAULT_FORCE_MULTIPLE, DEFAULT_RANDOM, TbChoiceDirective
 from .directives.file import TbFileDirective
 from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
@@ -146,6 +146,8 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_code_edit_label", "Edit", "html")
     app.add_config_value("tb_code_hide_edit_label", "Hide editor", "html")
     app.add_config_value("tb_code_revision_label", "Source version", "html")
+    app.add_config_value("tb_choice_random", DEFAULT_RANDOM, "env")
+    app.add_config_value("tb_choice_force_multiple", DEFAULT_FORCE_MULTIPLE, "env")
     app.add_config_value("tb_video_default_width", "560", "env")
     app.add_config_value("tb_video_default_height", "315", "env")
     app.add_node(

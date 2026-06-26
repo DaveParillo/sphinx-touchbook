@@ -103,16 +103,15 @@ def visit_tb_choice_prompt_latex(self: LaTeXTranslator, node: TbChoicePromptNode
 
 
 def depart_tb_choice_prompt_latex(self: LaTeXTranslator, node: TbChoicePromptNode) -> None:
-    self.body.append("\n\\textbf{Choices}\\par\n")
+    self.body.append("\n")
 
 
 def visit_tb_choice_option_latex(self: LaTeXTranslator, node: TbChoiceOptionNode) -> None:
-    marker = "[*]" if node["correct"] else "[ ]"
-    self.body.append(f"\n\\noindent {marker} ")
+    raise nodes.SkipNode
 
 
 def depart_tb_choice_option_latex(self: LaTeXTranslator, node: TbChoiceOptionNode) -> None:
-    self.body.append("\\par\n")
+    pass
 
 
 def visit_tb_choice_answer_latex(self: LaTeXTranslator, node: TbChoiceAnswerNode) -> None:
@@ -120,7 +119,7 @@ def visit_tb_choice_answer_latex(self: LaTeXTranslator, node: TbChoiceAnswerNode
 
 
 def depart_tb_choice_answer_latex(self: LaTeXTranslator, node: TbChoiceAnswerNode) -> None:
-    self.body.append("\\par\\emph{Feedback.} ")
+    pass
 
 
 def visit_tb_choice_feedback_latex(self: LaTeXTranslator, node: TbChoiceFeedbackNode) -> None:
@@ -144,16 +143,15 @@ def visit_tb_choice_prompt_text(self: TextTranslator, node: TbChoicePromptNode) 
 
 
 def depart_tb_choice_prompt_text(self: TextTranslator, node: TbChoicePromptNode) -> None:
-    self.add_text("\nChoices:\n")
+    self.add_text("\n")
 
 
 def visit_tb_choice_option_text(self: TextTranslator, node: TbChoiceOptionNode) -> None:
-    marker = "[*]" if node["correct"] else "[ ]"
-    self.add_text(f"{marker} ")
+    raise nodes.SkipNode
 
 
 def depart_tb_choice_option_text(self: TextTranslator, node: TbChoiceOptionNode) -> None:
-    self.add_text("\n")
+    pass
 
 
 def visit_tb_choice_answer_text(self: TextTranslator, node: TbChoiceAnswerNode) -> None:
@@ -161,7 +159,7 @@ def visit_tb_choice_answer_text(self: TextTranslator, node: TbChoiceAnswerNode) 
 
 
 def depart_tb_choice_answer_text(self: TextTranslator, node: TbChoiceAnswerNode) -> None:
-    self.add_text("\nFeedback: ")
+    pass
 
 
 def visit_tb_choice_feedback_text(self: TextTranslator, node: TbChoiceFeedbackNode) -> None:

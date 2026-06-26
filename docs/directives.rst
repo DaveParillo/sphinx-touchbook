@@ -22,10 +22,11 @@ Working with Code - :doc:`components/tb-code`
 Containers        - :doc:`components/tb-group`
                   - :doc:`components/tb-reveal`
                   - :doc:`components/tb-video`
-Assessments       - ``tb-clickable`` (planned)
-                  - ``tb-dnd`` (planned)
-                  - ``tb-fitb`` (planned)
-                  - :doc:`components/tb-choice`
+Assessments       - :doc:`components/tb-choice`
+                  - ``tb-click`` (planned)
+                  - ``tb-drop`` (planned)
+                  - ``tb-blank`` (planned)
+                  - ``tb-order`` (planned)
                   - ``tb-parsons`` (planned)
 ================= ===================================
 
