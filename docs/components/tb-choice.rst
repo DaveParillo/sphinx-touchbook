@@ -1,3 +1,7 @@
+.. Sphinx-Touchbook: Interactive textbook widgets for Sphinx-doc.
+   Copyright (C) 2026 Dave Parillo.
+   See https://daveparillo.github.io/sphinx-touchbook/ for details.
+
 tb-choice
 =========
 
@@ -15,7 +19,9 @@ one answer is marked correct, HTML uses checkboxes.
 Synopsis
 --------
 
-The general format of the ``tb-choice`` directive is:
+The ``tb-choice`` directive allows questions and feedback defined in one of two
+formats: 'compact' and 'nested list'.
+The compact format looks like this:
 
 .. code-block:: rst
 
@@ -24,21 +30,27 @@ The general format of the ``tb-choice`` directive is:
 
       + --- Prompt area ---
       |
-      | question text and optional Sphinx content
+      | question text / content
       |
       + --- Answer area ---
       |
+      | - [x] correct answer content
       | - [ ] answer content
       |
       |   optional feedback for an incorrect answer
       |
-      | - [x] correct answer content
-      |
-      |   optional feedback for a correct answer
-      |
       + -------------------
 
-For complex answer content, use nested feedback lists:
+The compact format is limited to a single list paragraph for an answer because all following paragraphs are assumed to be feedback.
+The first 'word' in a list *must* be `[x]` or `[ ]`.
+
+.. note:: Alternate indicators
+
+   `[x]`, `[X]`, and `[+]` are all synonyms for a correct answer.
+
+   `[ ]` and `[-]` are both synonyms for a wrong answer.
+
+For complex answers and feedback, use nested feedback lists:
 
 .. code-block:: rst
 

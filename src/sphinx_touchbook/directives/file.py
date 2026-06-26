@@ -1,4 +1,29 @@
-"""The ``tb-file`` directive."""
+"""Sphinx-Touchbook: Interactive textbook widgets for Sphinx-doc.
+Copyright (C) 2026 Dave Parillo.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+---
+
+A Touchbook directive that mimics a local file for `tb-code`.
+
+See:
+https://daveparillo.github.io/sphinx-touchbook/
+for details.
+"""
+
+
+
 
 from __future__ import annotations
 
@@ -12,6 +37,7 @@ from docutils.parsers.rst import Directive, directives
 from sphinx_touchbook.directives.common import assign_node_id
 from sphinx_touchbook.nodes import TbFileNode
 
+# white list for legal chars in a filename
 FILENAME_PATTERN = re.compile(r"^[A-Za-z0-9._/-]+$")
 IMAGE_MIME_TYPES = {"image/gif", "image/jpeg", "image/png", "image/svg+xml", "image/webp"}
 TEXT_MIME_PREFIXES = ("text/",)

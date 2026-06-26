@@ -1,3 +1,7 @@
+.. Sphinx-Touchbook: Interactive textbook widgets for Sphinx-doc.
+   Copyright (C) 2026 Dave Parillo.
+   See https://daveparillo.github.io/sphinx-touchbook/ for details.
+
 Touchbook Directives Documentation
 ==================================
 
@@ -42,23 +46,10 @@ Assessments       - :doc:`components/tb-choice`
    components/tb-video
 
 General Syntax
-==============
+--------------
 
 All directives start with ``..``, then a single space, followed by the name of
 the directive, then ``::``.
-
-Every Touchbook directive accepts the optional ``name``
-`Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-If omitted, docutils assigns a deterministic generated ID derived from the
-document and node position. Use an explicit ``name`` when you want a stable
-human-readable target for references, tests, or custom integration.
-
-.. code-block:: rst
-
-   .. tb-reveal::
-      :name: optional-name
-
-      Content that can be revealed.
 
 Many directives also accept options. Options are indented below the directive
 line and begin with ``:``:
@@ -87,7 +78,6 @@ line and begin with ``:``:
 Container directives can contain other directives:
 
 .. tb-group::
-   :name: directives-group-tabs
 
    .. tb-tab:: Source
 
@@ -122,3 +112,20 @@ Container directives can contain other directives:
             .. math::
 
                \sum_{k = 1}^{n} k = \frac{n (n+1)}{2}.
+
+Every Touchbook directive accepts the optional ``name``
+`Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
+If omitted, an ID is automatically generated based on the current
+document and node position.
+This ID is deterministic, but not stable:
+if your document changes the generated name may change.
+Use an explicit ``name`` when you want a stable
+human-readable target for references, tests, or custom integration.
+
+.. code-block:: rst
+
+   .. tb-reveal::
+      :name: optional-name
+
+      Content that can be revealed.
+

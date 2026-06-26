@@ -1,8 +1,12 @@
+.. Sphinx-Touchbook: Interactive textbook widgets for Sphinx-doc.
+   Copyright (C) 2026 Dave Parillo.
+   See https://daveparillo.github.io/sphinx-touchbook/ for details.
+
 tb-code
 =======
 
-The ``tb-code`` directive creates a runnable source-code block. In HTML,
-readers can run the code through a configured execution service and optionally
+The ``tb-code`` directive creates a runnable source-code block.
+In HTML, readers can send code to a remote server and optionally
 edit the source before running it again.
 
 Synopsis

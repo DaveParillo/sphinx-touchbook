@@ -1,4 +1,37 @@
-"""The ``tb-choice`` directive."""
+"""Sphinx-Touchbook: Interactive textbook widgets for Sphinx-doc.
+Copyright (C) 2026 Dave Parillo.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+---
+
+A Touchbook directive for multiple choice questions.
+
+The content area allows questions and feedback defined in one of two
+formats: 'compact' and 'nested list'.
+Compact questions look like:
+   - [x] correct choice
+   - [ ] incorrect choice
+
+     Feedback as a separate paragraph within a list is optional.
+
+To support arbitrarily complex answer options the nested list option is
+also available.
+
+See:
+https://daveparillo.github.io/sphinx-touchbook/
+for details.
+"""
 
 # Inspired by the Runestone multiple choice directive and its list-based author
 # interface by Bradley N. Miller and Barbara Ericson:
