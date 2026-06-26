@@ -113,8 +113,10 @@ Fallback behavior
 
 HTML without JavaScript renders the prompt, answers, and feedback in document
 order. Text and PDF-oriented builders render the prompt and choices without
-correctness markers. Feedback is omitted from paper-oriented output so the
-printed document can ask the complete question without revealing the answer.
+correctness markers. Single-select questions use open-circle choice markers.
+Multiple-select questions use open-square choice markers. Feedback is omitted
+from paper-oriented output so the printed document can ask the complete
+question without revealing the answer.
 
 Examples
 --------

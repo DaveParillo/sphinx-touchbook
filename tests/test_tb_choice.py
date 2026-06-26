@@ -456,6 +456,8 @@ Title
     assert "[Question]" in text
     assert "What is the result of comparing" in text
     assert "Choices:" in text
+    assert "○" in text
+    assert "☐" not in text
     assert "negative" in text
     assert "positive" in text
     assert "[*]" not in text
@@ -480,10 +482,63 @@ Title
     assert r"\begin{sphinxadmonition}{note}{Question}" in latex
     assert "What is the result of comparing" in latex
     assert r"\begin{itemize}" in latex
-    assert r"\item" in latex
+    assert r"\item[$\circ$]" in latex
+    assert r"\item[$\square$]" not in latex
     assert "negative" in latex
     assert "positive" in latex
     assert "[*]" not in latex
     assert "[x]" not in latex
     assert "This answer should not appear" not in latex
     assert "This feedback should not appear" not in latex
+
+
+def test_text_builder_uses_square_marker_for_multiple_choice(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "text",
+        """
+Title
+=====
+
+.. tb-choice::
+   :force-multiple:
+
+   Select the color.
+
+   - [x] Green
+
+   - [ ] Gray
+""",
+    )
+
+    text = (outdir / "index.txt").read_text(encoding="utf-8")
+    assert "☐" in text
+    assert "○" not in text
+    assert "Green" in text
+    assert "Gray" in text
+
+
+def test_latex_builder_uses_square_marker_for_multiple_choice(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "latex",
+        """
+Title
+=====
+
+.. tb-choice::
+   :force-multiple:
+
+   Select the color.
+
+   - [x] Green
+
+   - [ ] Gray
+""",
+    )
+
+    latex = read_latex_output(outdir)
+    assert r"\item[$\square$]" in latex
+    assert r"\item[$\circ$]" not in latex
+    assert "Green" in latex
+    assert "Gray" in latex

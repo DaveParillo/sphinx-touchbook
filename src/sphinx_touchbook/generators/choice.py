@@ -44,6 +44,14 @@ def _node_id(node) -> str:
     return node["ids"][0]
 
 
+def _choice_text_marker(node: TbChoiceOptionNode) -> str:
+    return "☐" if node.parent["multiple"] else "○"
+
+
+def _choice_latex_marker(node: TbChoiceOptionNode) -> str:
+    return r"$\square$" if node.parent["multiple"] else r"$\circ$"
+
+
 def visit_tb_choice_html(self: HTML5Translator, node: TbChoiceNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     mode = "multiple" if node["multiple"] else "single"
@@ -129,7 +137,7 @@ def depart_tb_choice_prompt_latex(self: LaTeXTranslator, node: TbChoicePromptNod
 
 
 def visit_tb_choice_option_latex(self: LaTeXTranslator, node: TbChoiceOptionNode) -> None:
-    self.body.append("\n\\item ")
+    self.body.append(f"\n\\item[{_choice_latex_marker(node)}] ")
 
 
 def depart_tb_choice_option_latex(self: LaTeXTranslator, node: TbChoiceOptionNode) -> None:
@@ -169,7 +177,7 @@ def depart_tb_choice_prompt_text(self: TextTranslator, node: TbChoicePromptNode)
 
 
 def visit_tb_choice_option_text(self: TextTranslator, node: TbChoiceOptionNode) -> None:
-    self.add_text("- ")
+    self.add_text(f"{_choice_text_marker(node)} ")
 
 
 def depart_tb_choice_option_text(self: TextTranslator, node: TbChoiceOptionNode) -> None:
