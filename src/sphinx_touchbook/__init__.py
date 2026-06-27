@@ -24,6 +24,7 @@ from .directives.click import (
     TbClickMissDirective,
 )
 from .directives.file import TbFileDirective
+from .directives.match import TbMatchDirective
 from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
 from .directives.video import TbVideoDirective
@@ -39,6 +40,12 @@ from .nodes import (
     TbClickSourceNode,
     TbCodeNode,
     TbFileNode,
+    TbMatchDistractorNode,
+    TbMatchNode,
+    TbMatchPairNode,
+    TbMatchPromptNode,
+    TbMatchSourceNode,
+    TbMatchTargetNode,
     TbRevealNode,
     TbGroupNode,
     TbTabNode,
@@ -117,6 +124,44 @@ from .generators.file import (
     visit_tb_file_html,
     visit_tb_file_latex,
     visit_tb_file_text,
+)
+from .generators.match import (
+    depart_tb_match_html,
+    depart_tb_match_distractor_html,
+    depart_tb_match_distractor_latex,
+    depart_tb_match_distractor_text,
+    depart_tb_match_latex,
+    depart_tb_match_pair_html,
+    depart_tb_match_pair_latex,
+    depart_tb_match_pair_text,
+    depart_tb_match_prompt_html,
+    depart_tb_match_prompt_latex,
+    depart_tb_match_prompt_text,
+    depart_tb_match_source_html,
+    depart_tb_match_source_latex,
+    depart_tb_match_source_text,
+    depart_tb_match_target_html,
+    depart_tb_match_target_latex,
+    depart_tb_match_target_text,
+    depart_tb_match_text,
+    visit_tb_match_html,
+    visit_tb_match_distractor_html,
+    visit_tb_match_distractor_latex,
+    visit_tb_match_distractor_text,
+    visit_tb_match_latex,
+    visit_tb_match_pair_html,
+    visit_tb_match_pair_latex,
+    visit_tb_match_pair_text,
+    visit_tb_match_prompt_html,
+    visit_tb_match_prompt_latex,
+    visit_tb_match_prompt_text,
+    visit_tb_match_source_html,
+    visit_tb_match_source_latex,
+    visit_tb_match_source_text,
+    visit_tb_match_target_html,
+    visit_tb_match_target_latex,
+    visit_tb_match_target_text,
+    visit_tb_match_text,
 )
 from .generators.reveal import (
     depart_tb_reveal_html,
@@ -277,12 +322,49 @@ def setup(app: Sphinx) -> dict[str, object]:
         latex=(visit_tb_click_region_latex, depart_tb_click_region_latex),
         text=(visit_tb_click_region_text, depart_tb_click_region_text),
     )
+    app.add_node(
+        TbMatchNode,
+        html=(visit_tb_match_html, depart_tb_match_html),
+        latex=(visit_tb_match_latex, depart_tb_match_latex),
+        text=(visit_tb_match_text, depart_tb_match_text),
+    )
+    app.add_node(
+        TbMatchPromptNode,
+        html=(visit_tb_match_prompt_html, depart_tb_match_prompt_html),
+        latex=(visit_tb_match_prompt_latex, depart_tb_match_prompt_latex),
+        text=(visit_tb_match_prompt_text, depart_tb_match_prompt_text),
+    )
+    app.add_node(
+        TbMatchPairNode,
+        html=(visit_tb_match_pair_html, depart_tb_match_pair_html),
+        latex=(visit_tb_match_pair_latex, depart_tb_match_pair_latex),
+        text=(visit_tb_match_pair_text, depart_tb_match_pair_text),
+    )
+    app.add_node(
+        TbMatchSourceNode,
+        html=(visit_tb_match_source_html, depart_tb_match_source_html),
+        latex=(visit_tb_match_source_latex, depart_tb_match_source_latex),
+        text=(visit_tb_match_source_text, depart_tb_match_source_text),
+    )
+    app.add_node(
+        TbMatchTargetNode,
+        html=(visit_tb_match_target_html, depart_tb_match_target_html),
+        latex=(visit_tb_match_target_latex, depart_tb_match_target_latex),
+        text=(visit_tb_match_target_text, depart_tb_match_target_text),
+    )
+    app.add_node(
+        TbMatchDistractorNode,
+        html=(visit_tb_match_distractor_html, depart_tb_match_distractor_html),
+        latex=(visit_tb_match_distractor_latex, depart_tb_match_distractor_latex),
+        text=(visit_tb_match_distractor_text, depart_tb_match_distractor_text),
+    )
     app.add_directive("tb-code", TbCodeDirective)
     app.add_directive("tb-choice", TbChoiceDirective)
     app.add_directive("tb-click", TbClickDirective)
     app.add_directive("tb-hit", TbClickHitDirective)
     app.add_directive("tb-miss", TbClickMissDirective)
     app.add_directive("tb-file", TbFileDirective)
+    app.add_directive("tb-match", TbMatchDirective)
     app.add_directive("tb-reveal", TbRevealDirective)
     app.add_directive("tb-group", TbGroupDirective)
     app.add_directive("tb-tab", TbTabDirective)
@@ -301,6 +383,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_css_file("tb-choice.css")
     app.add_css_file("tb-click.css")
     app.add_css_file("tb-file.css")
+    app.add_css_file("tb-match.css")
     app.add_css_file("tb-video.css")
     app.add_js_file("tb-reveal.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
@@ -308,6 +391,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_js_file("tb-choice.js", loading_method="defer")
     app.add_js_file("tb-click.js", loading_method="defer")
     app.add_js_file("tb-file.js", loading_method="defer")
+    app.add_js_file("tb-match.js", loading_method="defer")
     app.add_js_file("tb-video.js", loading_method="defer")
     return {
         "version": "0.1.0",

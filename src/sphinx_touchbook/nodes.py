@@ -84,3 +84,27 @@ class TbClickSourceNode(nodes.General, nodes.Element):
 
 class TbClickRegionNode(nodes.General, nodes.Element):
     """Feedback for one clickable source region."""
+
+
+class TbMatchNode(nodes.General, nodes.Element):
+    """Semantic node for a matching assessment."""
+
+
+class TbMatchPromptNode(nodes.General, nodes.Element):
+    """Prompt content for a matching assessment."""
+
+
+class TbMatchPairNode(nodes.General, nodes.Element):
+    """One source and target pair for a matching assessment."""
+
+
+class TbMatchSourceNode(nodes.General, nodes.Element):
+    """Draggable source content for a matching pair."""
+
+
+class TbMatchTargetNode(nodes.General, nodes.Element):
+    """Target content for a matching pair."""
+
+
+class TbMatchDistractorNode(nodes.General, nodes.Element):
+    """Unmatched target option for a matching assessment."""

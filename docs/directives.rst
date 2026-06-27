@@ -28,7 +28,7 @@ Containers        - :doc:`components/tb-group`
                   - :doc:`components/tb-video`
 Assessments       - :doc:`components/tb-choice`
                   - :doc:`components/tb-click`
-                  - ``tb-drop`` (planned)
+                  - :doc:`components/tb-match`
                   - ``tb-blank`` (planned)
                   - ``tb-order`` (planned)
                   - ``tb-parsons`` (planned)
@@ -41,6 +41,7 @@ Assessments       - :doc:`components/tb-choice`
    components/tb-code
    components/tb-choice
    components/tb-click
+   components/tb-match
    components/tb-file
    components/tb-group
    components/tb-reveal
