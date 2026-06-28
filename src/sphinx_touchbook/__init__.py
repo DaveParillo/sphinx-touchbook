@@ -26,6 +26,8 @@ from .directives.click import (
 )
 from .directives.file import TbFileDirective
 from .directives.match import TbMatchDirective
+from .directives.order import TbOrderDirective
+from .directives.parsons import TbParsonsDirective
 from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
 from .directives.video import TbVideoDirective
@@ -50,6 +52,12 @@ from .nodes import (
     TbMatchPromptNode,
     TbMatchSourceNode,
     TbMatchTargetNode,
+    TbOrderItemNode,
+    TbOrderNode,
+    TbOrderPromptNode,
+    TbParsonsItemNode,
+    TbParsonsNode,
+    TbParsonsPromptNode,
     TbRevealNode,
     TbGroupNode,
     TbTabNode,
@@ -186,6 +194,46 @@ from .generators.match import (
     visit_tb_match_target_latex,
     visit_tb_match_target_text,
     visit_tb_match_text,
+)
+from .generators.order import (
+    depart_tb_order_html,
+    depart_tb_order_item_html,
+    depart_tb_order_item_latex,
+    depart_tb_order_item_text,
+    depart_tb_order_latex,
+    depart_tb_order_prompt_html,
+    depart_tb_order_prompt_latex,
+    depart_tb_order_prompt_text,
+    depart_tb_order_text,
+    visit_tb_order_html,
+    visit_tb_order_item_html,
+    visit_tb_order_item_latex,
+    visit_tb_order_item_text,
+    visit_tb_order_latex,
+    visit_tb_order_prompt_html,
+    visit_tb_order_prompt_latex,
+    visit_tb_order_prompt_text,
+    visit_tb_order_text,
+)
+from .generators.parsons import (
+    depart_tb_parsons_html,
+    depart_tb_parsons_item_html,
+    depart_tb_parsons_item_latex,
+    depart_tb_parsons_item_text,
+    depart_tb_parsons_latex,
+    depart_tb_parsons_prompt_html,
+    depart_tb_parsons_prompt_latex,
+    depart_tb_parsons_prompt_text,
+    depart_tb_parsons_text,
+    visit_tb_parsons_html,
+    visit_tb_parsons_item_html,
+    visit_tb_parsons_item_latex,
+    visit_tb_parsons_item_text,
+    visit_tb_parsons_latex,
+    visit_tb_parsons_prompt_html,
+    visit_tb_parsons_prompt_latex,
+    visit_tb_parsons_prompt_text,
+    visit_tb_parsons_text,
 )
 from .generators.reveal import (
     depart_tb_reveal_html,
@@ -400,6 +448,42 @@ def setup(app: Sphinx) -> dict[str, object]:
         latex=(visit_tb_match_distractor_latex, depart_tb_match_distractor_latex),
         text=(visit_tb_match_distractor_text, depart_tb_match_distractor_text),
     )
+    app.add_node(
+        TbOrderNode,
+        html=(visit_tb_order_html, depart_tb_order_html),
+        latex=(visit_tb_order_latex, depart_tb_order_latex),
+        text=(visit_tb_order_text, depart_tb_order_text),
+    )
+    app.add_node(
+        TbOrderItemNode,
+        html=(visit_tb_order_item_html, depart_tb_order_item_html),
+        latex=(visit_tb_order_item_latex, depart_tb_order_item_latex),
+        text=(visit_tb_order_item_text, depart_tb_order_item_text),
+    )
+    app.add_node(
+        TbOrderPromptNode,
+        html=(visit_tb_order_prompt_html, depart_tb_order_prompt_html),
+        latex=(visit_tb_order_prompt_latex, depart_tb_order_prompt_latex),
+        text=(visit_tb_order_prompt_text, depart_tb_order_prompt_text),
+    )
+    app.add_node(
+        TbParsonsNode,
+        html=(visit_tb_parsons_html, depart_tb_parsons_html),
+        latex=(visit_tb_parsons_latex, depart_tb_parsons_latex),
+        text=(visit_tb_parsons_text, depart_tb_parsons_text),
+    )
+    app.add_node(
+        TbParsonsItemNode,
+        html=(visit_tb_parsons_item_html, depart_tb_parsons_item_html),
+        latex=(visit_tb_parsons_item_latex, depart_tb_parsons_item_latex),
+        text=(visit_tb_parsons_item_text, depart_tb_parsons_item_text),
+    )
+    app.add_node(
+        TbParsonsPromptNode,
+        html=(visit_tb_parsons_prompt_html, depart_tb_parsons_prompt_html),
+        latex=(visit_tb_parsons_prompt_latex, depart_tb_parsons_prompt_latex),
+        text=(visit_tb_parsons_prompt_text, depart_tb_parsons_prompt_text),
+    )
     app.add_directive("tb-blank", TbBlankDirective)
     app.add_directive("tb-code", TbCodeDirective)
     app.add_directive("tb-choice", TbChoiceDirective)
@@ -408,6 +492,8 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_directive("tb-miss", TbClickMissDirective)
     app.add_directive("tb-file", TbFileDirective)
     app.add_directive("tb-match", TbMatchDirective)
+    app.add_directive("tb-order", TbOrderDirective)
+    app.add_directive("tb-parsons", TbParsonsDirective)
     app.add_directive("tb-reveal", TbRevealDirective)
     app.add_directive("tb-group", TbGroupDirective)
     app.add_directive("tb-tab", TbTabDirective)
@@ -428,6 +514,8 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_css_file("tb-click.css")
     app.add_css_file("tb-file.css")
     app.add_css_file("tb-match.css")
+    app.add_css_file("tb-order.css")
+    app.add_css_file("tb-parsons.css")
     app.add_css_file("tb-video.css")
     app.add_js_file("tb-reveal.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
@@ -437,6 +525,8 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_js_file("tb-click.js", loading_method="defer")
     app.add_js_file("tb-file.js", loading_method="defer")
     app.add_js_file("tb-match.js", loading_method="defer")
+    app.add_js_file("tb-order.js", loading_method="defer")
+    app.add_js_file("tb-parsons.js", loading_method="defer")
     app.add_js_file("tb-video.js", loading_method="defer")
     return {
         "version": "0.1.0",

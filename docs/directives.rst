@@ -30,8 +30,8 @@ Assessments       - :doc:`components/tb-choice`
                   - :doc:`components/tb-blank`
                   - :doc:`components/tb-click`
                   - :doc:`components/tb-match`
-                  - ``tb-order`` (planned)
-                  - ``tb-parsons`` (planned)
+                  - :doc:`components/tb-order`
+                  - :doc:`components/tb-parsons`
 ================= ===================================
 
 .. toctree::
@@ -43,6 +43,8 @@ Assessments       - :doc:`components/tb-choice`
    components/tb-choice
    components/tb-click
    components/tb-match
+   components/tb-order
+   components/tb-parsons
    components/tb-file
    components/tb-group
    components/tb-reveal

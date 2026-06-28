@@ -82,6 +82,30 @@ class TbBlankInputNode(nodes.General, nodes.Element):
     """One blank input location in a fill-in-the-blank assessment."""
 
 
+class TbOrderNode(nodes.General, nodes.Element):
+    """Semantic node for an ordering assessment."""
+
+
+class TbOrderPromptNode(nodes.General, nodes.Element):
+    """Prompt content for an ordering assessment."""
+
+
+class TbOrderItemNode(nodes.General, nodes.Element):
+    """One item in an ordering assessment."""
+
+
+class TbParsonsNode(nodes.General, nodes.Element):
+    """Semantic node for a Parsons problem."""
+
+
+class TbParsonsPromptNode(nodes.General, nodes.Element):
+    """Prompt content for a Parsons problem."""
+
+
+class TbParsonsItemNode(nodes.General, nodes.Element):
+    """One code fragment in a Parsons problem."""
+
+
 class TbClickNode(nodes.General, nodes.Element):
     """Semantic node for a clickable-source assessment."""
 

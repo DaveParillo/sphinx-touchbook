@@ -1,0 +1,120 @@
+tb-parsons {
+  display: block;
+  margin: 1rem 0;
+}
+
+.tb-parsons__prompt {
+  border-left: 0.25rem solid var(--color-background-border, #999);
+  margin-bottom: 1rem;
+  padding-left: 0.75rem;
+}
+
+.tb-parsons__prompt > :first-child {
+  margin-top: 0;
+}
+
+.tb-parsons__prompt > :last-child {
+  margin-bottom: 0;
+}
+
+.tb-parsons__list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tb-parsons__item {
+  align-items: start;
+  border: 1px solid var(--color-background-border, #999);
+  border-radius: 0.25rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0.5rem 0.75rem;
+}
+
+.tb-parsons__item--excluded {
+  opacity: 0.72;
+}
+
+.tb-parsons__code {
+  background: var(--color-background-secondary, #f6f8fa);
+  border-radius: 0.25rem;
+  color: var(--color-foreground-primary, #24292f);
+  font-family: var(--font-stack--monospace, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  margin: 0;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.5rem 0.75rem 0.5rem calc(0.75rem + (var(--tb-parsons-indent, 0) * 1ch));
+  white-space: pre;
+}
+
+.tb-parsons__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: end;
+}
+
+.tb-parsons__move,
+.tb-parsons__indent,
+.tb-parsons__toggle,
+.tb-parsons__check {
+  cursor: pointer;
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0.35rem 0.55rem;
+}
+
+.tb-parsons__move:disabled,
+.tb-parsons__indent:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.tb-parsons__toggle[aria-pressed="true"] .tb-parsons__toggle-icon {
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+.tb-parsons__toggle[aria-pressed="false"] .tb-parsons__toggle-icon {
+  color: #b00020;
+  font-weight: 700;
+}
+
+.tb-parsons__move:focus-visible,
+.tb-parsons__indent:focus-visible,
+.tb-parsons__toggle:focus-visible,
+.tb-parsons__check:focus-visible {
+  outline: 2px solid var(--color-brand-primary, #1f6feb);
+  outline-offset: 2px;
+}
+
+.tb-parsons__item--correct {
+  border-color: #2e7d32;
+}
+
+.tb-parsons__item--incorrect {
+  border-color: #b00020;
+}
+
+.tb-parsons__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.tb-parsons__status {
+  font-weight: 700;
+  margin: 0;
+}
+
+@media (max-width: 48rem) {
+  .tb-parsons__item {
+    grid-template-columns: 1fr;
+  }
+}
