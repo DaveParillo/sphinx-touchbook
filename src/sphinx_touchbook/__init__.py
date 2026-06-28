@@ -6,6 +6,7 @@ from pathlib import Path
 
 from sphinx.application import Sphinx
 
+from .directives.blank import TbBlankDirective
 from .directives.code import (
     DEFAULT_CODE_BLOCK_OPTIONS,
     DEFAULT_ENDPOINT,
@@ -29,6 +30,9 @@ from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
 from .directives.video import TbVideoDirective
 from .nodes import (
+    TbBlankInputNode,
+    TbBlankNode,
+    TbBlankPromptNode,
     TbChoiceAnswerNode,
     TbChoiceFeedbackNode,
     TbChoiceNode,
@@ -50,6 +54,26 @@ from .nodes import (
     TbGroupNode,
     TbTabNode,
     TbVideoNode,
+)
+from .generators.blank import (
+    depart_tb_blank_html,
+    depart_tb_blank_input_html,
+    depart_tb_blank_input_latex,
+    depart_tb_blank_input_text,
+    depart_tb_blank_latex,
+    depart_tb_blank_prompt_html,
+    depart_tb_blank_prompt_latex,
+    depart_tb_blank_prompt_text,
+    depart_tb_blank_text,
+    visit_tb_blank_html,
+    visit_tb_blank_input_html,
+    visit_tb_blank_input_latex,
+    visit_tb_blank_input_text,
+    visit_tb_blank_latex,
+    visit_tb_blank_prompt_html,
+    visit_tb_blank_prompt_latex,
+    visit_tb_blank_prompt_text,
+    visit_tb_blank_text,
 )
 from .generators.click import (
     depart_tb_click_html,
@@ -233,6 +257,24 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_video_default_width", "560", "env")
     app.add_config_value("tb_video_default_height", "315", "env")
     app.add_node(
+        TbBlankNode,
+        html=(visit_tb_blank_html, depart_tb_blank_html),
+        latex=(visit_tb_blank_latex, depart_tb_blank_latex),
+        text=(visit_tb_blank_text, depart_tb_blank_text),
+    )
+    app.add_node(
+        TbBlankPromptNode,
+        html=(visit_tb_blank_prompt_html, depart_tb_blank_prompt_html),
+        latex=(visit_tb_blank_prompt_latex, depart_tb_blank_prompt_latex),
+        text=(visit_tb_blank_prompt_text, depart_tb_blank_prompt_text),
+    )
+    app.add_node(
+        TbBlankInputNode,
+        html=(visit_tb_blank_input_html, depart_tb_blank_input_html),
+        latex=(visit_tb_blank_input_latex, depart_tb_blank_input_latex),
+        text=(visit_tb_blank_input_text, depart_tb_blank_input_text),
+    )
+    app.add_node(
         TbCodeNode,
         html=(visit_tb_code_html, depart_tb_code_html),
         latex=(visit_tb_code_latex, depart_tb_code_latex),
@@ -358,6 +400,7 @@ def setup(app: Sphinx) -> dict[str, object]:
         latex=(visit_tb_match_distractor_latex, depart_tb_match_distractor_latex),
         text=(visit_tb_match_distractor_text, depart_tb_match_distractor_text),
     )
+    app.add_directive("tb-blank", TbBlankDirective)
     app.add_directive("tb-code", TbCodeDirective)
     app.add_directive("tb-choice", TbChoiceDirective)
     app.add_directive("tb-click", TbClickDirective)
@@ -380,6 +423,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_css_file("tb-reveal.css")
     app.add_css_file("tb-group.css")
     app.add_css_file("tb-code.css")
+    app.add_css_file("tb-blank.css")
     app.add_css_file("tb-choice.css")
     app.add_css_file("tb-click.css")
     app.add_css_file("tb-file.css")
@@ -388,6 +432,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_js_file("tb-reveal.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
     app.add_js_file("tb-code.js", loading_method="defer")
+    app.add_js_file("tb-blank.js", loading_method="defer")
     app.add_js_file("tb-choice.js", loading_method="defer")
     app.add_js_file("tb-click.js", loading_method="defer")
     app.add_js_file("tb-file.js", loading_method="defer")

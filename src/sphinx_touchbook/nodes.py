@@ -70,6 +70,18 @@ class TbChoiceFeedbackNode(nodes.General, nodes.Element):
     """Feedback content for a choice option."""
 
 
+class TbBlankNode(nodes.General, nodes.Element):
+    """Semantic node for a fill-in-the-blank assessment."""
+
+
+class TbBlankPromptNode(nodes.General, nodes.Element):
+    """Prompt content for a fill-in-the-blank assessment."""
+
+
+class TbBlankInputNode(nodes.General, nodes.Element):
+    """One blank input location in a fill-in-the-blank assessment."""
+
+
 class TbClickNode(nodes.General, nodes.Element):
     """Semantic node for a clickable-source assessment."""
 
