@@ -86,6 +86,13 @@ class TbGroup extends HTMLElement {
     const last = tabs.length - 1;
     let next = null;
 
+    if (event.key === "Tab" && !event.shiftKey) {
+      if (this.focusFirstPanelControl(index)) {
+        event.preventDefault();
+      }
+      return;
+    }
+
     if (event.key === "ArrowRight") {
       next = index === last ? 0 : index + 1;
     } else if (event.key === "ArrowLeft") {
@@ -100,6 +107,31 @@ class TbGroup extends HTMLElement {
       event.preventDefault();
       this.selectTab(next);
     }
+  }
+
+  focusFirstPanelControl(index) {
+    const panel = this.ownPanels()[index];
+    if (!panel || panel.hidden) {
+      return false;
+    }
+    const controls = Array.from(panel.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
+      'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ));
+    const control = controls.find((candidate) => !this.isHiddenControl(candidate));
+    if (!control) {
+      return false;
+    }
+    control.focus();
+    return true;
+  }
+
+  isHiddenControl(control) {
+    return (
+      control.hidden ||
+      control.closest("[hidden]") ||
+      control.getAttribute("aria-hidden") === "true"
+    );
   }
 
   ownTabs() {

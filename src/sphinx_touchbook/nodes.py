@@ -82,6 +82,18 @@ class TbBlankInputNode(nodes.General, nodes.Element):
     """One blank input location in a fill-in-the-blank assessment."""
 
 
+class TbFormulaNode(nodes.General, nodes.Element):
+    """Semantic node for a calculated numeric formula assessment."""
+
+
+class TbFormulaPromptNode(nodes.General, nodes.Element):
+    """Prompt content for a calculated formula assessment."""
+
+
+class TbFormulaVariableNode(nodes.General, nodes.Element):
+    """One generated variable location in a calculated formula assessment."""
+
+
 class TbOrderNode(nodes.General, nodes.Element):
     """Semantic node for an ordering assessment."""
 
@@ -144,3 +156,15 @@ class TbMatchTargetNode(nodes.General, nodes.Element):
 
 class TbMatchDistractorNode(nodes.General, nodes.Element):
     """Unmatched target option for a matching assessment."""
+
+
+class TbMicroParsonsNode(nodes.General, nodes.Element):
+    """Semantic node for a token-level Parsons assessment."""
+
+
+class TbMicroParsonsPromptNode(nodes.General, nodes.Element):
+    """Prompt content for a token-level Parsons assessment."""
+
+
+class TbMicroParsonsTokenNode(nodes.General, nodes.Element):
+    """One token in a token-level Parsons assessment."""

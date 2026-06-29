@@ -1,0 +1,103 @@
+tb-micro-parsons {
+  display: block;
+  margin: 1rem 0;
+}
+
+.tb-micro-parsons__prompt {
+  border-left: 0.25rem solid var(--color-background-border, #999);
+  margin-bottom: 1rem;
+  padding-left: 0.75rem;
+}
+
+.tb-micro-parsons__prompt > :first-child {
+  margin-top: 0;
+}
+
+.tb-micro-parsons__prompt > :last-child {
+  margin-bottom: 0;
+}
+
+.tb-micro-parsons__workspace {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.tb-micro-parsons__row {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tb-micro-parsons__row-label {
+  font-weight: 700;
+  margin: 0;
+}
+
+.tb-micro-parsons__tokens {
+  align-items: center;
+  border: 1px solid var(--color-background-border, #999);
+  border-radius: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  min-height: 3.15rem;
+  padding: 0.5rem;
+}
+
+.tb-micro-parsons__target {
+  background: color-mix(in srgb, var(--color-background-secondary, #f6f8fa) 65%, transparent);
+}
+
+.tb-micro-parsons__token {
+  display: inline-flex;
+}
+
+.tb-micro-parsons__token-button {
+  background: var(--color-background-secondary, #f6f8fa);
+  border: 1px solid var(--color-background-border, #999);
+  border-radius: 0.25rem;
+  color: var(--color-foreground-primary, #24292f);
+  cursor: pointer;
+  font: inherit;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.55rem;
+}
+
+.tb-micro-parsons__content {
+  font-family: var(--font-stack--monospace, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  white-space: pre;
+}
+
+.tb-micro-parsons__token-button:focus-visible,
+.tb-micro-parsons__check:focus-visible {
+  outline: 2px solid var(--color-brand-primary, #1f6feb);
+  outline-offset: 2px;
+}
+
+.tb-micro-parsons__token--correct .tb-micro-parsons__token-button {
+  border-color: #2e7d32;
+}
+
+.tb-micro-parsons__token--incorrect .tb-micro-parsons__token-button {
+  border-color: #b00020;
+}
+
+.tb-micro-parsons__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.tb-micro-parsons__check {
+  cursor: pointer;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+}
+
+.tb-micro-parsons__status {
+  font-weight: 700;
+  margin: 0;
+}

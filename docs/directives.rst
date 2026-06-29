@@ -29,7 +29,9 @@ Containers        - :doc:`components/tb-group`
 Assessments       - :doc:`components/tb-choice`
                   - :doc:`components/tb-blank`
                   - :doc:`components/tb-click`
+                  - :doc:`components/tb-formula`
                   - :doc:`components/tb-match`
+                  - :doc:`components/tb-micro-parsons`
                   - :doc:`components/tb-order`
                   - :doc:`components/tb-parsons`
 ================= ===================================
@@ -42,7 +44,9 @@ Assessments       - :doc:`components/tb-choice`
    components/tb-blank
    components/tb-choice
    components/tb-click
+   components/tb-formula
    components/tb-match
+   components/tb-micro-parsons
    components/tb-order
    components/tb-parsons
    components/tb-file

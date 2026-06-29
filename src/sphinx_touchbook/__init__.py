@@ -25,7 +25,9 @@ from .directives.click import (
     TbClickMissDirective,
 )
 from .directives.file import TbFileDirective
+from .directives.formula import TbFormulaDirective
 from .directives.match import TbMatchDirective
+from .directives.micro_parsons import TbMicroParsonsDirective
 from .directives.order import TbOrderDirective
 from .directives.parsons import TbParsonsDirective
 from .directives.reveal import TbRevealDirective
@@ -46,12 +48,18 @@ from .nodes import (
     TbClickSourceNode,
     TbCodeNode,
     TbFileNode,
+    TbFormulaNode,
+    TbFormulaPromptNode,
+    TbFormulaVariableNode,
     TbMatchDistractorNode,
     TbMatchNode,
     TbMatchPairNode,
     TbMatchPromptNode,
     TbMatchSourceNode,
     TbMatchTargetNode,
+    TbMicroParsonsNode,
+    TbMicroParsonsPromptNode,
+    TbMicroParsonsTokenNode,
     TbOrderItemNode,
     TbOrderNode,
     TbOrderPromptNode,
@@ -157,6 +165,26 @@ from .generators.file import (
     visit_tb_file_latex,
     visit_tb_file_text,
 )
+from .generators.formula import (
+    depart_tb_formula_html,
+    depart_tb_formula_latex,
+    depart_tb_formula_prompt_html,
+    depart_tb_formula_prompt_latex,
+    depart_tb_formula_prompt_text,
+    depart_tb_formula_text,
+    depart_tb_formula_variable_html,
+    depart_tb_formula_variable_latex,
+    depart_tb_formula_variable_text,
+    visit_tb_formula_html,
+    visit_tb_formula_latex,
+    visit_tb_formula_prompt_html,
+    visit_tb_formula_prompt_latex,
+    visit_tb_formula_prompt_text,
+    visit_tb_formula_text,
+    visit_tb_formula_variable_html,
+    visit_tb_formula_variable_latex,
+    visit_tb_formula_variable_text,
+)
 from .generators.match import (
     depart_tb_match_html,
     depart_tb_match_distractor_html,
@@ -194,6 +222,26 @@ from .generators.match import (
     visit_tb_match_target_latex,
     visit_tb_match_target_text,
     visit_tb_match_text,
+)
+from .generators.micro_parsons import (
+    depart_tb_micro_parsons_html,
+    depart_tb_micro_parsons_latex,
+    depart_tb_micro_parsons_prompt_html,
+    depart_tb_micro_parsons_prompt_latex,
+    depart_tb_micro_parsons_prompt_text,
+    depart_tb_micro_parsons_text,
+    depart_tb_micro_parsons_token_html,
+    depart_tb_micro_parsons_token_latex,
+    depart_tb_micro_parsons_token_text,
+    visit_tb_micro_parsons_html,
+    visit_tb_micro_parsons_latex,
+    visit_tb_micro_parsons_prompt_html,
+    visit_tb_micro_parsons_prompt_latex,
+    visit_tb_micro_parsons_prompt_text,
+    visit_tb_micro_parsons_text,
+    visit_tb_micro_parsons_token_html,
+    visit_tb_micro_parsons_token_latex,
+    visit_tb_micro_parsons_token_text,
 )
 from .generators.order import (
     depart_tb_order_html,
@@ -302,6 +350,8 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_choice_random", DEFAULT_RANDOM, "env")
     app.add_config_value("tb_choice_force_multiple", DEFAULT_FORCE_MULTIPLE, "env")
     app.add_config_value("tb_click_show_hints", DEFAULT_SHOW_HINTS, "html")
+    app.add_config_value("tb_formula_default_endpoint", DEFAULT_ENDPOINT, "html")
+    app.add_config_value("tb_formula_language_defaults", {}, "env")
     app.add_config_value("tb_video_default_width", "560", "env")
     app.add_config_value("tb_video_default_height", "315", "env")
     app.add_node(
@@ -333,6 +383,24 @@ def setup(app: Sphinx) -> dict[str, object]:
         html=(visit_tb_file_html, depart_tb_file_html),
         latex=(visit_tb_file_latex, depart_tb_file_latex),
         text=(visit_tb_file_text, depart_tb_file_text),
+    )
+    app.add_node(
+        TbFormulaNode,
+        html=(visit_tb_formula_html, depart_tb_formula_html),
+        latex=(visit_tb_formula_latex, depart_tb_formula_latex),
+        text=(visit_tb_formula_text, depart_tb_formula_text),
+    )
+    app.add_node(
+        TbFormulaPromptNode,
+        html=(visit_tb_formula_prompt_html, depart_tb_formula_prompt_html),
+        latex=(visit_tb_formula_prompt_latex, depart_tb_formula_prompt_latex),
+        text=(visit_tb_formula_prompt_text, depart_tb_formula_prompt_text),
+    )
+    app.add_node(
+        TbFormulaVariableNode,
+        html=(visit_tb_formula_variable_html, depart_tb_formula_variable_html),
+        latex=(visit_tb_formula_variable_latex, depart_tb_formula_variable_latex),
+        text=(visit_tb_formula_variable_text, depart_tb_formula_variable_text),
     )
     app.add_node(
         TbRevealNode,
@@ -449,6 +517,24 @@ def setup(app: Sphinx) -> dict[str, object]:
         text=(visit_tb_match_distractor_text, depart_tb_match_distractor_text),
     )
     app.add_node(
+        TbMicroParsonsNode,
+        html=(visit_tb_micro_parsons_html, depart_tb_micro_parsons_html),
+        latex=(visit_tb_micro_parsons_latex, depart_tb_micro_parsons_latex),
+        text=(visit_tb_micro_parsons_text, depart_tb_micro_parsons_text),
+    )
+    app.add_node(
+        TbMicroParsonsPromptNode,
+        html=(visit_tb_micro_parsons_prompt_html, depart_tb_micro_parsons_prompt_html),
+        latex=(visit_tb_micro_parsons_prompt_latex, depart_tb_micro_parsons_prompt_latex),
+        text=(visit_tb_micro_parsons_prompt_text, depart_tb_micro_parsons_prompt_text),
+    )
+    app.add_node(
+        TbMicroParsonsTokenNode,
+        html=(visit_tb_micro_parsons_token_html, depart_tb_micro_parsons_token_html),
+        latex=(visit_tb_micro_parsons_token_latex, depart_tb_micro_parsons_token_latex),
+        text=(visit_tb_micro_parsons_token_text, depart_tb_micro_parsons_token_text),
+    )
+    app.add_node(
         TbOrderNode,
         html=(visit_tb_order_html, depart_tb_order_html),
         latex=(visit_tb_order_latex, depart_tb_order_latex),
@@ -491,7 +577,9 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_directive("tb-hit", TbClickHitDirective)
     app.add_directive("tb-miss", TbClickMissDirective)
     app.add_directive("tb-file", TbFileDirective)
+    app.add_directive("tb-formula", TbFormulaDirective)
     app.add_directive("tb-match", TbMatchDirective)
+    app.add_directive("tb-micro-parsons", TbMicroParsonsDirective)
     app.add_directive("tb-order", TbOrderDirective)
     app.add_directive("tb-parsons", TbParsonsDirective)
     app.add_directive("tb-reveal", TbRevealDirective)
@@ -513,7 +601,9 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_css_file("tb-choice.css")
     app.add_css_file("tb-click.css")
     app.add_css_file("tb-file.css")
+    app.add_css_file("tb-formula.css")
     app.add_css_file("tb-match.css")
+    app.add_css_file("tb-micro-parsons.css")
     app.add_css_file("tb-order.css")
     app.add_css_file("tb-parsons.css")
     app.add_css_file("tb-video.css")
@@ -524,7 +614,9 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_js_file("tb-choice.js", loading_method="defer")
     app.add_js_file("tb-click.js", loading_method="defer")
     app.add_js_file("tb-file.js", loading_method="defer")
+    app.add_js_file("tb-formula.js", loading_method="defer")
     app.add_js_file("tb-match.js", loading_method="defer")
+    app.add_js_file("tb-micro-parsons.js", loading_method="defer")
     app.add_js_file("tb-order.js", loading_method="defer")
     app.add_js_file("tb-parsons.js", loading_method="defer")
     app.add_js_file("tb-video.js", loading_method="defer")
