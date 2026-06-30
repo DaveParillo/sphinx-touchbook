@@ -6,10 +6,28 @@ build-backend = "hatchling.build"
 name = "sphinx-touchbook"
 version = "0.1.0"
 description = "Sphinx directives and Web Components for interactive textbook content."
+readme = "README.md"
 requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Dave Parillo", email="dparillo@sdccd.edu" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Sphinx :: Extension",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Documentation :: Sphinx",
+    "Topic :: Education",
+]
 dependencies = [
     "Sphinx>=7",
 ]
+
+[project.urls]
+Homepage = "https://github.com/DaveParillo/sphinx-touchbook"
+Issues = "https://github.com/DaveParillo/sphinx-touchbook/issues"
 
 [project.optional-dependencies]
 test = [
@@ -20,7 +38,34 @@ docs = [
     "Sphinx>=7",
     "sphinx-nefertiti",
 ]
+publish = [
+    "build",
+    "hatchling",
+    "twine",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.hatch.build]
+exclude = [
+    "**/.DS_Store",
+    "**/__pycache__",
+    "**/*.pyc",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/LICENSE",
+    "/README.md",
+    "/pyproject.toml",
+    "/src",
+    "/tests",
+    "/docs",
+    "/package.json",
+    "/package-lock.json",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sphinx_touchbook"]

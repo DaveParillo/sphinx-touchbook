@@ -9,12 +9,6 @@ Authors write semantic reStructuredText directives, Sphinx parses them into
 docutils nodes, Python generators render builder-specific output, and
 JavaScript components progressively enhance the generated HTML.
 
-The project is built around a three-layer model:
-
-- Sphinx directives and transforms parse author intent and store semantic data.
-- Python generators render HTML, text, LaTeX-oriented output, and static fallbacks.
-- JavaScript components add browser behavior,
-
 This project is inspired by
 [Runestone Interactive](https://github.com/RunestoneInteractive),
 which pioneered interactive textbook components for computer science education.
@@ -34,15 +28,15 @@ To build documents Python is required.
 Create and activate a virtual environment:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
 Install the Python package with test and documentation dependencies:
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install ".[test,docs]"
+python3 -m pip install --upgrade pip
+python3 -m pip install ".[test,docs]"
 ```
 
 To test documents Node.js with `npm` is required.
@@ -58,7 +52,7 @@ npm ci
 Build the author guide as HTML:
 
 ```bash
-python -m sphinx -b html docs build/authorguide --fail-on-warning
+python3 -m sphinx -b html docs build/authorguide --fail-on-warning
 ```
 
 The generated site starts at:
@@ -73,7 +67,7 @@ compatible with Sphinx, or a docker image:
 Build LaTeX source locally:
 
 ```bash
-python -m sphinx -b latex docs build/latex --fail-on-warning
+python3 -m sphinx -b latex docs build/latex --fail-on-warning
 ```
 
 Build the author guide PDF with the Sphinx LaTeX container:
@@ -83,7 +77,7 @@ docker run --rm \
   -v "$PWD:/docs" \
   -w /docs \
   sphinxdoc/sphinx-latexpdf:latest \
-  sh -c 'python -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
+  sh -c 'python3 -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
 ```
 
 ## Run Tests
@@ -91,7 +85,7 @@ docker run --rm \
 Run the Python directive and generator tests:
 
 ```bash
-python -m pytest tests/test_*.py
+python3 -m pytest tests/test_*.py
 ```
 
 Run isolated JavaScript component tests:
@@ -99,15 +93,6 @@ Run isolated JavaScript component tests:
 ```bash
 npm run test:web-components
 ```
-
-## Current Directives
-
-The current extension includes:
-
-- `tb-reveal`: hidden content that can be revealed inline or in a modal.
-- `tb-group`: grouped tab-like content.
-- `tb-code`: code listings that can be edited, compiled, and run through a configured execution service.
-- `tb-file`: simulated local files that can be displayed, hidden, or prepared for later execution use.
 
 See the author guide in `docs/` for directive syntax, options, examples,
 accessibility notes, and fallback behavior.
