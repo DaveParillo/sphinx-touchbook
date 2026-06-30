@@ -91,6 +91,23 @@ describe("tb-group Web Component", () => {
     expect(tabs[0].getAttribute("aria-selected")).toBe("true");
   });
 
+  it("focuses a tab on pointer activation before keyboard navigation", () => {
+    const element = appendGroup();
+    const tabs = ownTabs(element);
+    const panels = ownPanels(element);
+
+    tabs[1].dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    expect(document.activeElement).toBe(tabs[1]);
+
+    click(tabs[1]);
+    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+    expect(panels[1].hidden).toBe(false);
+
+    keydown(tabs[1], "ArrowRight");
+    expect(tabs[2].getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[2]);
+  });
+
   it("keeps a nested group selected when its enclosing tab is selected", () => {
     const outer = document.createElement("tb-group");
     outer.id = "outer-tabs";

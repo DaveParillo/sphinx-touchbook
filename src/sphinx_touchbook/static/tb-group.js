@@ -49,6 +49,8 @@ class TbGroup extends HTMLElement {
         }
       }
 
+      button.addEventListener("pointerdown", () => button.focus());
+      button.addEventListener("mousedown", () => button.focus());
       button.addEventListener("click", () => this.selectTab(index));
       button.addEventListener("keydown", (event) => this.onKeydown(event, index));
 
