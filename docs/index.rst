@@ -10,7 +10,7 @@ Sphinx Touchbook Author Guide
 
    intro
    directives
+   accessibility
 
 
 Download the `PDF version <_downloads/sphinxtouchbookauthorguide.pdf>`__.
-
