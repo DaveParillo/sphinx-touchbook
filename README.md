@@ -32,11 +32,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Install the Python package with test and documentation dependencies:
+Install the Python package with test, documentation build and publish to pypi
+dependencies:
 
 ```bash
 python3 -m pip install --upgrade pip
-python3 -m pip install ".[test,docs]"
+python3 -m pip install -e '.[test,docs,publish]'
 ```
 
 To test documents Node.js with `npm` is required.
@@ -80,6 +81,10 @@ docker run --rm \
   sh -c 'python3 -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
 ```
 
+
+See the author guide in `docs/` for directive syntax, options, examples,
+accessibility notes, and fallback behavior.
+
 ## Run Tests
 
 Run the Python directive and generator tests:
@@ -94,5 +99,10 @@ Run isolated JavaScript component tests:
 npm run test:web-components
 ```
 
-See the author guide in `docs/` for directive syntax, options, examples,
-accessibility notes, and fallback behavior.
+## Build install package
+
+```bash
+  python3 -m build
+  python3 -m twine check dist/*
+```
+
