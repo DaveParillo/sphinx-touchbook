@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 project = 'Sphinx Touchbook Author Guide'
 author = 'Dave Parillo'
 project_copyright = '2026, ' + author
-version = '0.1.0'
+version = '0.1.1'
 release = version + '-alpha'
 
 

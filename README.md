@@ -1,4 +1,5 @@
 # sphinx-touchbook
+[![PyPI](https://img.shields.io/pypi/v/sphinx-touchbook.svg)](https://pypi.org/project/sphinx-touchbook/)
 [![Tests](https://img.shields.io/github/actions/workflow/status/daveparillo/sphinx-touchbook/publish-authorguide.yml?branch=main&label=tests)](https://github.com/daveparillo/sphinx-touchbook/actions/workflows/publish-authorguide.yml)
 [![Author Guide](https://img.shields.io/github/actions/workflow/status/daveparillo/sphinx-touchbook/publish-authorguide.yml?branch=main&label=docs)](https://github.com/daveparillo/sphinx-touchbook/actions/workflows/publish-authorguide.yml)
 [![License](https://img.shields.io/badge/license-BSD--2--Clause-blue)](LICENSE)
