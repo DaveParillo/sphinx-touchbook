@@ -16,7 +16,7 @@ import re
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
 
-from sphinx_touchbook.directives.common import assign_node_id
+from sphinx_touchbook.directives.common import assign_node_id, class_names
 from sphinx_touchbook.nodes import (
     TbClickNode,
     TbClickPromptNode,
@@ -175,12 +175,17 @@ class TbClickRegionDirective(Directive):
     required_arguments = 1
     optional_arguments = 0
     final_argument_whitespace = True
+    option_spec = {
+        "class": directives.class_option,
+    }
 
     correct = False
 
     def run(self):
         self.assert_has_content()
         node = TbClickRegionNode()
+        if "class" in self.options:
+            node["classes"].extend(class_names(self.options["class"]))
         node["selector"] = self.arguments[0].strip()
         node["correct"] = self.correct
         self.state.nested_parse(self.content, self.content_offset, node)
@@ -205,6 +210,7 @@ class TbClickDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = False
     option_spec = {
+        "class": directives.class_option,
         "name": directives.unchanged_required,
         "show-hints": directives.flag,
     }

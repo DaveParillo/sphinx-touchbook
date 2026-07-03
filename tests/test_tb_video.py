@@ -390,6 +390,7 @@ Title
 
     latex = read_latex_output(outdir)
     assert "Video URL: https://vimeo.com/486845755" in latex
+    assert "Video URL: https://vimeo.com/486845755\n\\par\n\\textbf{Notes.}" in latex
     assert "Notes for the lecture video." in latex
     assert r"\begin{sphinxadmonition}{note}{Video}" in latex
 

@@ -13,6 +13,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.generators.common import html_class_attr
 from sphinx_touchbook.nodes import TbFormulaNode, TbFormulaPromptNode, TbFormulaVariableNode
 
 
@@ -20,10 +21,33 @@ def _node_id(node: TbFormulaNode) -> str:
     return node["ids"][0]
 
 
+def _formula_parent(node: nodes.Node) -> TbFormulaNode | None:
+    parent = node.parent
+    while parent is not None:
+        if isinstance(parent, TbFormulaNode):
+            return parent
+        parent = parent.parent
+    return None
+
+
+def _static_variable_value(node: TbFormulaVariableNode) -> str:
+    parent = _formula_parent(node)
+    if parent is None:
+        return "____"
+    spec = parent.get("variables", {}).get(node["name"])
+    if spec is None:
+        return "____"
+
+    value = (float(spec["min"]) + float(spec["max"])) / 2
+    if spec.get("integer"):
+        return str(round(value))
+    return f"{value:g}"
+
+
 def visit_tb_formula_html(self: HTML5Translator, node: TbFormulaNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     endpoint = escape(str(self.config.tb_formula_default_endpoint), quote=True)
-    self.body.append(f'<tb-formula id="{node_id}" data-endpoint="{endpoint}">\n')
+    self.body.append(f'<tb-formula id="{node_id}"{html_class_attr(node)} data-endpoint="{endpoint}">\n')
 
 
 def depart_tb_formula_html(self: HTML5Translator, node: TbFormulaNode) -> None:
@@ -66,11 +90,11 @@ def depart_tb_formula_variable_html(self: HTML5Translator, node: TbFormulaVariab
 
 
 def visit_tb_formula_latex(self: LaTeXTranslator, node: TbFormulaNode) -> None:
-    self.body.append("\n\\begin{sphinxadmonition}{note}{Calculated formula}\n")
+    self.body.append("\n\\subsubsection*{Calculated formula}\n")
 
 
 def depart_tb_formula_latex(self: LaTeXTranslator, node: TbFormulaNode) -> None:
-    self.body.append("\n\\underline{\\hspace{2cm}}\n\\end{sphinxadmonition}\n")
+    self.body.append("\n\\underline{\\hspace{2cm}}\n")
 
 
 def visit_tb_formula_prompt_latex(self: LaTeXTranslator, node: TbFormulaPromptNode) -> None:
@@ -82,7 +106,7 @@ def depart_tb_formula_prompt_latex(self: LaTeXTranslator, node: TbFormulaPromptN
 
 
 def visit_tb_formula_variable_latex(self: LaTeXTranslator, node: TbFormulaVariableNode) -> None:
-    self.body.append(r"\underline{\hspace{1cm}}")
+    self.body.append(self.encode(_static_variable_value(node)))
     raise nodes.SkipNode
 
 
@@ -107,7 +131,7 @@ def depart_tb_formula_prompt_text(self: TextTranslator, node: TbFormulaPromptNod
 
 
 def visit_tb_formula_variable_text(self: TextTranslator, node: TbFormulaVariableNode) -> None:
-    self.add_text("____")
+    self.add_text(_static_variable_value(node))
     raise nodes.SkipNode
 
 

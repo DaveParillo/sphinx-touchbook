@@ -236,9 +236,16 @@ Title
     )
 
     latex = read_latex_output(outdir)
-    assert r"\begin{sphinxadmonition}{note}{Matching question}" in latex
+    assert r"\subsubsection*{Matching question}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Matching question}" not in latex
     assert "Match each term" in latex
-    assert r"\textbf{Sources}" in latex
+    assert r"\begin{tabular}{@{}p{0.42\linewidth}p{0.52\linewidth}@{}}" in latex
+    assert r"\textbf{Sources} & \textbf{Targets}" not in latex
+    assert r"\begin{itemize}" not in latex
+    assert r"\begin{enumerate}" not in latex
+    assert r"\textbf{A.} compiler" in latex
+    assert r"\textbf{B.} interpreter" in latex
+    assert r"\textbf{C.} linker" in latex
+    assert r"\underline{\hspace{1.5em}} Combines object files into a program." in latex
     assert "compiler" in latex
-    assert r"\textbf{Targets}" in latex
     assert "Translates source code into executable code." in latex

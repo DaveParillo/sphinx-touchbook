@@ -28,6 +28,7 @@ class TbParsonsDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = False
     option_spec = {
+        "class": directives.class_option,
         "name": directives.unchanged_required,
         "no-indent": directives.flag,
     }

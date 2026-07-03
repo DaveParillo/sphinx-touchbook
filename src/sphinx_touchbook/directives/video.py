@@ -209,6 +209,7 @@ class TbVideoDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = True
     option_spec = {
+        "class": directives.class_option,
         "name": directives.unchanged_required,
         "width": directives.length_or_percentage_or_unitless,
         "height": directives.length_or_percentage_or_unitless,

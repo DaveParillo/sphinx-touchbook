@@ -222,5 +222,6 @@ Title
     )
 
     latex = read_latex_output(outdir)
-    assert r"\begin{sphinxadmonition}{note}{Ordering question}" in latex
+    assert r"\subsubsection*{Ordering question}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Ordering question}" not in latex
     assert "Wake up" in latex

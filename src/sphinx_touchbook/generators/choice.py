@@ -16,6 +16,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.generators.common import html_class_attr
 from sphinx_touchbook.nodes import (
     TbChoiceAnswerNode,
     TbChoiceFeedbackNode,
@@ -34,14 +35,14 @@ def _choice_text_marker(node: TbChoiceOptionNode) -> str:
 
 
 def _choice_latex_marker(node: TbChoiceOptionNode) -> str:
-    return r"$\square$" if node.parent["multiple"] else r"$\circ$"
+    return r"$\square$" if node.parent["multiple"] else r"$\bigcirc$"
 
 
 def visit_tb_choice_html(self: HTML5Translator, node: TbChoiceNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     mode = "multiple" if node["multiple"] else "single"
     random_attr = ' random="true"' if node.get("random") else ""
-    self.body.append(f'<tb-choice id="{node_id}" mode="{mode}"{random_attr}>\n')
+    self.body.append(f'<tb-choice id="{node_id}"{html_class_attr(node)} mode="{mode}"{random_attr}>\n')
 
 
 def depart_tb_choice_html(self: HTML5Translator, node: TbChoiceNode) -> None:
@@ -106,11 +107,11 @@ def depart_tb_choice_feedback_html(self: HTML5Translator, node: TbChoiceFeedback
 
 
 def visit_tb_choice_latex(self: LaTeXTranslator, node: TbChoiceNode) -> None:
-    self.body.append("\n\\begin{sphinxadmonition}{note}{Question}\n")
+    self.body.append("\n\\subsubsection*{Question}\n")
 
 
 def depart_tb_choice_latex(self: LaTeXTranslator, node: TbChoiceNode) -> None:
-    self.body.append("\n\\end{itemize}\n\\end{sphinxadmonition}\n")
+    self.body.append("\n\\end{itemize}\n")
 
 
 def visit_tb_choice_prompt_latex(self: LaTeXTranslator, node: TbChoicePromptNode) -> None:

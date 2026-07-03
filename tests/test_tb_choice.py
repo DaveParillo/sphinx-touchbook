@@ -479,10 +479,11 @@ Title
     )
 
     latex = read_latex_output(outdir)
-    assert r"\begin{sphinxadmonition}{note}{Question}" in latex
+    assert r"\subsubsection*{Question}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Question}" not in latex
     assert "What is the result of comparing" in latex
     assert r"\begin{itemize}" in latex
-    assert r"\item[$\circ$]" in latex
+    assert r"\item[$\bigcirc$]" in latex
     assert r"\item[$\square$]" not in latex
     assert "negative" in latex
     assert "positive" in latex
@@ -539,6 +540,6 @@ Title
 
     latex = read_latex_output(outdir)
     assert r"\item[$\square$]" in latex
-    assert r"\item[$\circ$]" not in latex
+    assert r"\item[$\bigcirc$]" not in latex
     assert "Green" in latex
     assert "Gray" in latex

@@ -14,6 +14,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.generators.common import html_class_attr
 from sphinx_touchbook.nodes import (
     TbMatchDistractorNode,
     TbMatchNode,
@@ -61,9 +62,24 @@ def _append_children(visitor, parent: nodes.Element) -> None:
         child.walkabout(visitor)
 
 
+def _letter_label(index: int) -> str:
+    label = ""
+    current = index
+    while True:
+        current, remainder = divmod(current, 26)
+        label = chr(ord("A") + remainder) + label
+        if current == 0:
+            return label
+        current -= 1
+
+
+def _latex_cell_text(visitor: LaTeXTranslator, text: str) -> str:
+    return visitor.encode(" ".join(text.split()))
+
+
 def visit_tb_match_html(self: HTML5Translator, node: TbMatchNode) -> None:
     node_id = escape(_node_id(node), quote=True)
-    self.body.append(f'<tb-match id="{node_id}">\n')
+    self.body.append(f'<tb-match id="{node_id}"{html_class_attr(node)}>\n')
 
 
 def depart_tb_match_html(self: HTML5Translator, node: TbMatchNode) -> None:
@@ -130,28 +146,35 @@ def depart_tb_match_target_html(self: HTML5Translator, node: TbMatchTargetNode) 
 
 
 def visit_tb_match_latex(self: LaTeXTranslator, node: TbMatchNode) -> None:
-    self.body.append("\n\\begin{sphinxadmonition}{note}{Matching question}\n")
+    self.body.append("\n\\subsubsection*{Matching question}\n")
 
 
 def depart_tb_match_latex(self: LaTeXTranslator, node: TbMatchNode) -> None:
-    self.body.append("\n\\textbf{Sources}\\par\n\\begin{itemize}\n")
-    for pair in _source_order(node):
-        source = next(child for child in pair.children if isinstance(child, TbMatchSourceNode))
-        self.body.append("\\item ")
-        self.body.append(self.encode(source.astext()))
-        self.body.append("\n")
-    self.body.append("\\end{itemize}\n\\textbf{Targets}\\par\n\\begin{enumerate}\n")
-    for pair in _pair_nodes(node):
-        target = next(child for child in pair.children if isinstance(child, TbMatchTargetNode))
-        self.body.append("\\item ")
-        self.body.append(self.encode(target.astext()))
-        self.body.append("\n")
-    for distractor in _distractor_nodes(node):
-        self.body.append("\\item ")
-        self.body.append(self.encode(distractor.astext()))
-        self.body.append("\n")
-    self.body.append("\\end{enumerate}\n")
-    self.body.append("\n\\end{sphinxadmonition}\n")
+    sources = [
+        (_letter_label(index), _source_text(pair))
+        for index, pair in enumerate(_source_order(node))
+    ]
+    targets = [target for _, target in _option_values(node)]
+    row_count = max(len(sources), len(targets))
+
+    self.body.append(
+        "\n\\noindent\\begin{tabular}{@{}p{0.42\\linewidth}p{0.52\\linewidth}@{}}\n"
+    )
+    for index in range(row_count):
+        if index < len(sources):
+            label, source = sources[index]
+            source_cell = f"\\textbf{{{label}.}} {_latex_cell_text(self, source)}"
+        else:
+            source_cell = ""
+
+        if index < len(targets):
+            target = _latex_cell_text(self, targets[index])
+            target_cell = f"\\underline{{\\hspace{{1.5em}}}} {target}"
+        else:
+            target_cell = ""
+
+        self.body.append(f"{source_cell} & {target_cell}\\\\[0.45em]\n")
+    self.body.append("\\end{tabular}\n")
 
 
 def visit_tb_match_prompt_latex(self: LaTeXTranslator, node: TbMatchPromptNode) -> None:

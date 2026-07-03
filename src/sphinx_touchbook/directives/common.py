@@ -7,6 +7,18 @@ Shared directive helpers.
 from __future__ import annotations
 
 from docutils import nodes
+from docutils.parsers.rst import directives
+
+
+def class_names(value) -> list[str]:
+    if isinstance(value, str):
+        return directives.class_option(value)
+    if isinstance(value, (list, tuple)):
+        classes: list[str] = []
+        for item in value:
+            classes.extend(class_names(item))
+        return classes
+    return directives.class_option(str(value))
 
 
 def assign_node_id(directive, node: nodes.Element) -> None:
@@ -22,3 +34,6 @@ def assign_node_id(directive, node: nodes.Element) -> None:
         directive.state.document.note_explicit_target(node, node)
     else:
         directive.state.document.set_id(node)
+
+    if "class" in directive.options:
+        node["classes"].extend(class_names(directive.options["class"]))

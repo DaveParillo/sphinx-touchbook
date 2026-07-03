@@ -86,6 +86,8 @@ class TbFileDirective(Directive):
     optional_arguments = 1
     final_argument_whitespace = True
     option_spec = {
+        "caption": directives.unchanged,
+        "class": directives.class_option,
         "filename": validate_filename,
         "name": directives.unchanged,
         "hidden": directives.flag,
@@ -101,6 +103,7 @@ class TbFileDirective(Directive):
         node = TbFileNode()
         assign_node_id(self, node)
         node["filename"] = self.options["filename"]
+        node["caption"] = self.options.get("caption")
         node["hidden"] = "hidden" in self.options
         node["source_path"] = None
         node["mime_type"] = _mime_type(node["filename"], None)

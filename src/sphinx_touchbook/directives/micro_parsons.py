@@ -26,6 +26,7 @@ class TbMicroParsonsDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = False
     option_spec = {
+        "class": directives.class_option,
         "distractor": directives.unchanged,
         "name": directives.unchanged_required,
     }

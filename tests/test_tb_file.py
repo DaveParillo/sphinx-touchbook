@@ -96,9 +96,25 @@ def test_directive_parses_inline_text_file():
     assert node["ids"] == ["sample-file"]
     assert node["names"] == ["sample-file"]
     assert node["filename"] == "data/input.txt"
+    assert node["caption"] is None
     assert node["content"] == "Alice\nBob"
     assert node["is_text"] is True
     assert node["editable"] is True
+
+
+def test_directive_parses_caption():
+    document = parse_rst(
+        """
+.. tb-file::
+   :filename: data/input.txt
+   :caption: Sample input data
+
+   Alice
+"""
+    )
+
+    node = next(document.findall(TbFileNode))
+    assert node["caption"] == "Sample input data"
 
 
 def test_directive_rejects_invalid_filenames():
@@ -188,6 +204,7 @@ Title
     assert element.find("pre", class_="tb-file__content").get_text(strip=True) == "Alice Bob"
     config = json.loads(element.find("script", class_="tb-file__config").string)
     assert config["filename"] == "input.txt"
+    assert config["caption"] is None
     assert config["content"] == "Alice Bob"
     assert config["isText"] is True
     assert config["editable"] is True
@@ -195,6 +212,32 @@ Title
     assert (outdir / "_static" / "tb-file.css").exists()
     assert "tb-file.js" in html
     assert "tb-file.css" in html
+
+
+def test_html_build_uses_caption_for_visible_text_file_label(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "html",
+        {
+            "index.rst": """
+Title
+=====
+
+.. tb-file::
+   :filename: input.txt
+   :caption: Example input file
+
+   Alice Bob
+""",
+        },
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    element = soup.find("tb-file")
+    assert element.find("figcaption", class_="tb-file__caption").get_text(strip=True) == "Example input file"
+    config = json.loads(element.find("script", class_="tb-file__config").string)
+    assert config["filename"] == "input.txt"
+    assert config["caption"] == "Example input file"
 
 
 def test_registry_contains_visible_text_file_metadata(tmp_path):
@@ -522,6 +565,34 @@ Title
 
     latex = read_latex_output(outdir)
     assert "input.txt" in latex
+    assert "Alice" in latex
+    assert r"\begin{sphinxadmonition}{note}{input.txt}" not in latex
+    assert r"\sphinxSetupCaptionForVerbatim{input.txt}" in latex
+    assert r"\begin{sphinxVerbatim}[commandchars=\\\{\}]" in latex
+
+
+def test_latex_builder_renders_text_file_as_captioned_listing(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "latex",
+        {
+            "index.rst": """
+Title
+=====
+
+.. tb-file::
+   :filename: input.txt
+   :caption: Example input file
+
+   Alice
+""",
+        },
+    )
+
+    latex = read_latex_output(outdir)
+    assert r"\sphinxSetupCaptionForVerbatim{Example input file}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Example input file}" not in latex
+    assert r"\begin{sphinxVerbatim}[commandchars=\\\{\}]" in latex
     assert "Alice" in latex
 
 

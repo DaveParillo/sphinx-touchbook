@@ -44,6 +44,7 @@ class TbBlankDirective(Directive):
     final_argument_whitespace = False
     option_spec = {
         "case-sensitive": directives.flag,
+        "class": directives.class_option,
         "name": directives.unchanged_required,
         "preserve-whitespace": directives.flag,
     }

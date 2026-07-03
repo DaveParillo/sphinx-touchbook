@@ -16,6 +16,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.generators.common import html_class_attr
 from sphinx_touchbook.nodes import TbRevealNode
 
 
@@ -33,6 +34,9 @@ def _attrs(node: TbRevealNode) -> str:
     parts = [f'{name}="{escape(value, quote=True)}"' for name, value in attrs.items()]
     if node["modal"]:
         parts.append("modal")
+    class_attr = html_class_attr(node)
+    if class_attr:
+        parts.append(class_attr.strip())
     return " ".join(parts)
 
 

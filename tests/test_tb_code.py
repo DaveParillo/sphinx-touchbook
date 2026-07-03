@@ -787,6 +787,8 @@ Title
 
     latex = read_latex_output(outdir)
     assert "Static listing" in latex
+    assert r"\sphinxSetupCaptionForVerbatim{Static listing}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Static listing}" not in latex
     assert r"\begin{sphinxVerbatim}" in latex
     assert r"\PYG" in latex
     assert "Hello" in latex

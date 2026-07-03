@@ -12,6 +12,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.generators.common import html_class_attr
 from sphinx_touchbook.nodes import (
     TbMicroParsonsNode,
     TbMicroParsonsPromptNode,
@@ -34,7 +35,7 @@ def _display_order(node: TbMicroParsonsNode) -> list[TbMicroParsonsTokenNode]:
 def visit_tb_micro_parsons_html(self: HTML5Translator, node: TbMicroParsonsNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     has_distractors = "true" if node["has_distractors"] else "false"
-    self.body.append(f'<tb-micro-parsons id="{node_id}" data-has-distractors="{has_distractors}">\n')
+    self.body.append(f'<tb-micro-parsons id="{node_id}"{html_class_attr(node)} data-has-distractors="{has_distractors}">\n')
 
 
 def depart_tb_micro_parsons_html(self: HTML5Translator, node: TbMicroParsonsNode) -> None:
@@ -90,17 +91,15 @@ def depart_tb_micro_parsons_prompt_html(self: HTML5Translator, node: TbMicroPars
 
 
 def visit_tb_micro_parsons_latex(self: LaTeXTranslator, node: TbMicroParsonsNode) -> None:
-    self.body.append("\n\\begin{sphinxadmonition}{note}{Micro Parsons problem}\n")
+    self.body.append("\n\\subsubsection*{Micro Parsons problem}\n")
 
 
 def depart_tb_micro_parsons_latex(self: LaTeXTranslator, node: TbMicroParsonsNode) -> None:
-    self.body.append("\n\\textbf{Tokens}\\par\n\\begin{itemize}\n")
-    for token in _display_order(node):
-        self.body.append("\\item ")
-        self.body.append(self.encode(token.astext()))
-        self.body.append("\n")
-    self.body.append("\\end{itemize}\n\\textbf{Answer:} \\underline{\\hspace{6cm}}\n")
-    self.body.append("\\end{sphinxadmonition}\n")
+    tokens = " ".join(token.astext() for token in _display_order(node))
+    self.body.append("\n\\textbf{Tokens}\\par\n")
+    self.body.append("\\begin{sphinxVerbatim}[commandchars=\\\\\\{\\}]\n")
+    self.body.append(self.encode(tokens))
+    self.body.append("\n\\end{sphinxVerbatim}\n\\textbf{Answer:} \\underline{\\hspace{6cm}}\n")
 
 
 def visit_tb_micro_parsons_token_latex(self: LaTeXTranslator, node: TbMicroParsonsTokenNode) -> None:

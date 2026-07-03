@@ -182,6 +182,7 @@ Title
     )
 
     latex = read_latex_output(outdir)
-    assert r"\begin{sphinxadmonition}{note}{Fill in the blank}" in latex
+    assert r"\subsubsection*{Fill in the blank}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Fill in the blank}" not in latex
     assert r"\underline{\hspace{2cm}}" in latex
     assert "Paris" not in latex

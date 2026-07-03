@@ -14,6 +14,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.generators.common import html_class_attr
 from sphinx_touchbook.nodes import (
     TbClickNode,
     TbClickPromptNode,
@@ -52,7 +53,7 @@ def _annotated_source_html(node: TbClickSourceNode) -> str:
 def visit_tb_click_html(self: HTML5Translator, node: TbClickNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     hints = escape(node.get("hints", "false"), quote=True)
-    self.body.append(f'<tb-click id="{node_id}" hints="{hints}">\n')
+    self.body.append(f'<tb-click id="{node_id}"{html_class_attr(node)} hints="{hints}">\n')
 
 
 def depart_tb_click_html(self: HTML5Translator, node: TbClickNode) -> None:
@@ -90,8 +91,11 @@ def depart_tb_click_source_html(self: HTML5Translator, node: TbClickSourceNode) 
 def visit_tb_click_region_html(self: HTML5Translator, node: TbClickRegionNode) -> None:
     feedback_id = escape(f"{_node_id(node.parent)}-feedback-{node['index']}", quote=True)
     correct = "true" if node["correct"] else "false"
+    classes = "tb-click__feedback"
+    if node.get("classes"):
+        classes += " " + " ".join(escape(name, quote=True) for name in node["classes"])
     self.body.append(
-        f'<div id="{feedback_id}" class="tb-click__feedback" '
+        f'<div id="{feedback_id}" class="{classes}" '
         f'data-correct="{correct}" hidden>\n'
     )
 
@@ -101,11 +105,11 @@ def depart_tb_click_region_html(self: HTML5Translator, node: TbClickRegionNode) 
 
 
 def visit_tb_click_latex(self: LaTeXTranslator, node: TbClickNode) -> None:
-    self.body.append("\n\\begin{sphinxadmonition}{note}{Click question}\n")
+    self.body.append("\n\\subsubsection*{Click question}\n")
 
 
 def depart_tb_click_latex(self: LaTeXTranslator, node: TbClickNode) -> None:
-    self.body.append("\n\\end{sphinxadmonition}\n")
+    self.body.append("\n")
 
 
 def visit_tb_click_prompt_latex(self: LaTeXTranslator, node: TbClickPromptNode) -> None:

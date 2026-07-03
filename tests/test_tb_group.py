@@ -58,6 +58,12 @@ def build_sphinx(tmp_path: Path, builder: str, index: str) -> Path:
     return outdir
 
 
+def read_latex_output(outdir: Path) -> str:
+    tex_files = list(outdir.glob("*.tex"))
+    assert tex_files
+    return tex_files[0].read_text(encoding="utf-8")
+
+
 def test_directives_parse_semantic_nodes_without_group_id():
     document = parse_rst(
         """
@@ -209,6 +215,33 @@ Title
     assert "First content." in text
     assert "Second" in text
     assert "Second content." in text
+
+
+def test_latex_builder_uses_rubrics_for_tabs(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "latex",
+        """
+Title
+=====
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      Source content.
+
+   .. tb-tab:: Rendered
+
+      Rendered content.
+""",
+    )
+
+    latex = read_latex_output(outdir)
+    assert r"\subsubsection*{Source}" in latex
+    assert r"\subsubsection*{Rendered}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Source}" not in latex
+    assert r"\begin{sphinxadmonition}{note}{Rendered}" not in latex
 
 
 def test_web_component_asset_defines_custom_element():

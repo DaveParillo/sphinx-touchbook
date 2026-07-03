@@ -12,6 +12,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.generators.common import html_class_attr
 from sphinx_touchbook.nodes import TbParsonsItemNode, TbParsonsNode, TbParsonsPromptNode
 
 
@@ -31,7 +32,7 @@ def visit_tb_parsons_html(self: HTML5Translator, node: TbParsonsNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     no_indent = "true" if node["no_indent"] else "false"
     language = escape(node.get("language", ""), quote=True)
-    self.body.append(f'<tb-parsons id="{node_id}" data-no-indent="{no_indent}" data-language="{language}">\n')
+    self.body.append(f'<tb-parsons id="{node_id}"{html_class_attr(node)} data-no-indent="{no_indent}" data-language="{language}">\n')
 
 
 def depart_tb_parsons_html(self: HTML5Translator, node: TbParsonsNode) -> None:
@@ -99,16 +100,15 @@ def depart_tb_parsons_prompt_html(self: HTML5Translator, node: TbParsonsPromptNo
 
 
 def visit_tb_parsons_latex(self: LaTeXTranslator, node: TbParsonsNode) -> None:
-    self.body.append("\n\\begin{sphinxadmonition}{note}{Parsons problem}\n")
+    self.body.append("\n\\subsubsection*{Parsons problem}\n")
 
 
 def depart_tb_parsons_latex(self: LaTeXTranslator, node: TbParsonsNode) -> None:
-    self.body.append("\n\\textbf{Code fragments}\\par\n\\begin{itemize}\n")
-    for item in _display_order(node):
-        self.body.append("\\item \\sphinxcode{")
-        self.body.append(self.encode(item["code"]))
-        self.body.append("}\n")
-    self.body.append("\\end{itemize}\n\\end{sphinxadmonition}\n")
+    fragments = "\n\n".join(item["code"] for item in _display_order(node))
+    self.body.append("\n\\textbf{Code fragments}\\par\n")
+    self.body.append("\\begin{sphinxVerbatim}[commandchars=\\\\\\{\\}]\n")
+    self.body.append(self.encode(fragments))
+    self.body.append("\n\\end{sphinxVerbatim}\n")
 
 
 def visit_tb_parsons_item_latex(self: LaTeXTranslator, node: TbParsonsItemNode) -> None:

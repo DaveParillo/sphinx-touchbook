@@ -273,5 +273,9 @@ Title
     )
 
     latex = read_latex_output(outdir)
-    assert r"\begin{sphinxadmonition}{note}{Parsons problem}" in latex
+    assert r"\subsubsection*{Parsons problem}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Parsons problem}" not in latex
+    assert r"\begin{itemize}" not in latex
+    assert r"\item \sphinxcode" not in latex
+    assert r"\begin{sphinxVerbatim}[commandchars=\\\{\}]" in latex
     assert "return curmax" in latex

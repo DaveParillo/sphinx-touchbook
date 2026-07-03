@@ -62,6 +62,7 @@ class TbChoiceDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = False
     option_spec = {
+        "class": directives.class_option,
         "force-multiple": directives.flag,
         "name": directives.unchanged_required,
         "random": directives.flag,

@@ -271,8 +271,9 @@ Title
 
     text = (outdir / "index.txt").read_text(encoding="utf-8")
     assert "[Calculated formula]" in text
-    assert "small glass can hold" in text
-    assert "____" in text
+    assert "small glass can hold 85 ounces of water" in text
+    assert "hold 15 ounces of water" in text
+    assert "Answer: ________" in text
     assert "4 * y + 3 * x" not in text
 
 
@@ -289,6 +290,10 @@ Title
     )
 
     latex = read_latex_output(outdir)
-    assert r"\begin{sphinxadmonition}{note}{Calculated formula}" in latex
-    assert r"\underline{\hspace{1cm}}" in latex
+    assert r"\subsubsection*{Calculated formula}" in latex
+    assert r"\begin{sphinxadmonition}{note}{Calculated formula}" not in latex
+    assert "small glass can hold 85 ounces of water" in latex
+    assert "hold 15 ounces of water" in latex
+    assert r"\underline{\hspace{1cm}}" not in latex
+    assert r"\underline{\hspace{2cm}}" in latex
     assert "4 * y + 3 * x" not in latex

@@ -17,11 +17,16 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.generators.common import html_class_attr
 from sphinx_touchbook.nodes import TbFileNode
 
 
 def _node_id(node: TbFileNode) -> str:
     return node["ids"][0]
+
+
+def _caption(node: TbFileNode) -> str:
+    return node.get("caption") or node["filename"]
 
 
 def _config(node: TbFileNode) -> dict[str, object]:
@@ -32,6 +37,7 @@ def _config(node: TbFileNode) -> dict[str, object]:
         "isText": node["is_text"],
         "dataUrl": node.get("data_url"),
         "editable": node["editable"],
+        "caption": node.get("caption"),
         "editLabel": "Edit",
         "hideEditLabel": "Hide editor",
     }
@@ -42,10 +48,11 @@ def visit_tb_file_html(self: HTML5Translator, node: TbFileNode) -> None:
         raise nodes.SkipNode
     node_id = escape(_node_id(node), quote=True)
     filename = escape(node["filename"], quote=True)
+    caption = escape(_caption(node))
     editable = "true" if node["editable"] else "false"
-    self.body.append(f'<tb-file id="{node_id}" filename="{filename}" editable="{editable}">\n')
+    self.body.append(f'<tb-file id="{node_id}"{html_class_attr(node)} filename="{filename}" editable="{editable}">\n')
     self.body.append('<figure class="tb-file__fallback">\n')
-    self.body.append(f'<figcaption class="tb-file__caption">{escape(node["filename"])}</figcaption>\n')
+    self.body.append(f'<figcaption class="tb-file__caption">{caption}</figcaption>\n')
     if node["is_text"]:
         self.body.append(f'<pre class="tb-file__content"><code>{escape(node.get("content", ""))}</code></pre>\n')
     elif node["mime_type"].startswith("image/"):
@@ -66,26 +73,24 @@ def depart_tb_file_html(self: HTML5Translator, node: TbFileNode) -> None:
 def visit_tb_file_latex(self: LaTeXTranslator, node: TbFileNode) -> None:
     if node.get("hidden"):
         raise nodes.SkipNode
-    self.body.append("\n\\begin{sphinxadmonition}{note}{")
-    self.body.append(self.encode(node["filename"]))
+    self.body.append("\n\\sphinxSetupCaptionForVerbatim{")
+    self.body.append(self.encode(_caption(node)))
     self.body.append("}\n")
+    self.body.append("\n\\begin{sphinxVerbatim}[commandchars=\\\\\\{\\}]\n")
     if node["is_text"]:
-        self.body.append("\\begin{sphinxVerbatim}[commandchars=\\\\\\{\\}]\n")
         self.body.append(self.encode(node.get("content", "")))
     else:
         self.body.append(self.encode(f"Image file: {node['filename']}"))
 
 
 def depart_tb_file_latex(self: LaTeXTranslator, node: TbFileNode) -> None:
-    if node["is_text"]:
-        self.body.append("\n\\end{sphinxVerbatim}\n")
-    self.body.append("\n\\end{sphinxadmonition}\n")
+    self.body.append("\n\\end{sphinxVerbatim}\n")
 
 
 def visit_tb_file_text(self: TextTranslator, node: TbFileNode) -> None:
     if node.get("hidden"):
         raise nodes.SkipNode
-    self.add_text(f"\n[{node['filename']}]\n")
+    self.add_text(f"\n[{_caption(node)}]\n")
     if node["is_text"]:
         self.add_text(f"\n{node.get('content', '')}\n")
     else:
