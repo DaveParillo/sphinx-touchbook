@@ -1,12 +1,20 @@
 import sys
+import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def project_version():
+    with (ROOT / "pyproject.toml").open("rb") as pyproject:
+        return tomllib.load(pyproject)["project"]["version"]
+
 project = 'Sphinx Touchbook Author Guide'
 author = 'Dave Parillo'
 project_copyright = '2026, ' + author
-version = '0.1.1'
+version = project_version()
 release = version + '-alpha'
 
 
