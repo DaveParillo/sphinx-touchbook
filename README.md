@@ -107,3 +107,31 @@ npm run test:web-components
   python3 -m twine check dist/*
 ```
 
+# Alternatives to Sphinx-Touchbook
+
+- [Bookdown](https://bookdown.org).
+  Bookdown is an open source R package that structures book writing and
+  workflow. Those who want to create statistics and programming textbooks may
+  find it a useful fit. Supported languages include R, C/C++, Python, Fortran,
+  Julia, Shell scripts, and SQL as well as LaTeX.
+- [OpenDSA](https://opendsa-server.cs.vt.edu).
+  OpenDSA is infrastructure and materials to support courses in a wide variety
+  of Computer Science-related topics such as Data Structures and Algorithms
+  (DSA), Formal Languages, Finite Automata, and Programming Languages.
+- [PreTeXt](https://pretextbook.org).
+  PreTeXt is an authoring and publishing system for authors of textbooks,
+  course materials, research articles, and monographs, especially in STEM
+  disciplines, with a strong focus on accessibility.
+
+  Documents written in PreTeXt can be automatically converted to accessible
+  HTML, PDF, EBUP, RevealJS slideshow, Jupyter notebooks, and even Braille.
+- [Runestone Interactive](https://github.com/RunestoneInteractive).
+  The Runestone mission is to equip the nation's STEM teachers with open-source
+  content, tools and strategies they need to create engaging, accessible, and
+  effective learning experiences for their students.
+- [Scalar](https://scalar.me/anvc/scalar/features/).
+  Scalar is a free, open source authoring and publishing platform that’s
+  designed to make it easy for authors to write long-form, born-digital
+  scholarship online. 
+
+
