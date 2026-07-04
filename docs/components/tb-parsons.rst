@@ -1,3 +1,5 @@
+.. _tb-parsons:
+
 tb-parsons
 ==========
 
@@ -34,13 +36,15 @@ The general format of the ``tb-parsons`` directive is:
 Options
 -------
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **name**
    ``String``. Optional.
    Sphinx reference name for this Parsons problem.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 **no-indent**
    ``Flag``. Optional.
@@ -87,8 +91,9 @@ Fallback behavior
 -----------------
 
 HTML without JavaScript renders the prompt and a deterministic fragment order
-with controls. Text and PDF-oriented builders render the prompt and fragments as
-a Parsons problem. Static output does not support interactive checking.
+with controls. Text builders render the prompt and shuffled fragments as a
+Parsons problem. PDF-oriented builders render the shuffled fragments in a
+literal block. Static output does not support interactive checking.
 
 Examples
 --------

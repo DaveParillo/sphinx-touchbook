@@ -1,3 +1,5 @@
+.. _tb-code:
+
 tb-code
 =======
 
@@ -33,12 +35,9 @@ Options
    Standard ``code-block`` caption displayed with the static code listing.
 
 **class**
-   ``String`` or ``list``. Optional.
-   Standard Sphinx ``code-block`` class option passed through to the static
-   highlighted listing.
-   See the
-   `Sphinx code-block documentation <https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#showing-code-examples>`__
-   for more information.
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
 
 **compileargs**, **linkargs**, **runargs**, **interpreterargs**
    ``String`` or ``list``. Optional.
@@ -144,10 +143,7 @@ Options
 **name**
    ``String``. Optional.
    Sphinx reference name for this runnable code block.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 **readonly**
    ``Boolean``. Optional. Hides the edit control in HTML output.

@@ -5,7 +5,8 @@ Sphinx Touchbook Author Guide
    :maxdepth: 2
 
    intro
-   directives
+   general
+   components/index
    accessibility
 
 

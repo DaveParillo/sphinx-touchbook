@@ -1,3 +1,5 @@
+.. _tb-reveal:
+
 tb-reveal
 =========
 
@@ -25,6 +27,11 @@ The content area is required.
 Options
 -------
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **hidelabel**
    ``String``. Optional. Label for the hide or close button.
    Default is ``Hide``.
@@ -41,11 +48,9 @@ Options
    Default is ``Message from the author``.
 
 **name**
-   ``String``. Optional. Sphinx reference name for this reveal block.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   ``String``. Optional.
+   Sphinx reference name for this reveal block.
+   See :ref:`common` for details.
 
 **showlabel**
    ``String``. Optional. Label for the show button.
@@ -119,9 +124,15 @@ Example 2: Custom button labels
             :hidelabel: Hide Content
 
             The reveal block can contain other directives. This example uses a
-            standard Sphinx code block until an ``activecode`` directive exists:
+            standard Sphinx code block:
 
             .. code-block:: python
+
+               print("Hello, world")
+
+            and a ``tb-code`` block:
+
+            .. tb-code:: python
 
                print("Hello, world")
 
@@ -133,9 +144,15 @@ Example 2: Custom button labels
          :hidelabel: Hide Content
 
          The reveal block can contain other directives. This example uses a
-         standard Sphinx code block until an ``activecode`` directive exists:
+         standard Sphinx code block:
 
          .. code-block:: python
+
+            print("Hello, world")
+
+         and a ``tb-code`` block:
+
+         .. tb-code:: python
 
             print("Hello, world")
 

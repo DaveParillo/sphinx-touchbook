@@ -1,3 +1,5 @@
+.. _tb-match:
+
 tb-match
 ========
 
@@ -45,13 +47,15 @@ Options
    sorted by visible definition text, so distractors do not always appear after
    the matching definitions.
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **name**
    ``String``. Optional.
    Sphinx reference name for this matching question.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 Accessibility behavior
 ----------------------
@@ -64,9 +68,10 @@ Fallback behavior
 -----------------
 
 HTML without JavaScript renders source and target content in the page.
-Text and PDF-oriented builders render the prompt, a source list, and a target
-list. The source and target lists are separated so printed output does not
-serve as an answer key.
+Text builders render the prompt, a source list, and a target list.
+PDF-oriented builders render the prompt and a two-column matching table.
+Sources use upper-case letter labels. Targets include blank answer lines where
+readers can write the matching source letter.
 
 Examples
 --------

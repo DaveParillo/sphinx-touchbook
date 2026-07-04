@@ -1,3 +1,5 @@
+.. _tb-group:
+
 tb-group
 ========
 
@@ -46,12 +48,15 @@ Options
 
    Any valid Sphinx markup can reside within a tab.
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **name**
    ``String``. Optional.
-   Sphinx reference name for this group or tab. This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   Sphinx reference name for this group or tab.
+   See :ref:`common` for details.
 
 Sphinx configuration options
 ----------------------------

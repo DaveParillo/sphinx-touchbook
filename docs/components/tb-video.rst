@@ -1,3 +1,5 @@
+.. _tb-video:
+
 tb-video
 ========
 
@@ -31,6 +33,11 @@ path.
 Options
 -------
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **height**
    ``String``. Optional.
    Height used for the player and placeholder frame.
@@ -42,9 +49,9 @@ Options
    `Common Option Value Types section <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-option-value-types>`__.
 
 **name**
-   ``String``. Optional. Sphinx reference name for this video block.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
+   ``String``. Optional.
+   Sphinx reference name for this video block.
+   See :ref:`common` for details.
 
 **thumbnail**
    ``String``. Optional.

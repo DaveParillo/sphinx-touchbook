@@ -1,3 +1,5 @@
+.. _tb-blank:
+
 tb-blank
 ========
 
@@ -38,13 +40,15 @@ Options
    Require exact case when comparing submitted answers. By default, matching is
    case-insensitive.
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **name**
    ``String``. Optional.
    Sphinx reference name for this fill-in-the-blank question.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 **preserve-whitespace**
    ``Flag``. Optional.

@@ -1,3 +1,5 @@
+.. _tb-click:
+
 tb-click
 ========
 
@@ -62,13 +64,15 @@ Bare selector
 Options
 -------
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **name**
    ``String``. Optional.
    Sphinx reference name for this click question.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 **show-hints**
    ``Boolean``. Optional.

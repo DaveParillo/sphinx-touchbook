@@ -1,3 +1,5 @@
+.. _tb-choice:
+
 tb-choice
 =========
 
@@ -65,13 +67,15 @@ For complex answers and feedback, use nested feedback lists:
 Options
 -------
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **name**
    ``String``. Optional.
    Sphinx reference name for this choice block.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 **force-multiple**
    ``Boolean``. Optional.

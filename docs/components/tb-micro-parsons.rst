@@ -1,3 +1,5 @@
+.. _tb-micro-parsons:
+
 tb-micro-parsons
 ================
 
@@ -29,13 +31,15 @@ The general format of the ``tb-micro-parsons`` directive is:
 Options
 -------
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **name**
    ``String``. Optional.
    Sphinx reference name for this micro-Parsons problem.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 **distractor**
    ``String``. Optional.
@@ -57,8 +61,9 @@ Fallback behavior
 -----------------
 
 HTML without JavaScript renders the prompt, a deterministic token order, and an
-empty answer row. Text and PDF-oriented builders render the prompt, shuffled
-tokens, and a blank answer line. Static output does not support interactive
+empty answer row. Text builders render the prompt, shuffled tokens, and a blank
+answer line. PDF-oriented builders render the shuffled tokens in a literal
+block with a blank answer line. Static output does not support interactive
 checking.
 
 Examples

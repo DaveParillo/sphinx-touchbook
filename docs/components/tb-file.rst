@@ -1,3 +1,5 @@
+.. _tb-file:
+
 tb-file
 =======
 
@@ -45,6 +47,15 @@ Options
    Empty path segments, ``.``, ``..``, absolute paths, spaces, and other
    punctuation are rejected.
 
+**caption**
+   ``String``. Optional.
+   Caption displayed with the static file listing.
+
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **editable**
    ``Boolean``. Optional. Text files are editable by default.
    This option can explicitly request editing if a project-level default later
@@ -61,10 +72,7 @@ Options
 **name**
    ``String``. Optional.
    Sphinx reference name for this file artifact.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 **readonly**
    ``Boolean``. Optional.
@@ -79,9 +87,10 @@ No directive-specific configuration options exist.
 Accessibility behavior
 ----------------------
 
-Visible text files render their filename as a caption and their content as
-readable preformatted text before JavaScript runs. When editing is available,
-HTML adds a native button and textarea with programmatic labels.
+Visible text files render their caption, or their filename when no caption is
+set, and their content as readable preformatted text before JavaScript runs.
+When editing is available, HTML adds a native button and textarea with
+programmatic labels.
 
 Image files render with the simulated filename as alternate text. Authors
 should choose filenames that communicate the image's instructional role when
@@ -90,10 +99,11 @@ using image files this way.
 Fallback behavior
 -----------------
 
-Text and PDF-oriented builders render visible text files as a labeled file
-listing. Image files render as labeled image-file references. Hidden files are
-not rendered, but remain available in the Sphinx environment registry for
-later execution integration.
+Text builders render visible text files as labeled file listings. PDF-oriented
+builders render visible text files as LaTeX listings. The listing caption uses
+``caption`` when set and otherwise uses ``filename``. Image files render as
+labeled image-file references. Hidden files are not rendered, but remain
+available in the Sphinx environment registry for later execution integration.
 
 Referenced binary files are registered and marked read-only. HTML can display
 image formats supported by browsers. Text and PDF-oriented builders render a
@@ -117,6 +127,7 @@ Example 1: Inline text file
 
          .. tb-file::
             :filename: input.txt
+            :caption: Example input file
 
             Hello file!
 
@@ -124,6 +135,7 @@ Example 1: Inline text file
 
       .. tb-file::
          :filename: input.txt
+         :caption: Example input file
 
          Hello file!
 

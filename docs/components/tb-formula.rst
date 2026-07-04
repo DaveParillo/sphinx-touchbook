@@ -1,3 +1,5 @@
+.. _tb-formula:
+
 tb-formula
 ==========
 
@@ -35,13 +37,15 @@ Options
    ``name=min..max`` syntax. If both endpoints are integers, HTML generates
    integer values. Decimal endpoints generate decimal values.
 
+**class**
+   ``String`` or ``List``. Optional.
+   A CSS class to add to the directive.
+   See :ref:`common` for details.
+
 **name**
    ``String``. Optional.
    Sphinx reference name for this calculated formula question.
-   This is a
-   `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
-   If omitted, docutils assigns a deterministic generated ID derived from the
-   document and node position.
+   See :ref:`common` for details.
 
 **tolerance**
    ``Number``. Optional.
@@ -97,9 +101,10 @@ Fallback behavior
 -----------------
 
 HTML without JavaScript shows the question with placeholder blanks and an
-answer input. Text and PDF-oriented builders render the question with blanks
-for generated values and a blank answer area. Static output does not include
-the formula.
+answer input. Text and PDF-oriented builders render the question with one
+deterministic value for each generated variable and a blank answer area. The
+static value is the midpoint of the configured range, rounded for integer
+ranges. Static output does not include the formula.
 
 Examples
 --------
