@@ -821,3 +821,9 @@ def test_web_component_contract():
     assert "resetLabel" not in source
     assert 'role", "status"' in source
     assert "Math.random" not in source
+
+
+def test_hidden_controls_have_theme_independent_css():
+    source = Path("src/sphinx_touchbook/static/tb-code.css").read_text(encoding="utf-8")
+    assert "tb-code [hidden]" in source
+    assert "display: none !important" in source

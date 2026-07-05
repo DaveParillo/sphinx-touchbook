@@ -3,6 +3,10 @@ tb-code {
   margin: 1rem 0;
 }
 
+tb-code [hidden] {
+  display: none !important;
+}
+
 .tb-code__fallback {
   margin: 0 0 0.75rem;
 }
