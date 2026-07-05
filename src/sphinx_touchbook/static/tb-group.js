@@ -60,6 +60,8 @@ class TbGroup extends HTMLElement {
 
     this.append(tablist, panels);
     this.activateNestedGroups(panels[0]);
+    TbGroup.installHashHandler();
+    TbGroup.scheduleHashReveal();
   }
 
   selectTab(index, options = {}) {
@@ -162,14 +164,102 @@ class TbGroup extends HTMLElement {
     });
   }
 
+  revealHashTarget(hash) {
+    if (!hash || hash === "#") {
+      return false;
+    }
+
+    const target = this.hashTarget(hash);
+    if (!target) {
+      return false;
+    }
+
+    const panels = this.ownPanels();
+    const panelIndex = panels.findIndex((panel) => panel.contains(target));
+    if (panelIndex === -1) {
+      return false;
+    }
+
+    if (panels[panelIndex].hidden) {
+      this.selectTab(panelIndex, { focus: false });
+    }
+    return true;
+  }
+
+  hashTarget(hash) {
+    const id = TbGroup.decodeHashId(hash);
+    if (!id) {
+      return null;
+    }
+    return document.getElementById(id);
+  }
+
   safeId() {
     if (!this.id) {
       this.id = `tb-group-${TbGroup.nextId++}`;
     }
     return this.id;
   }
+
+  static installHashHandler() {
+    if (TbGroup.hashHandlerInstalled) {
+      return;
+    }
+    TbGroup.hashHandlerInstalled = true;
+    window.addEventListener("hashchange", () => TbGroup.scheduleHashReveal());
+  }
+
+  static scheduleHashReveal() {
+    window.requestAnimationFrame(() => TbGroup.revealCurrentHash());
+  }
+
+  static revealCurrentHash() {
+    const hash = window.location.hash;
+    if (!hash || hash === "#") {
+      return;
+    }
+
+    let revealed = false;
+    document.querySelectorAll("tb-group").forEach((group) => {
+      if (typeof group.revealHashTarget === "function") {
+        revealed = group.revealHashTarget(hash) || revealed;
+      }
+    });
+
+    if (!revealed) {
+      return;
+    }
+
+    const id = TbGroup.decodeHashId(hash);
+    const target = id ? document.getElementById(id) : null;
+    if (!target) {
+      return;
+    }
+    if (typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ block: "start" });
+    }
+    if (typeof target.focus === "function" && TbGroup.isNaturallyFocusable(target)) {
+      target.focus({ preventScroll: true });
+    }
+  }
+
+  static isNaturallyFocusable(element) {
+    return element.matches(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
+      'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+  }
+
+  static decodeHashId(hash) {
+    try {
+      return decodeURIComponent(hash.slice(1));
+    } catch (error) {
+      return "";
+    }
+  }
 }
 
 TbGroup.nextId = 1;
+TbGroup.hashHandlerInstalled = false;
 
 customElements.define("tb-group", TbGroup);

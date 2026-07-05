@@ -7,6 +7,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  window.history.replaceState(null, "", "/");
 });
 
 function appendGroup() {
@@ -35,6 +36,10 @@ function ownTabs(element) {
 
 function ownPanels(element) {
   return Array.from(element.querySelectorAll(":scope > .tb-group__panels > .tb-group__panel"));
+}
+
+function nextFrame() {
+  return new Promise((resolve) => window.requestAnimationFrame(resolve));
 }
 
 describe("tb-group Web Component", () => {
@@ -155,5 +160,51 @@ describe("tb-group Web Component", () => {
     expect(innerPanels[0].hidden).toBe(false);
     expect(innerPanels[1].hidden).toBe(true);
     expect(innerPanels[0].textContent).toContain("First inner content");
+  });
+
+  it("selects the owning tab when the initial location hash targets hidden panel content", async () => {
+    window.history.replaceState(null, "", "/#hidden-target");
+
+    const element = document.createElement("tb-group");
+    element.id = "hash-tabs";
+    element.innerHTML = `
+      <div class="tb-group__fallback">
+        <tb-tab label="Source">
+          <div class="tb-tab__content"><p>Source content</p></div>
+        </tb-tab>
+        <tb-tab label="Rendered">
+          <div class="tb-tab__content"><p id="hidden-target">Rendered content</p></div>
+        </tb-tab>
+      </div>
+    `;
+
+    document.body.appendChild(element);
+    await nextFrame();
+
+    const tabs = ownTabs(element);
+    const panels = ownPanels(element);
+    expect(tabs[0].getAttribute("aria-selected")).toBe("false");
+    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+    expect(panels[0].hidden).toBe(true);
+    expect(panels[1].hidden).toBe(false);
+  });
+
+  it("selects the owning tab when a same-page link changes the hash to hidden panel content", async () => {
+    const element = appendGroup();
+    const panels = ownPanels(element);
+    panels[1].innerHTML = '<p><span id="second-panel-target">Second target</span></p>';
+
+    expect(panels[0].hidden).toBe(false);
+    expect(panels[1].hidden).toBe(true);
+
+    window.history.pushState(null, "", "/#second-panel-target");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    await nextFrame();
+
+    const tabs = ownTabs(element);
+    expect(tabs[0].getAttribute("aria-selected")).toBe("false");
+    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+    expect(panels[0].hidden).toBe(true);
+    expect(panels[1].hidden).toBe(false);
   });
 });
