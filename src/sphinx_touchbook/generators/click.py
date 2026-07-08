@@ -14,7 +14,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import (
     TbClickNode,
     TbClickPromptNode,
@@ -53,6 +53,7 @@ def _annotated_source_html(node: TbClickSourceNode) -> str:
 def visit_tb_click_html(self: HTML5Translator, node: TbClickNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     hints = escape(node.get("hints", "false"), quote=True)
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-click id="{node_id}"{html_class_attr(node)} hints="{hints}">\n')
 
 
@@ -105,6 +106,7 @@ def depart_tb_click_region_html(self: HTML5Translator, node: TbClickRegionNode) 
 
 
 def visit_tb_click_latex(self: LaTeXTranslator, node: TbClickNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\subsubsection*{Click question}\n")
 
 

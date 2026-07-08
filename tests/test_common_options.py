@@ -6,6 +6,10 @@ from bs4 import BeautifulSoup
 from sphinx.application import Sphinx
 
 
+def read_latex(outdir: Path) -> str:
+    return next(outdir.glob("*.tex")).read_text(encoding="utf-8")
+
+
 def build_sphinx(tmp_path: Path, builder: str, index: str) -> Path:
     srcdir = tmp_path / "src"
     outdir = tmp_path / f"_build_{builder}"
@@ -170,3 +174,86 @@ Title
     feedback = soup.find("div", class_="tb-click__feedback")
     assert feedback is not None
     assert "hit-class" in feedback.get("class", [])
+
+
+def test_touchbook_directive_targets_are_preserved_in_html(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+See :ref:`explicit code target <explicit-code-target>`,
+:ref:`named code target <named-code-target>`,
+:ref:`explicit group target <explicit-group-target>`, and
+:ref:`named group target <named-group-target>`.
+
+.. _explicit-code-target:
+
+.. tb-code:: python
+   :name: named-code-target
+
+   print("hello")
+
+.. _explicit-group-target:
+
+.. tb-group::
+   :name: named-group-target
+
+   .. tb-tab:: Rendered
+
+      Group content.
+""",
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    for node_id in (
+        "explicit-code-target",
+        "named-code-target",
+        "explicit-group-target",
+        "named-group-target",
+    ):
+        assert soup.find(id=node_id) is not None, node_id
+        assert soup.find("a", href=f"#{node_id}") is not None, node_id
+
+
+def test_touchbook_directive_targets_are_preserved_in_latex(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "latex",
+        """
+Title
+=====
+
+See :ref:`explicit code target <explicit-code-target>`,
+:ref:`named code target <named-code-target>`,
+:ref:`explicit group target <explicit-group-target>`, and
+:ref:`named group target <named-group-target>`.
+
+.. _explicit-code-target:
+
+.. tb-code:: python
+   :name: named-code-target
+
+   print("hello")
+
+.. _explicit-group-target:
+
+.. tb-group::
+   :name: named-group-target
+
+   .. tb-tab:: Rendered
+
+      Group content.
+""",
+    )
+
+    latex = read_latex(outdir)
+    for node_id in (
+        "explicit-code-target",
+        "named-code-target",
+        "explicit-group-target",
+        "named-group-target",
+    ):
+        assert f"index:{node_id}" in latex

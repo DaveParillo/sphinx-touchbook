@@ -14,7 +14,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbOrderItemNode, TbOrderNode, TbOrderPromptNode
 
 
@@ -37,6 +37,7 @@ def _append_children(visitor, parent: nodes.Element) -> None:
 
 def visit_tb_order_html(self: HTML5Translator, node: TbOrderNode) -> None:
     node_id = escape(_node_id(node), quote=True)
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-order id="{node_id}"{html_class_attr(node)}>\n')
 
 
@@ -78,6 +79,7 @@ def depart_tb_order_prompt_html(self: HTML5Translator, node: TbOrderPromptNode) 
 
 
 def visit_tb_order_latex(self: LaTeXTranslator, node: TbOrderNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\subsubsection*{Ordering question}\n")
 
 

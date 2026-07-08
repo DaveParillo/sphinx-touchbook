@@ -15,7 +15,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbGroupNode, TbTabNode
 
 
@@ -24,6 +24,7 @@ def _node_id(node) -> str:
 
 
 def visit_tb_group_html(self: HTML5Translator, node: TbGroupNode) -> None:
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-group id="{escape(_node_id(node), quote=True)}"{html_class_attr(node)}>\n')
     self.body.append('<div class="tb-group__fallback">\n')
 
@@ -37,6 +38,7 @@ def visit_tb_tab_html(self: HTML5Translator, node: TbTabNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     label = escape(node["label"], quote=True)
     label_text = escape(node["label"])
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-tab id="{node_id}"{html_class_attr(node)} label="{label}">\n')
     self.body.append('<section class="tb-tab__fallback">\n')
     self.body.append(f'<p class="tb-tab__label"><strong>{label_text}</strong></p>\n')
@@ -50,6 +52,7 @@ def depart_tb_tab_html(self: HTML5Translator, node: TbTabNode) -> None:
 
 
 def visit_tb_group_latex(self: LaTeXTranslator, node: TbGroupNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n")
 
 
@@ -58,6 +61,7 @@ def depart_tb_group_latex(self: LaTeXTranslator, node: TbGroupNode) -> None:
 
 
 def visit_tb_tab_latex(self: LaTeXTranslator, node: TbTabNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\subsubsection*{")
     self.body.append(self.encode(node["label"]))
     self.body.append("}\n")

@@ -16,7 +16,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import (
     TbChoiceAnswerNode,
     TbChoiceFeedbackNode,
@@ -42,6 +42,7 @@ def visit_tb_choice_html(self: HTML5Translator, node: TbChoiceNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     mode = "multiple" if node["multiple"] else "single"
     random_attr = ' random="true"' if node.get("random") else ""
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-choice id="{node_id}"{html_class_attr(node)} mode="{mode}"{random_attr}>\n')
 
 
@@ -107,6 +108,7 @@ def depart_tb_choice_feedback_html(self: HTML5Translator, node: TbChoiceFeedback
 
 
 def visit_tb_choice_latex(self: LaTeXTranslator, node: TbChoiceNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\subsubsection*{Question}\n")
 
 

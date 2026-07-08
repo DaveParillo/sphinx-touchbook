@@ -17,7 +17,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbCodeNode
 
 
@@ -94,6 +94,7 @@ def visit_tb_code_html(self: HTML5Translator, node: TbCodeNode) -> None:
     code_options = node.get("code_block_options", {})
     classes = " ".join(escape(name, quote=True) for name in code_options.get("classes", []))
     fallback_class = "tb-code__fallback" if not classes else f"tb-code__fallback {classes}"
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-code id="{node_id}"{html_class_attr(node)} language="{language}" editable="{editable}">\n')
     self.body.append(f'<figure class="{fallback_class}">\n')
     if node["caption"]:
@@ -111,6 +112,7 @@ def depart_tb_code_html(self: HTML5Translator, node: TbCodeNode) -> None:
 def visit_tb_code_latex(self: LaTeXTranslator, node: TbCodeNode) -> None:
     if node.get("hidden"):
         raise nodes.SkipNode
+    latex_targets(self, node)
     if node["caption"]:
         self.body.append("\n\\sphinxSetupCaptionForVerbatim{")
         self.body.append(self.encode(node["caption"]))

@@ -15,7 +15,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbBlankInputNode, TbBlankNode, TbBlankPromptNode
 
 
@@ -27,6 +27,7 @@ def visit_tb_blank_html(self: HTML5Translator, node: TbBlankNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     case_sensitive = "true" if node["case_sensitive"] else "false"
     trim = "true" if node["trim"] else "false"
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-blank id="{node_id}"{html_class_attr(node)} case-sensitive="{case_sensitive}" trim="{trim}">\n')
 
 
@@ -71,6 +72,7 @@ def depart_tb_blank_input_html(self: HTML5Translator, node: TbBlankInputNode) ->
 
 
 def visit_tb_blank_latex(self: LaTeXTranslator, node: TbBlankNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\subsubsection*{Fill in the blank}\n")
 
 

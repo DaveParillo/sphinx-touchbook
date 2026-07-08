@@ -19,7 +19,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbVideoNode
 
 
@@ -97,6 +97,7 @@ def visit_tb_video_html(self: HTML5Translator, node: TbVideoNode) -> None:
     style_attr = f' style="{escape(style, quote=True)}"' if style else ""
     window_attr = ' window="true"' if node["window"] else ""
 
+    self.body.append(html_additional_targets(node))
     self.body.append(
         f'<tb-video id="{node_id}"{html_class_attr(node)} source-url="{source_url}" embed-url="{embed_url}" '
         f'provider="{provider}" kind="{kind}" width="{width}" height="{height}"'
@@ -130,6 +131,7 @@ def depart_tb_video_html(self: HTML5Translator, node: TbVideoNode) -> None:
 def visit_tb_video_latex(self: LaTeXTranslator, node: TbVideoNode) -> None:
     if node.get("hidden"):
         raise nodes.SkipNode
+    latex_targets(self, node)
     self.body.append("\n\\begin{sphinxadmonition}{note}{Video}\n")
     self.body.append(self.encode(f"Video URL: {node['source_url']}"))
     self.body.append("\n")

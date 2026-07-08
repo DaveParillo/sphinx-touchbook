@@ -12,7 +12,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbParsonsItemNode, TbParsonsNode, TbParsonsPromptNode
 
 
@@ -32,6 +32,7 @@ def visit_tb_parsons_html(self: HTML5Translator, node: TbParsonsNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     no_indent = "true" if node["no_indent"] else "false"
     language = escape(node.get("language", ""), quote=True)
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-parsons id="{node_id}"{html_class_attr(node)} data-no-indent="{no_indent}" data-language="{language}">\n')
 
 
@@ -100,6 +101,7 @@ def depart_tb_parsons_prompt_html(self: HTML5Translator, node: TbParsonsPromptNo
 
 
 def visit_tb_parsons_latex(self: LaTeXTranslator, node: TbParsonsNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\subsubsection*{Parsons problem}\n")
 
 

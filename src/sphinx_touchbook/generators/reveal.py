@@ -16,7 +16,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbRevealNode
 
 
@@ -41,6 +41,7 @@ def _attrs(node: TbRevealNode) -> str:
 
 
 def visit_tb_reveal_html(self: HTML5Translator, node: TbRevealNode) -> None:
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-reveal {_attrs(node)}>\n')
     self.body.append('<details class="tb-reveal__fallback">\n')
     self.body.append(f'<summary>{escape(node["showlabel"])}</summary>\n')
@@ -54,6 +55,7 @@ def depart_tb_reveal_html(self: HTML5Translator, node: TbRevealNode) -> None:
 
 
 def visit_tb_reveal_latex(self: LaTeXTranslator, node: TbRevealNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\begin{sphinxadmonition}{note}{")
     self.body.append(self.encode(node["modal_titlebar"] if node["modal"] else node["showlabel"]))
     self.body.append("}\n")

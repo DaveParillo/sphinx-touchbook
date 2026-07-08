@@ -17,7 +17,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbFileNode
 
 
@@ -50,6 +50,7 @@ def visit_tb_file_html(self: HTML5Translator, node: TbFileNode) -> None:
     filename = escape(node["filename"], quote=True)
     caption = escape(_caption(node))
     editable = "true" if node["editable"] else "false"
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-file id="{node_id}"{html_class_attr(node)} filename="{filename}" editable="{editable}">\n')
     self.body.append('<figure class="tb-file__fallback">\n')
     self.body.append(f'<figcaption class="tb-file__caption">{caption}</figcaption>\n')
@@ -73,6 +74,7 @@ def depart_tb_file_html(self: HTML5Translator, node: TbFileNode) -> None:
 def visit_tb_file_latex(self: LaTeXTranslator, node: TbFileNode) -> None:
     if node.get("hidden"):
         raise nodes.SkipNode
+    latex_targets(self, node)
     self.body.append("\n\\sphinxSetupCaptionForVerbatim{")
     self.body.append(self.encode(_caption(node)))
     self.body.append("}\n")

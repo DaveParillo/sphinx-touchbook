@@ -12,7 +12,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import (
     TbMicroParsonsNode,
     TbMicroParsonsPromptNode,
@@ -35,6 +35,7 @@ def _display_order(node: TbMicroParsonsNode) -> list[TbMicroParsonsTokenNode]:
 def visit_tb_micro_parsons_html(self: HTML5Translator, node: TbMicroParsonsNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     has_distractors = "true" if node["has_distractors"] else "false"
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-micro-parsons id="{node_id}"{html_class_attr(node)} data-has-distractors="{has_distractors}">\n')
 
 
@@ -91,6 +92,7 @@ def depart_tb_micro_parsons_prompt_html(self: HTML5Translator, node: TbMicroPars
 
 
 def visit_tb_micro_parsons_latex(self: LaTeXTranslator, node: TbMicroParsonsNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\subsubsection*{Micro Parsons problem}\n")
 
 

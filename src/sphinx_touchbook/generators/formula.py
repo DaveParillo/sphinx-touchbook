@@ -13,7 +13,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_class_attr
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import TbFormulaNode, TbFormulaPromptNode, TbFormulaVariableNode
 
 
@@ -47,6 +47,7 @@ def _static_variable_value(node: TbFormulaVariableNode) -> str:
 def visit_tb_formula_html(self: HTML5Translator, node: TbFormulaNode) -> None:
     node_id = escape(_node_id(node), quote=True)
     endpoint = escape(str(self.config.tb_formula_default_endpoint), quote=True)
+    self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-formula id="{node_id}"{html_class_attr(node)} data-endpoint="{endpoint}">\n')
 
 
@@ -90,6 +91,7 @@ def depart_tb_formula_variable_html(self: HTML5Translator, node: TbFormulaVariab
 
 
 def visit_tb_formula_latex(self: LaTeXTranslator, node: TbFormulaNode) -> None:
+    latex_targets(self, node)
     self.body.append("\n\\subsubsection*{Calculated formula}\n")
 
 
