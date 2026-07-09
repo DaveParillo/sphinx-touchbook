@@ -74,13 +74,8 @@ tb-parsons {
   opacity: 0.55;
 }
 
-.tb-parsons__toggle[aria-pressed="true"] .tb-parsons__toggle-icon {
-  color: #2e7d32;
-  font-weight: 700;
-}
-
-.tb-parsons__toggle[aria-pressed="false"] .tb-parsons__toggle-icon {
-  color: #b00020;
+.tb-parsons__toggle .tb-parsons__toggle-icon {
+  color: currentColor;
   font-weight: 700;
 }
 
