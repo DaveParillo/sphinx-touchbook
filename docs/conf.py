@@ -28,7 +28,7 @@ html_theme_options = {
             'link': 'https://github.com/DaveParillo/sphinx-touchbook',
         },
     ],
-    'logo': 'hand-index-thumb.svg',
+    'logo': 'touchbook-logo.svg',
     'logo_width': 40,
     'logo_height': 24,
 }
