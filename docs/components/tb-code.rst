@@ -33,6 +33,9 @@ Options
 **caption**
    ``String``. Optional.
    Standard ``code-block`` caption displayed with the static code listing.
+   A caption alone does not create a hyperlink target.
+   Combine ``caption`` with ``name`` when a block should be referenced with
+   ``:numref:``.
 
 **class**
    ``String`` or ``List``. Optional.
@@ -143,6 +146,10 @@ Options
 **name**
    ``String``. Optional.
    Sphinx reference name for this runnable code block.
+   Use ``name`` by itself for explicit-title references such as
+   ``:ref:`run this code <example-code>```.
+   Use ``name`` with ``caption`` for numbered references such as
+   ``:numref:`example-code```.
    See :ref:`common` for details.
 
 **readonly**
@@ -192,6 +199,35 @@ Options
 **stdin**
    ``String``. Optional. Standard input sent with the run request.
    When present, HTML shows this value in an editable text input.
+
+Reference behavior
+------------------
+
+``tb-code`` follows Sphinx ``code-block`` reference conventions.
+Use ``caption`` for the visible listing caption.
+Use ``name`` for a stable hyperlink target.
+Use both options when a code block should be referenced with ``:numref:``:
+
+.. code-block:: rst
+
+   See :numref:`hello-code`.
+
+   .. tb-code:: python
+      :name: hello-code
+      :caption: Hello example
+
+      print("Hello")
+
+If only ``name`` is set, use an explicit-title ``:ref:``:
+
+.. code-block:: rst
+
+   See :ref:`this runnable example <hello-code>`.
+
+   .. tb-code:: python
+      :name: hello-code
+
+      print("Hello")
 
 Sphinx configuration options
 ----------------------------

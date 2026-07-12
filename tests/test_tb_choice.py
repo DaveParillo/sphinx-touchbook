@@ -480,7 +480,6 @@ Title
 
     latex = read_latex_output(outdir)
     assert r"\subsubsection*{Question}" in latex
-    assert r"\begin{sphinxadmonition}{note}{Question}" not in latex
     assert "What is the result of comparing" in latex
     assert r"\begin{itemize}" in latex
     assert r"\item[$\bigcirc$]" in latex

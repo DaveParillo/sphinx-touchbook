@@ -324,6 +324,11 @@ from .transforms import (
 )
 
 
+def _tb_code_caption(node: TbCodeNode) -> str | None:
+    """Return the caption Sphinx uses for numbered code references."""
+    return node.get("caption")
+
+
 def _add_static_path(app: Sphinx) -> None:
     static_path = str(Path(__file__).parent / "static")
     if static_path not in app.config.html_static_path:
@@ -372,8 +377,10 @@ def setup(app: Sphinx) -> dict[str, object]:
         latex=(visit_tb_blank_input_latex, depart_tb_blank_input_latex),
         text=(visit_tb_blank_input_text, depart_tb_blank_input_text),
     )
-    app.add_node(
+    app.add_enumerable_node(
         TbCodeNode,
+        "code-block",
+        _tb_code_caption,
         html=(visit_tb_code_html, depart_tb_code_html),
         latex=(visit_tb_code_latex, depart_tb_code_latex),
         text=(visit_tb_code_text, depart_tb_code_text),

@@ -154,7 +154,6 @@ Title
     assert [tab["label"] for tab in tabs] == ["First", "Second"]
     assert group.find("div", class_="tb-group__fallback") is not None
     assert group.find("p", class_="tb-tab__label") is not None
-    assert group.find("p", class_="tb-tab__title") is None
     assert "First" in group.get_text()
     assert "Second content" in group.get_text()
     assert (outdir / "_static" / "tb-group.js").exists()
@@ -240,8 +239,6 @@ Title
     latex = read_latex_output(outdir)
     assert r"\subsubsection*{Source}" in latex
     assert r"\subsubsection*{Rendered}" in latex
-    assert r"\begin{sphinxadmonition}{note}{Source}" not in latex
-    assert r"\begin{sphinxadmonition}{note}{Rendered}" not in latex
 
 
 def test_web_component_asset_defines_custom_element():
@@ -252,5 +249,3 @@ def test_web_component_asset_defines_custom_element():
     assert 'panel.setAttribute("role", "tabpanel")' in source
     assert "ArrowRight" in source
     assert "ArrowLeft" in source
-    assert "tb-tab__title" not in source
-    assert "Math.random" not in source

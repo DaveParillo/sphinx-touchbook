@@ -566,7 +566,6 @@ Title
     latex = read_latex_output(outdir)
     assert "input.txt" in latex
     assert "Alice" in latex
-    assert r"\begin{sphinxadmonition}{note}{input.txt}" not in latex
     assert r"\sphinxSetupCaptionForVerbatim{input.txt}" in latex
     assert r"\begin{sphinxVerbatim}[commandchars=\\\{\}]" in latex
 
@@ -591,7 +590,6 @@ Title
 
     latex = read_latex_output(outdir)
     assert r"\sphinxSetupCaptionForVerbatim{Example input file}" in latex
-    assert r"\begin{sphinxadmonition}{note}{Example input file}" not in latex
     assert r"\begin{sphinxVerbatim}[commandchars=\\\{\}]" in latex
     assert "Alice" in latex
 

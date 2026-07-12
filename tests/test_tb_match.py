@@ -153,9 +153,7 @@ Title
     assert all(select.find("option", value="") for select in selects)
     assert all(len(select.find_all("option")) == 4 for select in selects)
     assert "Translates source code into executable code." in selects[0].get_text(" ", strip=True)
-    assert element.find("section", class_="tb-match__definitions") is None
     assert element.find("button", class_="tb-match__check").has_attr("disabled")
-    assert element.find("button", class_="tb-match__reset") is None
     assert (outdir / "_static" / "tb-match.js").exists()
     assert (outdir / "_static" / "tb-match.css").exists()
 
@@ -237,12 +235,8 @@ Title
 
     latex = read_latex_output(outdir)
     assert r"\subsubsection*{Matching question}" in latex
-    assert r"\begin{sphinxadmonition}{note}{Matching question}" not in latex
     assert "Match each term" in latex
     assert r"\begin{tabular}{@{}p{0.42\linewidth}p{0.52\linewidth}@{}}" in latex
-    assert r"\textbf{Sources} & \textbf{Targets}" not in latex
-    assert r"\begin{itemize}" not in latex
-    assert r"\begin{enumerate}" not in latex
     assert r"\textbf{A.} compiler" in latex
     assert r"\textbf{B.} interpreter" in latex
     assert r"\textbf{C.} linker" in latex

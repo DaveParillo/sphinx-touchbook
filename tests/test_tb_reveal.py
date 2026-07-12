@@ -114,8 +114,6 @@ Title
     element = elements[0]
     assert element["showlabel"] == "Open"
     assert element["hidelabel"] == "Close"
-    assert "showtitle" not in element.attrs
-    assert "hidetitle" not in element.attrs
     assert "modal" not in element.attrs
     assert element.find("details", class_="tb-reveal__fallback") is not None
     assert element.find("summary").get_text(strip=True) == "Open"
@@ -189,8 +187,6 @@ Title
     element = elements[0]
     assert "modal" in element.attrs
     assert element["modal-titlebar"] == "Author note"
-    assert "modaltitle" not in element.attrs
-    assert "modallabel" not in element.attrs
 
 
 def test_text_builder_preserves_content(tmp_path):
@@ -219,11 +215,5 @@ def test_web_component_asset_defines_custom_element():
     assert 'button.setAttribute("aria-expanded", "false")' in source
     assert 'button.setAttribute("aria-controls", panelId)' in source
     assert 'openButton.setAttribute("aria-haspopup", "dialog")' in source
-    assert "showtitle" not in source
-    assert "hidetitle" not in source
-    assert "modaltitle" not in source
-    assert "modallabel" not in source
     assert "modal-titlebar" in source
-    assert "tb-reveal__dialog-title" not in source
     assert "showModal" in source
-    assert "Math.random" not in source

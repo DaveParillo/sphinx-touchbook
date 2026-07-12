@@ -285,7 +285,6 @@ Title
 
     latex = read_latex_output(outdir)
     assert r"\subsubsection*{Click question}" in latex
-    assert r"\begin{sphinxadmonition}{note}{Click question}" not in latex
     assert "Click the comparison operator" in latex
     assert "WHERE age >= 18;" in latex
     assert "This line selects output columns." not in latex

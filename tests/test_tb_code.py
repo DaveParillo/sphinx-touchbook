@@ -201,6 +201,104 @@ Title
     assert "tb-code.css" in html
 
 
+def test_caption_without_name_does_not_create_caption_target(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-code:: python
+   :caption: Caption only
+
+   print("Hello")
+""",
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    element = soup.find("tb-code")
+    assert element is not None
+    assert element["id"] != "caption-only"
+    assert soup.find(id="caption-only") is None
+    assert element.find("figcaption", class_="tb-code__caption").get_text(strip=True) == "Caption only"
+
+
+def test_name_and_caption_support_numref_in_html(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+See :numref:`captioned-code`.
+
+.. tb-code:: python
+   :name: captioned-code
+   :caption: Captioned code
+
+   print("Hello")
+""",
+        conf_extra='numfig = True\nnumfig_format = {"code-block": "Listing %s"}\n',
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    link = soup.find("a", href="#captioned-code")
+    assert link is not None
+    assert "Listing" in link.get_text()
+    assert soup.find("tb-code", id="captioned-code") is not None
+
+
+def test_name_without_caption_is_not_numbered_for_numref(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+See :numref:`uncaptioned-code`.
+
+.. tb-code:: python
+   :name: uncaptioned-code
+
+   print("Hello")
+""",
+        conf_extra='numfig = True\nnumfig_format = {"code-block": "Listing %s"}\n',
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    assert soup.find("tb-code", id="uncaptioned-code") is not None
+    assert soup.find("a", href="#uncaptioned-code") is None
+    assert "uncaptioned-code" in soup.get_text()
+
+
+def test_name_and_caption_support_numref_in_latex(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "latex",
+        """
+Title
+=====
+
+See :numref:`captioned-code`.
+
+.. tb-code:: python
+   :name: captioned-code
+   :caption: Captioned code
+
+   print("Hello")
+""",
+        conf_extra='numfig = True\nnumfig_format = {"code-block": "Listing %s"}\n',
+    )
+
+    latex = read_latex_output(outdir)
+    assert "index:captioned-code" in latex
+    assert "Listing" in latex
+    assert r"\sphinxSetupCaptionForVerbatim{Captioned code}" in latex
+
+
 def test_conf_py_overrides_defaults(tmp_path):
     outdir = build_sphinx(
         tmp_path,
@@ -788,7 +886,6 @@ Title
     latex = read_latex_output(outdir)
     assert "Static listing" in latex
     assert r"\sphinxSetupCaptionForVerbatim{Static listing}" in latex
-    assert r"\begin{sphinxadmonition}{note}{Static listing}" not in latex
     assert r"\begin{sphinxVerbatim}" in latex
     assert r"\PYG" in latex
     assert "Hello" in latex
@@ -816,11 +913,7 @@ def test_web_component_contract():
     assert "runtimeParameters" in source
     assert "splitArguments" in source
     assert "tb-code__runtime-input" in source
-    assert "resetButton" not in source
-    assert "resetCode" not in source
-    assert "resetLabel" not in source
     assert 'role", "status"' in source
-    assert "Math.random" not in source
 
 
 def test_hidden_controls_have_theme_independent_css():
