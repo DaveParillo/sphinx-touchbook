@@ -1,6 +1,6 @@
 # sphinx-touchbook
 [![PyPI](https://img.shields.io/pypi/v/sphinx-touchbook.svg)](https://pypi.org/project/sphinx-touchbook/)
-[![Tests](https://img.shields.io/github/actions/workflow/status/daveparillo/sphinx-touchbook/publish-authorguide.yml?branch=main&label=tests)](https://github.com/daveparillo/sphinx-touchbook/actions/workflows/publish-authorguide.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/daveparillo/sphinx-touchbook/tests.yml?branch=main&label=tests)](https://github.com/daveparillo/sphinx-touchbook/actions/workflows/tests.yml)
 [![Author Guide](https://img.shields.io/github/actions/workflow/status/daveparillo/sphinx-touchbook/publish-authorguide.yml?branch=main&label=docs)](https://github.com/daveparillo/sphinx-touchbook/actions/workflows/publish-authorguide.yml)
 [![License](https://img.shields.io/badge/license-BSD--2--Clause-blue)](LICENSE)
 
@@ -24,7 +24,7 @@ If you want those features then you should consider Runestone as a resource.
 
 ## Setup
 
-To build documents Python is required.
+To build documents Python and Sphinx 8.1 or later are required.
 
 Create and activate a virtual environment:
 
@@ -39,6 +39,7 @@ dependencies:
 ```bash
 python3 -m pip install --upgrade pip
 python3 -m pip install -e '.[test,docs,publish]'
+python3 -m pip install tox
 ```
 
 To test documents Node.js with `npm` is required.
@@ -88,7 +89,13 @@ accessibility notes, and fallback behavior.
 
 ## Run Tests
 
-Run the Python directive and generator tests:
+Run the Python directive, generator, HTML docs, and text docs matrix:
+
+```bash
+python3 -m tox
+```
+
+Run only the Python directive and generator tests in the active environment:
 
 ```bash
 python3 -m pytest tests/test_*.py
@@ -133,5 +140,3 @@ npm run test:web-components
   Scalar is a free, open source authoring and publishing platform that’s
   designed to make it easy for authors to write long-form, born-digital
   scholarship online. 
-
-
