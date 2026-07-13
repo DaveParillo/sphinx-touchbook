@@ -58,12 +58,12 @@ jobs:
 
       - name: Build PDF author guide
         run: |
+          mkdir -p build/release-assets
           docker run --rm \
             -v "$PWD:/docs" \
             -w /docs \
             sphinxdoc/sphinx-latexpdf:latest \
             sh -c 'python -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
-          mkdir -p build/release-assets
           find build/latexpdf/latex -name '*.pdf' -exec cp {} build/release-assets/ \;
 
       - name: Build package
