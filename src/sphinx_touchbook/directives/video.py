@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.parse import ParseResult, parse_qs, urlencode, urlparse, urlunparse
 
 from docutils.parsers.rst import Directive, directives
 
@@ -34,6 +34,9 @@ YOUTUBE_HOSTS = {
     "music.youtube.com",
 }
 VIMEO_HOSTS = {"vimeo.com", "www.vimeo.com", "player.vimeo.com"}
+ODYSEE_HOSTS = {"odysee.com", "www.odysee.com"}
+CANVAS_HOST_LABEL = "canvas"
+INSTRUCTURE_DOMAIN = "instructure.com"
 
 
 def _config(directive: Directive) -> dict[str, str]:
@@ -67,10 +70,42 @@ def _seconds(value: str) -> int | None:
     return total
 
 
-def _youtube_video_id(parsed, query: dict[str, list[str]]) -> str | None:
-    if parsed.netloc in {"youtu.be", "www.youtu.be"}:
+def _hostname(parsed: ParseResult) -> str:
+    return (parsed.hostname or "").lower()
+
+
+def _host_matches(host: str, domains: set[str]) -> bool:
+    return any(host == domain or host.endswith(f".{domain}") for domain in domains)
+
+
+def _host_has_label(host: str, label: str) -> bool:
+    return label in host.split(".")
+
+
+def _is_youtube_host(host: str) -> bool:
+    return _host_matches(host, YOUTUBE_HOSTS)
+
+
+def _is_vimeo_host(host: str) -> bool:
+    return _host_matches(host, VIMEO_HOSTS)
+
+
+def _is_odysee_host(host: str) -> bool:
+    return _host_matches(host, ODYSEE_HOSTS)
+
+
+def _is_canvas_host(host: str) -> bool:
+    return _host_matches(host, {INSTRUCTURE_DOMAIN}) or _host_has_label(
+        host,
+        CANVAS_HOST_LABEL,
+    )
+
+
+def _youtube_video_id(parsed: ParseResult, query: dict[str, list[str]]) -> str | None:
+    host = _hostname(parsed)
+    if host in {"youtu.be", "www.youtu.be"}:
         return parsed.path.strip("/") or None
-    elif "youtube" in parsed.netloc:
+    elif _is_youtube_host(host):
         if parsed.path.startswith("/watch"):
             return query.get("v", [None])[0]
         else:
@@ -170,9 +205,9 @@ def _local_video(url: str) -> bool:
 def _resolve_source(url: str) -> dict[str, str]:
     parsed = urlparse(url)
     query = parse_qs(parsed.query)
-    host = parsed.netloc.lower()
+    host = _hostname(parsed)
 
-    if host in YOUTUBE_HOSTS or "youtube.com" in host:
+    if _is_youtube_host(host):
         watch_url = _youtube_watch_url(parsed, query)
         embed_url = _youtube_embed_url(parsed, query)
         if watch_url and embed_url:
@@ -183,7 +218,7 @@ def _resolve_source(url: str) -> dict[str, str]:
                 "embed_url": embed_url,
                 "thumbnail_url": _youtube_thumbnail_url(parsed, query),
             }
-    if host in VIMEO_HOSTS or "vimeo.com" in host:
+    if _is_vimeo_host(host):
         embed_url = _vimeo_embed_url(parsed)
         if embed_url:
             return {
@@ -192,9 +227,14 @@ def _resolve_source(url: str) -> dict[str, str]:
                 "embed_url": embed_url,
                 "thumbnail_url": _vimeo_thumbnail_url(parsed),
             }
-    if "odysee.com" in host:
-        return {"provider": "odysee", "kind": "iframe", "embed_url": _odysee_embed_url(parsed), "thumbnail_url": None}
-    if "canvas" in host or "instructure.com" in host:
+    if _is_odysee_host(host):
+        return {
+            "provider": "odysee",
+            "kind": "iframe",
+            "embed_url": _odysee_embed_url(parsed),
+            "thumbnail_url": None,
+        }
+    if _is_canvas_host(host):
         return {"provider": "canvas", "kind": "iframe", "embed_url": url, "thumbnail_url": None}
     if _local_video(url):
         return {"provider": "local", "kind": "video", "embed_url": url, "thumbnail_url": None}

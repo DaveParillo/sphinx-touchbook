@@ -191,6 +191,55 @@ def test_directive_detects_other_provider_urls(url, provider, embed_url):
     assert node["embed_url"] == embed_url
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://youtube.com.evil.example/watch?v=aqz-KE-bpKQ",
+        "https://notyoutube.com/watch?v=aqz-KE-bpKQ",
+        "https://vimeo.com.evil.example/486845755",
+        "https://notvimeo.com/486845755",
+        "https://odysee.com.evil.example/@example/video:abc",
+        "https://notodysee.com/@example/video:abc",
+        "https://evil-instructure.com/courses/1/external_tools/2",
+        "https://canvas-example.edu/courses/1/external_tools/2",
+    ],
+)
+def test_directive_does_not_detect_provider_from_partial_host_matches(url):
+    document = parse_rst(
+        f"""
+.. tb-video:: {url}
+"""
+    )
+
+    node = next(document.findall(TbVideoNode))
+    assert node["provider"] == "generic"
+    assert node["kind"] == "iframe"
+    assert node["embed_url"] == url
+
+
+@pytest.mark.parametrize(
+    "url,provider",
+    [
+        ("https://teaching.example.edu.canvas.example/video/1", "canvas"),
+        ("https://school.instructure.com/courses/1/external_tools/2", "canvas"),
+        ("https://youtube.example.com/watch?v=aqz-KE-bpKQ", "generic"),
+        ("https://vimeo.example.com/486845755", "generic"),
+    ],
+)
+def test_directive_provider_host_matching_uses_domain_and_label_boundaries(
+    url,
+    provider,
+):
+    document = parse_rst(
+        f"""
+.. tb-video:: {url}
+"""
+    )
+
+    node = next(document.findall(TbVideoNode))
+    assert node["provider"] == provider
+
+
 def test_html_build_emits_placeholder_and_config(tmp_path):
     outdir = build_sphinx(
         tmp_path,

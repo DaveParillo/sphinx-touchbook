@@ -207,12 +207,12 @@ Example 5: YouTube opens externally
 
       .. code-block:: rst
 
-         .. tb-video:: https://www.youtube.com/watch?v=aqz-KE-bpKQ
+         .. tb-video:: https://www.youtube.com/watch?v=aqz-KE-bpKQ&t=75s
 
             Start at 1:15 for the worked example.
 
    .. tb-tab:: Rendered
 
-      .. tb-video:: https://www.youtube.com/watch?v=aqz-KE-bpKQ
+      .. tb-video:: https://www.youtube.com/watch?v=aqz-KE-bpKQ&t=75s
 
          Start at 1:15 for the worked example.
