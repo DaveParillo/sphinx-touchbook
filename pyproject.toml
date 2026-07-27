@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sphinx-touchbook"
-version = "0.2.3"
+version = "0.2.4"
 description = "Sphinx directives and Web Components for interactive textbook content."
 readme = "README.md"
 requires-python = ">=3.10"

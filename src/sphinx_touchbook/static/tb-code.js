@@ -137,6 +137,7 @@ class TbCode extends HTMLElement {
     this.status.className = "tb-code__status";
     this.status.setAttribute("role", "status");
     this.status.setAttribute("aria-live", "polite");
+    this.status.setAttribute("aria-atomic", "true");
 
     const outputLabel = document.createElement("div");
     outputLabel.className = "tb-code__output-label";
@@ -146,7 +147,7 @@ class TbCode extends HTMLElement {
     this.output = document.createElement("pre");
     this.output.className = "tb-code__output";
     this.output.tabIndex = 0;
-    this.output.setAttribute("aria-labelledby", outputLabel.id);
+    this.output.setAttribute("aria-describedby", outputLabel.id);
 
     this.append(
       controls,

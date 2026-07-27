@@ -110,6 +110,7 @@ describe("tb-code Web Component", () => {
     const revisionOutput = element.querySelector("output.tb-code__revision-output");
     const runtimeInputs = element.querySelector(".tb-code__runtime-inputs");
     const status = element.querySelector(".tb-code__status");
+    const outputLabel = element.querySelector(".tb-code__output-label");
     const output = element.querySelector(".tb-code__output");
 
     expect(customElements.get("tb-code")).toBeTypeOf("function");
@@ -130,7 +131,10 @@ describe("tb-code Web Component", () => {
     expect(runtimeInputs.hidden).toBe(true);
     expect(status.getAttribute("role")).toBe("status");
     expect(status.getAttribute("aria-live")).toBe("polite");
-    expect(output.getAttribute("aria-labelledby")).toBeTruthy();
+    expect(status.getAttribute("aria-atomic")).toBe("true");
+    expect(outputLabel.textContent).toBe("Program output");
+    expect(output.getAttribute("aria-labelledby")).toBeNull();
+    expect(output.getAttribute("aria-describedby")).toBe(outputLabel.id);
   });
 
   it("toggles editor visibility and records source versions with the slider", () => {

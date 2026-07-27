@@ -362,8 +362,8 @@ Accessibility behavior
 
 The no-JS HTML fallback is a normal Sphinx-highlighted code listing. HTML adds
 native ``button`` controls, a ``textarea`` editor, a source version slider,
-optional runtime text inputs, a polite status region, and a labeled output
-region.
+optional runtime text inputs, a polite status region, and a described
+focusable output area.
 
 The edit button is a toggle. When the editor is opened, its label changes from
 ``tb_code_edit_label`` to ``tb_code_hide_edit_label`` and ``aria-expanded`` is

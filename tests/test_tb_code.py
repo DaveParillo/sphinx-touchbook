@@ -914,6 +914,9 @@ def test_web_component_contract():
     assert "splitArguments" in source
     assert "tb-code__runtime-input" in source
     assert 'role", "status"' in source
+    assert 'aria-atomic", "true"' in source
+    assert 'aria-describedby", outputLabel.id' in source
+    assert 'aria-labelledby", outputLabel.id' not in source
 
 
 def test_hidden_controls_have_theme_independent_css():
