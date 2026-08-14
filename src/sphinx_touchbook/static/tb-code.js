@@ -53,7 +53,7 @@ class TbCode extends HTMLElement {
     this.editButton.type = "button";
     this.editButton.className = "tb-code__button";
     this.editButton.textContent = this.config.editLabel || "Edit";
-    this.editButton.hidden = this.config.editable === false;
+    this.editButton.hidden = this.config.readonly === true;
     this.editButton.setAttribute("aria-expanded", "false");
     this.editButton.setAttribute("aria-controls", `${this.safeId()}-editor`);
     this.editButton.addEventListener("click", () => this.toggleEditor());

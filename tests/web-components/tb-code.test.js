@@ -22,7 +22,7 @@ function appendCode(config = {}) {
     validateLanguage: false,
     stdin: "",
     parameters: {},
-    editable: true,
+    readonly: false,
     runLabel: "Run",
     editLabel: "Edit source",
     hideEditLabel: "Hide source",
@@ -32,7 +32,6 @@ function appendCode(config = {}) {
   const element = document.createElement("tb-code");
   element.id = "code-example";
   element.setAttribute("language", data.language);
-  element.setAttribute("editable", String(data.editable));
   element.innerHTML = `
     <figure class="tb-code__fallback"><pre><code>${data.source}</code></pre></figure>
     <script type="application/json" class="tb-code__config">${JSON.stringify(data)}</script>
@@ -51,7 +50,7 @@ function appendSphinxHighlightedCode(config = {}) {
     validateLanguage: false,
     stdin: "",
     parameters: {},
-    editable: true,
+    readonly: false,
     runLabel: "Run",
     editLabel: "Edit source",
     hideEditLabel: "Hide source",
@@ -61,7 +60,6 @@ function appendSphinxHighlightedCode(config = {}) {
   const element = document.createElement("tb-code");
   element.id = "sphinx-code-example";
   element.setAttribute("language", data.language);
-  element.setAttribute("editable", String(data.editable));
   element.innerHTML = `
     <figure class="tb-code__fallback">
       <div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;one&quot;</span><span class="p">)</span></pre></div>
@@ -135,6 +133,12 @@ describe("tb-code Web Component", () => {
     expect(outputLabel.textContent).toBe("Program output");
     expect(output.getAttribute("aria-labelledby")).toBeNull();
     expect(output.getAttribute("aria-describedby")).toBe(outputLabel.id);
+  });
+
+  it("hides the edit control for readonly source", () => {
+    const element = appendCode({ readonly: true });
+
+    expect(editButton(element).hidden).toBe(true);
   });
 
   it("toggles editor visibility and records source versions with the slider", () => {

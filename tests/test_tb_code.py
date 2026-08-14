@@ -110,7 +110,7 @@ def test_directive_parses_semantic_node_defaults():
     assert node["endpoint"] == DEFAULT_ENDPOINT
     assert node["languages_endpoint"] == DEFAULT_LANGUAGES_ENDPOINT
     assert node["validate_language"] is True
-    assert node["editable"] is True
+    assert node["readonly"] is False
     assert node["edit_label"] == "Edit"
     assert node["hide_edit_label"] == "Hide editor"
     assert node["revision_label"] == "Source version"
@@ -147,7 +147,7 @@ def test_directive_accepts_language_argument_and_options():
     assert node["caption"] == "C++ hello"
     assert node["stdin"] == "input text"
     assert node["parameters"]["compileargs"] == ["-Wall"]
-    assert node["editable"] is False
+    assert node["readonly"] is True
     assert node["hidden"] is True
     assert node["code_block_options"]["linenos"] is True
     assert node["code_block_options"]["highlight_args"]["linenostart"] == 10
@@ -189,6 +189,7 @@ Title
     assert config["filesEndpoint"] == DEFAULT_FILES_ENDPOINT
     assert config["languagesEndpoint"] == DEFAULT_LANGUAGES_ENDPOINT
     assert config["validateLanguage"] is True
+    assert config["readonly"] is False
     assert config["runLabel"] == "Execute"
     assert config["editLabel"] == "Change"
     assert config["hideEditLabel"] == "Done"

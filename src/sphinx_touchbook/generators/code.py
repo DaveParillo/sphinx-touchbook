@@ -39,7 +39,7 @@ def _config(node: TbCodeNode) -> dict[str, object]:
         "stdin": node["stdin"],
         "parameters": node["parameters"],
         "files": node.get("files", []),
-        "editable": node["editable"],
+        "readonly": node["readonly"],
         "showTutor": node.get("show_tutor", False),
         "runLabel": node["run_label"],
         "editLabel": node["edit_label"],
@@ -88,12 +88,11 @@ def visit_tb_code_html(self: HTML5Translator, node: TbCodeNode) -> None:
         raise nodes.SkipNode
     node_id = escape(_node_id(node), quote=True)
     language = escape(node["language"], quote=True)
-    editable = "true" if node["editable"] else "false"
     code_options = node.get("code_block_options", {})
     classes = " ".join(escape(name, quote=True) for name in code_options.get("classes", []))
     fallback_class = "tb-code__fallback" if not classes else f"tb-code__fallback {classes}"
     self.body.append(html_additional_targets(node))
-    self.body.append(f'<tb-code id="{node_id}"{html_class_attr(node)} language="{language}" editable="{editable}">\n')
+    self.body.append(f'<tb-code id="{node_id}"{html_class_attr(node)} language="{language}">\n')
     self.body.append(f'<figure class="{fallback_class}">\n')
     if node["caption"]:
         self.body.append(f'<figcaption class="tb-code__caption">{escape(node["caption"])}</figcaption>\n')

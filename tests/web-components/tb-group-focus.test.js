@@ -85,10 +85,10 @@ const fixtures = [
     name: "tb-code",
     selector: "button.tb-code__button:not([hidden])",
     html: `
-      <tb-code id="code-example" language="python" editable="true">
+      <tb-code id="code-example" language="python">
         <figure class="tb-code__fallback"><pre><code>print("one")</code></pre></figure>
         <script type="application/json" class="tb-code__config">
-          {"language":"python","jobeLanguage":"python3","source":"print(\\"one\\")","endpoint":"https://example.test/runs/","languagesEndpoint":"https://example.test/languages","validateLanguage":false,"stdin":"","parameters":{},"editable":true,"runLabel":"Run","editLabel":"Edit source","hideEditLabel":"Hide source","revisionLabel":"Source version"}
+          {"language":"python","jobeLanguage":"python3","source":"print(\\"one\\")","endpoint":"https://example.test/runs/","languagesEndpoint":"https://example.test/languages","validateLanguage":false,"stdin":"","parameters":{},"readonly":false,"runLabel":"Run","editLabel":"Edit source","hideEditLabel":"Hide source","revisionLabel":"Source version"}
         </script>
       </tb-code>
     `,

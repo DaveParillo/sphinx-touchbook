@@ -217,7 +217,6 @@ class TbCodeDirective(Directive):
         "linkargs": directives.unchanged,
         "runargs": directives.unchanged,
         "interpreterargs": directives.unchanged,
-        "editable": directives.flag,
         "readonly": directives.flag,
         "hidden": directives.flag,
         "show-tutor": directives.flag,
@@ -280,9 +279,7 @@ class TbCodeDirective(Directive):
         for name in ("compileargs", "linkargs", "runargs", "interpreterargs"):
             value = self.options[name] if name in self.options else language_defaults.get(name)
             node["parameters"][name] = _as_arg_list(value)
-        node["editable"] = "readonly" not in self.options
-        if "editable" in self.options:
-            node["editable"] = True
+        node["readonly"] = "readonly" in self.options
         node["run_label"] = self.options.get("run-label") or _config_value(config, "tb_code_run_label", "Run")
         node["edit_label"] = self.options.get("edit-label") or _config_value(config, "tb_code_edit_label", "Edit")
         node["hide_edit_label"] = self.options.get("hide-edit-label") or _config_value(
