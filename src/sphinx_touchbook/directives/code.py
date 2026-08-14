@@ -236,9 +236,9 @@ class TbCodeDirective(Directive):
         assign_node_id(self, node)
         language = self.options.get("language") or (self.arguments[0] if self.arguments else None)
         config = _config(self)
-        node["language_map"] = dict(_config_value(config, "tb_code_language_map", DEFAULT_LANGUAGE_MAP))
+        language_map = dict(_config_value(config, "tb_code_language_map", DEFAULT_LANGUAGE_MAP))
         node["language"] = language or _config_value(config, "tb_code_default_language", DEFAULT_LANGUAGE)
-        node["jobe_language"] = node["language_map"].get(node["language"], node["language"])
+        node["jobe_language"] = language_map.get(node["language"], node["language"])
         language_defaults = _language_defaults(config, node["language"], node["jobe_language"])
         code_block_options = _merged_code_block_options(config, self.options)
         source, normalized_code_block_options = _normalize_code_block_options(

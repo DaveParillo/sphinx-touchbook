@@ -14,7 +14,6 @@ class TbCode extends HTMLElement {
     this.editing = false;
     this.revisions = [this.source];
     this.revisionIndex = 0;
-    this.editorDirty = false;
     this.fileEditors = new Map();
     this.renderControls();
     this.preloadSupportedLanguages();
@@ -69,9 +68,6 @@ class TbCode extends HTMLElement {
     this.editor.className = "tb-code__editor";
     this.editor.value = this.source;
     this.editor.hidden = true;
-    this.editor.addEventListener("input", () => {
-      this.editorDirty = true;
-    });
     this.editor.addEventListener("change", () => this.captureCurrentRevision());
     editorLabel.hidden = true;
     this.editorLabel = editorLabel;
@@ -257,14 +253,12 @@ class TbCode extends HTMLElement {
   captureCurrentRevision() {
     const source = this.editor.value;
     if (source === this.revisions[this.revisionIndex]) {
-      this.editorDirty = false;
       return;
     }
     const retained = this.revisions.slice(0, this.revisionIndex + 1);
     retained.push(source);
     this.revisions = retained;
     this.revisionIndex = this.revisions.length - 1;
-    this.editorDirty = false;
     this.updateSourceDisplay(source);
     this.updateRevisionControl();
   }
@@ -275,7 +269,6 @@ class TbCode extends HTMLElement {
     }
     this.revisionIndex = index;
     this.editor.value = this.revisions[index];
-    this.editorDirty = false;
     this.updateSourceDisplay(this.revisions[index]);
     this.updateRevisionControl();
     this.status.textContent = `Loaded source version ${index + 1}.`;
