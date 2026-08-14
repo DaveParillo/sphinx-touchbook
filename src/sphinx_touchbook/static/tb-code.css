@@ -11,6 +11,10 @@ tb-code [hidden] {
   margin: 0 0 0.75rem;
 }
 
+.tb-code__editor-slot {
+  margin: 0 0 0.75rem;
+}
+
 .tb-code__caption {
   font-weight: 700;
   margin-bottom: 0.5rem;
@@ -34,6 +38,18 @@ tb-code [hidden] {
   display: block;
   font-weight: 700;
   margin: 0.75rem 0 0.25rem;
+}
+
+.tb-code__visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .tb-code__editor {

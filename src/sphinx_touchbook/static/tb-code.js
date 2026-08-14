@@ -11,6 +11,15 @@ class TbCode extends HTMLElement {
     this.source = this.config.source || "";
     this.sourceDisplay = this.querySelector(":scope > .tb-code__fallback code")
       || this.querySelector(":scope > .tb-code__fallback pre");
+    this.fallback = this.querySelector(":scope > .tb-code__fallback");
+    this.editorSlot = document.createElement("div");
+    this.editorSlot.className = "tb-code__editor-slot";
+    this.editorSlot.hidden = true;
+    if (this.fallback) {
+      this.fallback.before(this.editorSlot);
+    } else {
+      this.prepend(this.editorSlot);
+    }
     this.editing = false;
     this.revisions = [this.source];
     this.revisionIndex = 0;
@@ -60,7 +69,7 @@ class TbCode extends HTMLElement {
     controls.append(this.runButton, this.editButton, this.tutorButton);
 
     const editorLabel = document.createElement("label");
-    editorLabel.className = "tb-code__editor-label";
+    editorLabel.className = "tb-code__editor-label tb-code__visually-hidden";
     editorLabel.htmlFor = `${this.safeId()}-editor`;
     editorLabel.textContent = "Editable source code";
     this.editor = document.createElement("textarea");
@@ -71,6 +80,7 @@ class TbCode extends HTMLElement {
     this.editor.addEventListener("change", () => this.captureCurrentRevision());
     editorLabel.hidden = true;
     this.editorLabel = editorLabel;
+    this.editorSlot.append(editorLabel, this.editor);
 
     this.revisionControl = document.createElement("div");
     this.revisionControl.className = "tb-code__revision-control";
@@ -147,8 +157,6 @@ class TbCode extends HTMLElement {
 
     this.append(
       controls,
-      editorLabel,
-      this.editor,
       this.revisionControl,
       this.runtimeInputs,
       this.attachedFiles,
@@ -233,6 +241,16 @@ class TbCode extends HTMLElement {
 
   showEditor() {
     this.editing = true;
+    const fallbackHeight = this.fallback?.getBoundingClientRect().height;
+    if (fallbackHeight) {
+      const height = `${Math.ceil(fallbackHeight)}px`;
+      this.editor.style.height = height;
+      this.editor.style.minHeight = height;
+    }
+    if (this.fallback) {
+      this.fallback.hidden = true;
+    }
+    this.editorSlot.hidden = false;
     this.editor.hidden = false;
     this.editorLabel.hidden = false;
     this.updateRevisionControl();
@@ -244,8 +262,14 @@ class TbCode extends HTMLElement {
   hideEditor() {
     this.captureCurrentRevision();
     this.editing = false;
+    this.editorSlot.hidden = true;
+    if (this.fallback) {
+      this.fallback.hidden = false;
+    }
     this.editor.hidden = true;
     this.editorLabel.hidden = true;
+    this.editor.style.height = "";
+    this.editor.style.minHeight = "";
     this.editButton.textContent = this.config.editLabel || "Edit";
     this.editButton.setAttribute("aria-expanded", "false");
   }
@@ -278,121 +302,37 @@ class TbCode extends HTMLElement {
     if (!this.sourceDisplay) {
       return;
     }
-    this.sourceDisplay.replaceChildren(...this.highlightSource(source));
-  }
-
-  highlightSource(source) {
     const fragment = document.createDocumentFragment();
+    const emphasized = new Set(this.config.emphasizeLines || []);
+    const lineNumberStart = Number.isInteger(this.config.lineNumberStart)
+      ? this.config.lineNumberStart
+      : 1;
     const lines = source.split("\n");
-    lines.forEach((line, lineIndex) => {
-      this.appendHighlightedLine(fragment, line);
-      if (lineIndex < lines.length - 1) {
+    const lineNumberWidth = String(lineNumberStart + lines.length - 1).length;
+
+    lines.forEach((line, index) => {
+      const lineContent = document.createDocumentFragment();
+      if (this.config.lineNumbers === true) {
+        const number = document.createElement("span");
+        number.className = "linenos";
+        number.textContent = String(lineNumberStart + index).padStart(lineNumberWidth);
+        lineContent.appendChild(number);
+      }
+      lineContent.appendChild(document.createTextNode(line));
+
+      if (emphasized.has(index + 1)) {
+        const highlight = document.createElement("span");
+        highlight.className = "hll";
+        highlight.appendChild(lineContent);
+        fragment.appendChild(highlight);
+      } else {
+        fragment.appendChild(lineContent);
+      }
+      if (index < lines.length - 1) {
         fragment.appendChild(document.createTextNode("\n"));
       }
     });
-    return Array.from(fragment.childNodes);
-  }
-
-  appendHighlightedLine(parent, line) {
-    const language = (this.config.language || "").toLowerCase();
-    const tokens = this.tokenizeSourceLine(line, language);
-    tokens.forEach((token) => {
-      if (!token.className) {
-        parent.appendChild(document.createTextNode(token.text));
-        return;
-      }
-      const span = document.createElement("span");
-      span.className = token.className;
-      span.textContent = token.text;
-      parent.appendChild(span);
-    });
-  }
-
-  tokenizeSourceLine(line, language) {
-    const tokens = [];
-    const keywordClasses = this.keywordClasses(language);
-    let index = 0;
-
-    while (index < line.length) {
-      const rest = line.slice(index);
-      const whitespace = rest.match(/^\s+/);
-      if (whitespace) {
-        tokens.push({ text: whitespace[0] });
-        index += whitespace[0].length;
-        continue;
-      }
-
-      const comment = this.commentMatch(rest, language);
-      if (comment) {
-        tokens.push({ text: comment, className: "c1" });
-        break;
-      }
-
-      const string = rest.match(/^([rubf]*("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'))/i);
-      if (string) {
-        tokens.push({ text: string[0], className: "s2" });
-        index += string[0].length;
-        continue;
-      }
-
-      const number = rest.match(/^\b\d+(?:\.\d+)?\b/);
-      if (number) {
-        tokens.push({ text: number[0], className: "mi" });
-        index += number[0].length;
-        continue;
-      }
-
-      const name = rest.match(/^[A-Za-z_][A-Za-z0-9_]*/);
-      if (name) {
-        const word = name[0];
-        tokens.push({ text: word, className: keywordClasses.get(word) || "n" });
-        index += word.length;
-        continue;
-      }
-
-      const operator = rest.match(/^(==|!=|<=|>=|&&|\|\||::|->|\+\+|--|[-+*/%=<>!&|^~]+)/);
-      if (operator) {
-        tokens.push({ text: operator[0], className: "o" });
-        index += operator[0].length;
-        continue;
-      }
-
-      tokens.push({ text: line[index], className: "p" });
-      index += 1;
-    }
-
-    return tokens;
-  }
-
-  keywordClasses(language) {
-    const keywords = new Map();
-    const add = (words, className) => words.forEach((word) => keywords.set(word, className));
-    if (["python", "py", "python3"].includes(language)) {
-      add(["False", "None", "True"], "kc");
-      add(["and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield"], "k");
-      add(["print", "len", "range", "str", "int", "float", "list", "dict", "set", "tuple"], "nb");
-      return keywords;
-    }
-    if (["cpp", "c++", "c", "java", "js", "javascript", "nodejs"].includes(language)) {
-      add(["auto", "bool", "break", "case", "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "false", "float", "for", "if", "int", "long", "new", "private", "protected", "public", "return", "short", "static", "struct", "switch", "this", "throw", "true", "try", "void", "while"], "k");
-      add(["include", "import", "package"], "kn");
-      add(["std", "System", "String", "Scanner"], "nc");
-      return keywords;
-    }
-    if (language === "octave") {
-      add(["break", "case", "catch", "continue", "else", "elseif", "end", "for", "function", "if", "otherwise", "return", "switch", "try", "while"], "k");
-    }
-    return keywords;
-  }
-
-  commentMatch(rest, language) {
-    if (["python", "py", "python3", "octave"].includes(language) && rest.startsWith("#")) {
-      return rest;
-    }
-    if (rest.startsWith("//")) {
-      return rest;
-    }
-    return "";
+    this.sourceDisplay.replaceChildren(fragment);
   }
 
   updateRevisionControl() {

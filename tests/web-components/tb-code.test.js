@@ -8,8 +8,9 @@ beforeAll(async () => {
 beforeEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
-  customElements.get("tb-code").languagesByEndpoint?.clear?.();
-  customElements.get("tb-code").languagePreloadsByEndpoint?.clear?.();
+  const TbCode = customElements.get("tb-code");
+  TbCode.languagesByEndpoint?.clear?.();
+  TbCode.languagePreloadsByEndpoint?.clear?.();
 });
 
 function appendCode(config = {}) {
@@ -90,6 +91,11 @@ function editButton(element) {
   return codeButton(element, "Edit source");
 }
 
+function displayedSource(element) {
+  return element.querySelector(".tb-code__fallback code")
+    || element.querySelector(".tb-code__fallback pre");
+}
+
 function tutorButton(element) {
   return Array.from(element.querySelectorAll("button.tb-code__button"))
     .find((button) => button.textContent.startsWith("Show in ") && button.textContent.endsWith(" Tutor"));
@@ -101,6 +107,8 @@ describe("tb-code Web Component", () => {
     const run = runButton(element);
     const edit = editButton(element);
     const tutor = tutorButton(element);
+    const fallback = element.querySelector(".tb-code__fallback");
+    const editorSlot = element.querySelector(".tb-code__editor-slot");
     const editor = element.querySelector("textarea.tb-code__editor");
     const revisionControl = element.querySelector(".tb-code__revision-control");
     const revisionLabel = element.querySelector("label.tb-code__revision-label");
@@ -119,6 +127,8 @@ describe("tb-code Web Component", () => {
     expect(edit.textContent).toBe("Edit source");
     expect(edit.getAttribute("aria-expanded")).toBe("false");
     expect(edit.getAttribute("aria-controls")).toBe(editor.id);
+    expect(fallback.hidden).toBe(false);
+    expect(editorSlot.hidden).toBe(true);
     expect(editor.hidden).toBe(true);
     expect(revisionControl.hidden).toBe(true);
     expect(revisionLabel.textContent).toBe("Source version");
@@ -177,6 +187,28 @@ describe("tb-code Web Component", () => {
     expect(revisionControl.hidden).toBe(false);
   });
 
+  it("replaces the fallback listing with an equally tall editor", () => {
+    const element = appendCode();
+    const edit = editButton(element);
+    const fallback = element.querySelector(".tb-code__fallback");
+    const editorSlot = element.querySelector(".tb-code__editor-slot");
+    const editor = element.querySelector("textarea.tb-code__editor");
+    fallback.getBoundingClientRect = () => ({ height: 240 });
+
+    click(edit);
+    expect(fallback.hidden).toBe(true);
+    expect(editorSlot.hidden).toBe(false);
+    expect(editor.hidden).toBe(false);
+    expect(editor.style.height).toBe("240px");
+    expect(editor.style.minHeight).toBe("240px");
+
+    click(edit);
+    expect(fallback.hidden).toBe(false);
+    expect(editorSlot.hidden).toBe(true);
+    expect(editor.style.height).toBe("");
+    expect(editor.style.minHeight).toBe("");
+  });
+
   it("keeps the source version slider hidden if only one version exists", () => {
     const element = appendCode();
     const edit = editButton(element);
@@ -212,7 +244,6 @@ describe("tb-code Web Component", () => {
     const editor = element.querySelector("textarea.tb-code__editor");
     const revisionControl = element.querySelector(".tb-code__revision-control");
     const revisionSlider = element.querySelector("input.tb-code__revision-slider");
-    const displayedSource = element.querySelector(".tb-code__fallback code");
 
     click(edit);
     editor.value = 'print("two")';
@@ -224,7 +255,7 @@ describe("tb-code Web Component", () => {
 
     revisionSlider.value = "1";
     input(revisionSlider);
-    expect(displayedSource.textContent).toBe('print("one")');
+    expect(displayedSource(element).textContent).toBe('print("one")');
 
     await click(run);
     await flushPromises();
@@ -382,7 +413,6 @@ describe("tb-code Web Component", () => {
     const run = runButton(element);
     const edit = editButton(element);
     const editor = element.querySelector("textarea.tb-code__editor");
-    const displayedSource = element.querySelector(".tb-code__fallback code");
 
     click(edit);
     expect(editor.value).toBe('print("visible")');
@@ -393,9 +423,9 @@ describe("tb-code Web Component", () => {
     input(editor);
     click(edit);
 
-    expect(displayedSource.textContent).toBe('print("edited visible")');
-    expect(displayedSource.textContent).not.toContain("hidden setup");
-    expect(displayedSource.textContent).not.toContain("hidden tests");
+    expect(displayedSource(element).textContent).toBe('print("edited visible")');
+    expect(displayedSource(element).textContent).not.toContain("hidden setup");
+    expect(displayedSource(element).textContent).not.toContain("hidden tests");
 
     await click(run);
     await flushPromises();
@@ -418,7 +448,6 @@ describe("tb-code Web Component", () => {
     const run = runButton(element);
     const edit = editButton(element);
     const editor = element.querySelector("textarea.tb-code__editor");
-    const displayedSource = element.querySelector(".tb-code__fallback code");
 
     click(edit);
     editor.value = 'print("hidden edit")';
@@ -426,13 +455,13 @@ describe("tb-code Web Component", () => {
     click(edit);
 
     expect(editor.hidden).toBe(true);
-    expect(displayedSource.textContent).toBe('print("hidden edit")');
+    expect(displayedSource(element).textContent).toBe('print("hidden edit")');
 
     await click(run);
     await flushPromises();
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(displayedSource.textContent).toBe('print("hidden edit")');
+    expect(displayedSource(element).textContent).toBe('print("hidden edit")');
   });
 
   it("updates the displayed source when edited code is run before hiding", async () => {
@@ -450,7 +479,6 @@ describe("tb-code Web Component", () => {
     const run = runButton(element);
     const edit = editButton(element);
     const editor = element.querySelector("textarea.tb-code__editor");
-    const displayedSource = element.querySelector(".tb-code__fallback code");
 
     click(edit);
     editor.value = 'print("visible edit")';
@@ -459,27 +487,49 @@ describe("tb-code Web Component", () => {
     await flushPromises();
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(displayedSource.textContent).toBe('print("visible edit")');
+    expect(displayedSource(element).textContent).toBe('print("visible edit")');
 
     click(edit);
     expect(editor.hidden).toBe(true);
-    expect(displayedSource.textContent).toBe('print("visible edit")');
+    expect(displayedSource(element).textContent).toBe('print("visible edit")');
   });
 
-  it("updates Sphinx-highlighted fallback source after editing", () => {
-    const element = appendSphinxHighlightedCode({ source: 'print("one")' });
+  it("preserves code-block line numbers and emphasized lines after editing", () => {
+    const element = appendSphinxHighlightedCode({
+      source: 'print("one")\nprint("two")',
+      lineNumbers: true,
+      lineNumberStart: 25,
+      emphasizeLines: [2],
+    });
     const edit = editButton(element);
     const editor = element.querySelector("textarea.tb-code__editor");
-    const displayedSource = element.querySelector(".tb-code__fallback pre");
 
     click(edit);
-    editor.value = 'print("sphinx shape")';
+    editor.value = 'print("first")\nprint("second")';
     input(editor);
     click(edit);
 
-    expect(displayedSource.textContent).toBe('print("sphinx shape")');
-    expect(displayedSource.querySelector("span.nb")?.textContent).toBe("print");
-    expect(displayedSource.querySelector("span.s2")?.textContent).toBe('"sphinx shape"');
+    const source = displayedSource(element);
+    expect(source.textContent).toBe('25print("first")\n26print("second")');
+    expect(Array.from(source.querySelectorAll("span.linenos"), (line) => line.textContent)).toEqual(["25", "26"]);
+    expect(source.querySelector("span.hll")?.textContent).toBe('26print("second")');
+    expect(source.querySelector("span.nb")).toBeNull();
+    expect(source.querySelector("span.s2")).toBeNull();
+  });
+
+  it("right-aligns reconstructed inline line numbers like Pygments", () => {
+    const source = Array.from({ length: 10 }, (_, index) => `line ${index + 1}`).join("\n");
+    const element = appendSphinxHighlightedCode({ source, lineNumbers: true });
+    const edit = editButton(element);
+    const editor = element.querySelector("textarea.tb-code__editor");
+
+    click(edit);
+    editor.value = source.replace("line 1", "first line");
+    change(editor);
+    click(edit);
+
+    expect(Array.from(displayedSource(element).querySelectorAll("span.linenos"), (line) => line.textContent))
+      .toEqual([" 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10"]);
   });
 
   it("renders attached file editors and sends current file contents with runs", async () => {

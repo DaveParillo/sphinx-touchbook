@@ -190,6 +190,9 @@ Title
     assert config["languagesEndpoint"] == DEFAULT_LANGUAGES_ENDPOINT
     assert config["validateLanguage"] is True
     assert config["readonly"] is False
+    assert config["lineNumbers"] is False
+    assert config["lineNumberStart"] == 1
+    assert config["emphasizeLines"] == []
     assert config["runLabel"] == "Execute"
     assert config["editLabel"] == "Change"
     assert config["hideEditLabel"] == "Done"

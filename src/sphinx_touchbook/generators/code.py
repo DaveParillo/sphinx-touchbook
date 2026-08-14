@@ -26,6 +26,8 @@ def _node_id(node: TbCodeNode) -> str:
 
 
 def _config(node: TbCodeNode) -> dict[str, object]:
+    code_options = node.get("code_block_options", {})
+    highlight_args = code_options.get("highlight_args", {})
     return {
         "language": node["language"],
         "jobeLanguage": node["jobe_language"],
@@ -40,6 +42,9 @@ def _config(node: TbCodeNode) -> dict[str, object]:
         "parameters": node["parameters"],
         "files": node.get("files", []),
         "readonly": node["readonly"],
+        "lineNumbers": code_options.get("linenos", False),
+        "lineNumberStart": highlight_args.get("linenostart", 1),
+        "emphasizeLines": highlight_args.get("hl_lines", []),
         "showTutor": node.get("show_tutor", False),
         "runLabel": node["run_label"],
         "editLabel": node["edit_label"],
