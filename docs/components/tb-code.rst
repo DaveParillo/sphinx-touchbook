@@ -138,7 +138,7 @@ Options
 **linenos**
    ``Boolean``. Optional.
    Standard Sphinx ``code-block`` linenos option passed through to the static
-   highlighted listing.
+   highlighted listing. ``tb-code`` supports inline line numbers only.
    See the
    `Sphinx code-block documentation <https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#showing-code-examples>`__
    for more information.

@@ -50,9 +50,7 @@ def _config(node: TbCodeNode) -> dict[str, object]:
 
 def _highlight_html(self: HTML5Translator, node: TbCodeNode) -> str:
     code_options = node.get("code_block_options", {})
-    linenos = code_options.get("linenos", False)
-    if linenos and self.config.html_codeblock_linenos_style:
-        linenos = self.config.html_codeblock_linenos_style
+    linenos = "inline" if code_options.get("linenos", False) else False
     highlight_args = dict(code_options.get("highlight_args", {}))
     opts = self.config.highlight_options.get(node["language"], {})
     return self.highlighter.highlight_block(

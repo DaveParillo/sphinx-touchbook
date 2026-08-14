@@ -169,10 +169,14 @@ def _as_int(value: object) -> int:
 
 
 def _normalize_code_block_options(directive, source: str, options: dict[str, object]) -> tuple[str, dict[str, object]]:
+    linenos_value = options.get("linenos")
     normalized: dict[str, object] = {
         "classes": _as_class_list(options.get("class")),
         "force": _as_bool_flag(options.get("force")),
-        "linenos": _as_bool_flag(options.get("linenos")) or "lineno-start" in options,
+        "linenos": (
+            "linenos" in options
+            and (linenos_value is None or _as_bool_flag(linenos_value))
+        ) or "lineno-start" in options,
         "highlight_args": {},
     }
 

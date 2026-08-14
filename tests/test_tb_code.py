@@ -364,6 +364,48 @@ Title
     assert fallback.find(class_="hll") is not None
 
 
+def test_html_uses_inline_line_numbers_when_sphinx_requests_table_style(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-code:: python
+   :lineno-start: 25
+
+   print("one")
+""",
+        conf_extra='html_codeblock_linenos_style = "table"\n',
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    fallback = soup.find("tb-code").find("figure", class_="tb-code__fallback")
+    assert fallback.find("table", class_="highlighttable") is None
+    assert fallback.find("span", class_="linenos").get_text(strip=True) == "25"
+
+
+def test_standalone_linenos_option_enables_inline_line_numbers(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-code:: python
+   :linenos:
+
+   print("one")
+""",
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    fallback = soup.find("tb-code").find("figure", class_="tb-code__fallback")
+    assert fallback.find("span", class_="linenos").get_text(strip=True) == "1"
+
+
 def test_directive_argument_lists_override_language_defaults(tmp_path):
     outdir = build_sphinx(
         tmp_path,
