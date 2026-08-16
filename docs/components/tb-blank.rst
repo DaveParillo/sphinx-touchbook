@@ -81,7 +81,13 @@ Nested ``tb-answer`` blocks support these options:
 
 **regex**
    ``Flag``. Optional.
-   Treat ``match`` values as regular expressions.
+   Treat each ``match`` value as a JavaScript regular expression. Patterns are
+   not anchored automatically, so use ``^`` and ``$`` when the whole answer
+   must match. For example, ``^(yes|no)$`` accepts either complete word,
+   ``^[A-Z]{2}\\d{4}$`` accepts two capital letters followed by four digits,
+   and ``^\\d+(\\.\\d+)?$`` accepts a whole or decimal number. By default,
+   regular-expression matching ignores case; use ``:case-sensitive:`` to
+   require matching case.
 
 Accessibility behavior
 ----------------------
@@ -196,3 +202,39 @@ Example 2: Code reasoning with targeted hints
             :hint: 7; No, because the variable a is modified in the else block.
             :hint: 99; No. Since a is greater than b, line 6 is never executed.
             :incorrect: Sorry, no. What is happening in the else block?
+
+Example 3: Regular-expression answer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use ``:regex:`` when several answer forms share a clear pattern. This example
+accepts a positive whole number without a leading zero. The anchors require the
+entire answer to match the pattern.
+
+.. tb-group::
+   :name: blank-ex3-tabs
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-blank::
+
+            Enter a positive whole number: {{blank}}
+
+            .. tb-answer::
+               :regex:
+               :match: ^[1-9]\d*$
+               :feedback: Correct.
+               :incorrect: Enter a positive whole number with no leading zero.
+
+   .. tb-tab:: Rendered
+
+      .. tb-blank::
+
+         Enter a positive whole number: {{blank}}
+
+         .. tb-answer::
+            :regex:
+            :match: ^[1-9]\d*$
+            :feedback: Correct.
+            :incorrect: Enter a positive whole number with no leading zero.
