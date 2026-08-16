@@ -108,7 +108,7 @@ def depart_tb_match_html(self: HTML5Translator, node: TbMatchNode) -> None:
         self.body.append("</div>\n")
     self.body.append("</div>\n")
     self.body.append('<div class="tb-match__actions">\n')
-    self.body.append('<button type="button" class="tb-match__check" disabled>Check Me</button>\n')
+    self.body.append('<button type="button" class="tb-match__check" disabled>Check answer</button>\n')
     self.body.append('<p class="tb-match__status" role="status" aria-live="polite"></p>\n')
     self.body.append("</div>\n")
     self.body.append("</tb-match>\n")
