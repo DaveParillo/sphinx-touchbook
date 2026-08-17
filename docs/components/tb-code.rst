@@ -85,9 +85,10 @@ Options
 
       :files: input.txt data/config.json
 
-   Text files appear in HTML as editable file textareas unless the ``tb-file``
-   was marked ``readonly``. Binary files are attached as read-only base64
-   content.
+   HTML shows a compact link for each visible attached file. Edit a text file
+   at its ``tb-file`` listing; its current content is uploaded when the code
+   runs. Hidden support files must use ``:readonly:`` or Sphinx emits a build
+   warning. Binary files are attached as read-only base64 content.
 
 **files-endpoint**
    ``String``. Optional. Jobe-compatible ``files`` endpoint used to upload
@@ -342,9 +343,11 @@ The current input values are used when the reader presses Run.
 These runtime inputs are separate from the source version history.
 
 When ``files`` is configured, each attached file is uploaded to the configured
-Jobe ``files`` endpoint before the run request is sent. The run request then
-uses Jobe's ``file_list`` field to map each uploaded file identifier to the
-filename visible inside the execution workspace.
+Jobe ``files`` endpoint before the run request is sent. A visible ``tb-file``
+is the single editor for its content; the compact attachment link in
+``tb-code`` navigates to that listing. The run request then uses Jobe's
+``file_list`` field to map each uploaded file identifier to the filename
+visible inside the execution workspace.
 
 When ``run-before`` or ``run-after`` is configured, those named fragments are
 combined with the current source only for the execution request. They are not

@@ -37,18 +37,54 @@ describe("tb-file Web Component", () => {
     const button = element.querySelector("button.tb-file__button");
     const editor = element.querySelector("textarea.tb-file__editor");
     const label = element.querySelector("label.tb-file__editor-label");
+    const fallback = element.querySelector(".tb-file__fallback");
+    const sourceListing = element.querySelector(".tb-file__content");
+    const editorSlot = element.querySelector(".tb-file__editor-slot");
+    const caption = element.querySelector(".tb-file__caption");
 
     expect(customElements.get("tb-file")).toBeTypeOf("function");
     expect(button).not.toBeNull();
     expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(fallback.hidden).toBe(false);
+    expect(caption.hidden).toBe(false);
+    expect(sourceListing.hidden).toBe(false);
+    expect(editorSlot.hidden).toBe(true);
     expect(editor.hidden).toBe(true);
     expect(label.hidden).toBe(true);
 
     button.click();
     expect(button.textContent).toBe("Hide editor");
     expect(button.getAttribute("aria-expanded")).toBe("true");
+    expect(fallback.hidden).toBe(false);
+    expect(caption.hidden).toBe(false);
+    expect(sourceListing.hidden).toBe(true);
+    expect(editorSlot.hidden).toBe(false);
     expect(editor.hidden).toBe(false);
     expect(label.hidden).toBe(false);
+  });
+
+  it("replaces the fallback listing with an equally tall editor", () => {
+    const element = appendTbFile();
+    const button = element.querySelector("button.tb-file__button");
+    const fallback = element.querySelector(".tb-file__fallback");
+    const sourceListing = element.querySelector(".tb-file__content");
+    const editorSlot = element.querySelector(".tb-file__editor-slot");
+    const editor = element.querySelector("textarea.tb-file__editor");
+    sourceListing.getBoundingClientRect = () => ({ height: 180 });
+
+    button.click();
+    expect(fallback.hidden).toBe(false);
+    expect(sourceListing.hidden).toBe(true);
+    expect(editorSlot.hidden).toBe(false);
+    expect(editor.style.height).toBe("180px");
+    expect(editor.style.minHeight).toBe("180px");
+
+    button.click();
+    expect(fallback.hidden).toBe(false);
+    expect(sourceListing.hidden).toBe(false);
+    expect(editorSlot.hidden).toBe(true);
+    expect(editor.style.height).toBe("");
+    expect(editor.style.minHeight).toBe("");
   });
 
   it("updates the fallback text as the file editor changes", () => {
@@ -62,6 +98,19 @@ describe("tb-file Web Component", () => {
     editor.dispatchEvent(new Event("input", { bubbles: true }));
 
     expect(code.textContent).toBe("Bob");
+  });
+
+  it("provides its current content to attached code blocks", () => {
+    const element = appendTbFile();
+    const button = element.querySelector("button.tb-file__button");
+    const editor = element.querySelector("textarea.tb-file__editor");
+
+    expect(element.getFileContent()).toBe("Alice");
+    button.click();
+    editor.value = "Bob";
+    editor.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(element.getFileContent()).toBe("Bob");
   });
 
   it("does not add editing controls for image files", () => {

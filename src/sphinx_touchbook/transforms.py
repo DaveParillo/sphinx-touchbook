@@ -77,12 +77,14 @@ def collect_tb_files(app: Sphinx, doctree: nodes.document) -> None:
             )
         env.tb_files[filename] = {
             "docname": docname,
+            "source_id": node["ids"][0],
             "filename": filename,
             "content": node.get("content", ""),
             "data_url": node.get("data_url"),
             "mime_type": node["mime_type"],
             "is_text": node["is_text"],
             "editable": node["editable"],
+            "hidden": node.get("hidden", False),
         }
 
 
@@ -176,9 +178,7 @@ class TbCodeIncludeTransform(Transform):
                         line=node.line,
                     )
                     continue
-                file_info = dict(file_by_filename[filename])
-                file_info.pop("docname", None)
-                attached_files.append(file_info)
+                attached_files.append(dict(file_by_filename[filename]))
             node["files"] = attached_files
 
     def _resolve_run_fragments(self, node: TbCodeNode, names: list[str], code_by_name: dict, option_name: str) -> list[str]:

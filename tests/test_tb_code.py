@@ -777,8 +777,8 @@ Title
 =====
 
 .. tb-file::
+   :name: input-file
    :filename: input.txt
-   :hidden:
 
    Alice Bob
 
@@ -792,19 +792,14 @@ Title
     )
 
     soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
-    assert soup.find("tb-file") is None
+    assert soup.find("tb-file", id="input-file") is not None
     element = soup.find("tb-code", id="file-reader")
     config = json.loads(element.find("script", class_="tb-code__config").string)
-    assert config["files"] == [
-        {
-            "filename": "input.txt",
-            "content": "Alice Bob",
-            "data_url": None,
-            "mime_type": "text/plain",
-            "is_text": True,
-            "editable": True,
-        }
-    ]
+    file_info = config["files"][0]
+    assert file_info["filename"] == "input.txt"
+    assert file_info["content"] == "Alice Bob"
+    assert file_info["source_id"] == "input-file"
+    assert file_info["href"] == "#input-file"
 
 
 def test_tb_code_attaches_tb_files_from_another_document(tmp_path):
@@ -828,6 +823,7 @@ Files
 .. tb-file::
    :filename: data/input.txt
    :hidden:
+   :readonly:
 
    42
 """,

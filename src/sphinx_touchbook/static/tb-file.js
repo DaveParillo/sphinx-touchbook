@@ -5,8 +5,20 @@ class TbFile extends HTMLElement {
     }
     this.dataset.enhanced = "true";
     this.config = this.readConfig();
+    this.fallback = this.querySelector(":scope > .tb-file__fallback");
+    this.sourceListing = this.fallback?.querySelector(":scope > .tb-file__content");
     if (!this.config.isText || this.config.editable === false) {
       return;
+    }
+    this.editorSlot = document.createElement("div");
+    this.editorSlot.className = "tb-file__editor-slot";
+    this.editorSlot.hidden = true;
+    if (this.sourceListing) {
+      this.sourceListing.before(this.editorSlot);
+    } else if (this.fallback) {
+      this.fallback.append(this.editorSlot);
+    } else {
+      this.prepend(this.editorSlot);
     }
     this.editing = false;
     this.renderEditor();
@@ -38,7 +50,7 @@ class TbFile extends HTMLElement {
     controls.appendChild(this.editButton);
 
     const label = document.createElement("label");
-    label.className = "tb-file__editor-label";
+    label.className = "tb-file__editor-label tb-file__visually-hidden";
     label.htmlFor = `${this.safeId()}-editor`;
     label.textContent = `Editable file content for ${this.config.filename || "file"}`;
     label.hidden = true;
@@ -51,7 +63,8 @@ class TbFile extends HTMLElement {
     this.editor.addEventListener("input", () => this.updateFallback());
 
     this.editorLabel = label;
-    this.append(controls, label, this.editor);
+    this.editorSlot.append(label, this.editor);
+    this.append(controls);
   }
 
   toggleEditor() {
@@ -64,6 +77,16 @@ class TbFile extends HTMLElement {
 
   showEditor() {
     this.editing = true;
+    const fallbackHeight = this.sourceListing?.getBoundingClientRect().height;
+    if (fallbackHeight) {
+      const height = `${Math.ceil(fallbackHeight)}px`;
+      this.editor.style.height = height;
+      this.editor.style.minHeight = height;
+    }
+    if (this.sourceListing) {
+      this.sourceListing.hidden = true;
+    }
+    this.editorSlot.hidden = false;
     this.editor.hidden = false;
     this.editorLabel.hidden = false;
     this.editButton.textContent = this.config.hideEditLabel || "Hide editor";
@@ -73,8 +96,14 @@ class TbFile extends HTMLElement {
 
   hideEditor() {
     this.editing = false;
+    this.editorSlot.hidden = true;
+    if (this.sourceListing) {
+      this.sourceListing.hidden = false;
+    }
     this.editor.hidden = true;
     this.editorLabel.hidden = true;
+    this.editor.style.height = "";
+    this.editor.style.minHeight = "";
     this.editButton.textContent = this.config.editLabel || "Edit";
     this.editButton.setAttribute("aria-expanded", "false");
   }
@@ -84,6 +113,10 @@ class TbFile extends HTMLElement {
     if (code) {
       code.textContent = this.editor.value;
     }
+  }
+
+  getFileContent() {
+    return this.editor ? this.editor.value : this.config.content || "";
   }
 
   safeId() {

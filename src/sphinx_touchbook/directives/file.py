@@ -91,7 +91,6 @@ class TbFileDirective(Directive):
         "filename": validate_filename,
         "name": directives.unchanged,
         "hidden": directives.flag,
-        "editable": directives.flag,
         "readonly": directives.flag,
         "encoding": directives.encoding,
     }
@@ -111,8 +110,6 @@ class TbFileDirective(Directive):
         node["data_url"] = None
         node["is_text"] = True
         node["editable"] = "readonly" not in self.options
-        if "editable" in self.options:
-            node["editable"] = True
 
         if self.arguments:
             path = _source_path(self, self.arguments[0])
@@ -138,4 +135,12 @@ class TbFileDirective(Directive):
             self.assert_has_content()
             node["content"] = "\n".join(self.content)
 
-        return [node]
+        result = [node]
+        if node["hidden"] and node["is_text"] and node["editable"]:
+            result.append(
+                self.state_machine.reporter.warning(
+                    "hidden tb-file is editable but has no editor; add :readonly: or make the file visible.",
+                    line=self.lineno,
+                )
+            )
+        return result

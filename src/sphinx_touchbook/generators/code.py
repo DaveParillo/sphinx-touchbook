@@ -25,7 +25,18 @@ def _node_id(node: TbCodeNode) -> str:
     return node["ids"][0]
 
 
-def _config(node: TbCodeNode) -> dict[str, object]:
+def _file_href(self: HTML5Translator, file_info: dict[str, object]) -> str | None:
+    if file_info.get("hidden"):
+        return None
+    source_id = str(file_info["source_id"])
+    source_docname = str(file_info["docname"])
+    current_docname = getattr(self.builder, "current_docname", "")
+    if source_docname == current_docname:
+        return f"#{source_id}"
+    return f"{self.builder.get_relative_uri(current_docname, source_docname)}#{source_id}"
+
+
+def _config(self: HTML5Translator, node: TbCodeNode) -> dict[str, object]:
     code_options = node.get("code_block_options", {})
     highlight_args = code_options.get("highlight_args", {})
     config = {
@@ -39,7 +50,10 @@ def _config(node: TbCodeNode) -> dict[str, object]:
         "languagesEndpoint": node["languages_endpoint"],
         "validateLanguage": node["validate_language"],
         "parameters": node["parameters"],
-        "files": node.get("files", []),
+        "files": [
+            {**file_info, "href": _file_href(self, file_info)}
+            for file_info in node.get("files", [])
+        ],
         "readonly": node["readonly"],
         "lineNumbers": code_options.get("linenos", False),
         "lineNumberStart": highlight_args.get("linenostart", 1),
@@ -105,7 +119,7 @@ def visit_tb_code_html(self: HTML5Translator, node: TbCodeNode) -> None:
         self.body.append(f'<figcaption class="tb-code__caption">{escape(node["caption"])}</figcaption>\n')
     self.body.append(_highlight_html(self, node))
     self.body.append("</figure>\n")
-    payload = json.dumps(_config(node), ensure_ascii=False).replace("</", "<\\/")
+    payload = json.dumps(_config(self, node), ensure_ascii=False).replace("</", "<\\/")
     self.body.append(f'<script type="application/json" class="tb-code__config">{payload}</script>\n')
 
 

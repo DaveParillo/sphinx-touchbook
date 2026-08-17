@@ -12,7 +12,7 @@ tb-code [hidden] {
 }
 
 .tb-code__editor-slot {
-  margin: 0 0 0.75rem;
+  margin: 0;
 }
 
 .tb-code__caption {
@@ -107,20 +107,13 @@ tb-code [hidden] {
 }
 
 .tb-code__attached-files-label,
-.tb-code__attached-file-label {
+.tb-code__attached-file-link {
   font-weight: 700;
 }
 
 .tb-code__attached-file {
   display: grid;
   gap: 0.25rem;
-}
-
-.tb-code__attached-file-editor {
-  box-sizing: border-box;
-  font-family: var(--font-stack--monospace, monospace);
-  min-height: 6rem;
-  width: 100%;
 }
 
 .tb-code__attached-file-note {

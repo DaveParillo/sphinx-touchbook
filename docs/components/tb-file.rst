@@ -56,18 +56,15 @@ Options
    A CSS class to add to the directive.
    See :ref:`common` for details.
 
-**editable**
-   ``Boolean``. Optional. Text files are editable by default.
-   This option can explicitly request editing if a project-level default later
-   changes.
-
 **encoding**
    ``String``. Optional. Encoding used when reading a referenced text file.
    Default is ``utf-8``.
 
 **hidden**
    ``Boolean``. Optional.
-   If present, register the file but do not render it in output.
+   If present, register the file but do not render it in output. Hidden text files
+   must also use ``:readonly:``; otherwise Sphinx emits a build warning because a
+   hidden file has no editor.
 
 **name**
    ``String``. Optional.
@@ -77,7 +74,7 @@ Options
 **readonly**
    ``Boolean``. Optional.
    If present, do not add editing controls for text files in HTML.
-   Binary files are never editable.
+   Text files are editable by default. Binary files are never editable.
 
 Sphinx configuration options
 ----------------------------
@@ -152,6 +149,7 @@ Example 2: Hidden text file
          .. tb-file::
             :filename: data/input.txt
             :hidden:
+            :readonly:
 
             100
 
@@ -160,6 +158,7 @@ Example 2: Hidden text file
       .. tb-file::
          :filename: data/input.txt
          :hidden:
+         :readonly:
 
          100
 
@@ -169,9 +168,9 @@ Example 3: Reading a simulated file from C++
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This example uses text from Lewis Carroll's *Jabberwocky*.
-When Run is pressed, the current contents of ``poem_text`` are sent with the
-execution request. If the file is edited in the attached-file editor, that
-edited content is sent instead of the original content.
+When Run is pressed, the current contents of ``poem.txt`` are sent with the
+execution request. Edit the visible ``tb-file`` listing to change the uploaded
+content.
 
 .. tb-group::
    :name: file-ex3-tabs
@@ -181,20 +180,23 @@ edited content is sent instead of the original content.
       .. code-block:: rst
 
          .. tb-file::
-            :filename: poem_text
+            :filename: poem.txt
+            :caption: Lewis Carroll's *Jabberwocky*
 
             Beware the Jabberwock, my son!
               The jaws that bite, the claws that catch!
 
+            (remainder ommitted)
+
          .. tb-code:: c++
             :caption: Read a simulated local file
-            :files: poem_text
+            :files: poem.txt
 
             #include <fstream>
             #include <iostream>
 
             int main () {
-              std::ifstream is("poem_text");
+              std::ifstream is("poem.txt");
               char c;
               while (is.get(c)) {
                 std::cout << c;
@@ -203,10 +205,12 @@ edited content is sent instead of the original content.
               return 0;
             }
 
-   .. tb-tab:: Rendered
+   .. tb-tab:: Full Text file
 
       .. tb-file::
-         :filename: poem_text
+         :name: tb-file-poem-txt
+         :filename: poem.txt
+         :caption: Lewis Carroll's *Jabberwocky*
 
          Beware the Jabberwock, my son!
            The jaws that bite, the claws that catch!
@@ -233,17 +237,18 @@ edited content is sent instead of the original content.
          O frabjous day! Callooh! Callay!'
            He chortled in his joy.
 
-      -- Lewis Carroll's *Jabberwocky*.
+
+   .. tb-tab:: Rendered
 
       .. tb-code:: c++
          :caption: Read a simulated local file
-         :files: poem_text
+         :files: poem.txt
 
          #include <fstream>
          #include <iostream>
 
          int main () {
-           std::ifstream is("poem_text");
+           std::ifstream is("poem.txt");
            char c;
            while (is.get(c)) {
              std::cout << c;

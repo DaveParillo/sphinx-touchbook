@@ -117,6 +117,22 @@ def test_directive_parses_caption():
     assert node["caption"] == "Sample input data"
 
 
+def test_directive_warns_when_name_is_normalized(capsys):
+    document = parse_rst(
+        """
+.. tb-file::
+   :name: poem.txt
+   :filename: poem.txt
+
+   A poem
+"""
+    )
+
+    node = next(document.findall(TbFileNode))
+    assert node["ids"] == ["poem-txt"]
+    assert ":name: 'poem.txt' is not a valid identifier; it was converted to 'poem-txt'" in capsys.readouterr().err
+
+
 def test_directive_rejects_invalid_filenames():
     document = parse_rst(
         """
@@ -375,7 +391,6 @@ Title
 
 .. tb-file:: docs/sample.pdf
    :filename: docs/sample.pdf
-   :editable:
 """,
             "docs/sample.pdf": b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n",
         },
@@ -404,6 +419,7 @@ Title
 .. tb-file::
    :filename: hidden.txt
    :hidden:
+   :readonly:
 
    secret
 """,
@@ -413,6 +429,25 @@ Title
     soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
     assert soup.find("tb-file") is None
     assert app.env.tb_files["hidden.txt"]["content"] == "secret"
+
+
+def test_hidden_editable_file_reports_a_warning():
+    document = parse_rst(
+        """
+.. tb-file::
+   :filename: hidden.txt
+   :hidden:
+
+   secret
+"""
+    )
+
+    assert next(document.findall(TbFileNode))["editable"] is True
+    assert any(
+        "hidden tb-file is editable" in message.astext()
+        for message in document.findall()
+        if message.tagname == "system_message"
+    )
 
 
 def test_duplicate_file_filenames_stop_the_build(tmp_path):
@@ -535,6 +570,7 @@ Title
 .. tb-file::
    :filename: hidden.txt
    :hidden:
+   :readonly:
 
    secret
 """,
@@ -606,6 +642,7 @@ Title
 .. tb-file::
    :filename: hidden.txt
    :hidden:
+   :readonly:
 
    secret
 """,

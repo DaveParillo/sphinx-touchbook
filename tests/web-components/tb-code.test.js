@@ -189,12 +189,19 @@ describe("tb-code Web Component", () => {
     const element = appendCode();
     const edit = editButton(element);
     const fallback = element.querySelector(".tb-code__fallback");
+    const sourceListing = element.querySelector(".tb-code__fallback pre");
     const editorSlot = element.querySelector(".tb-code__editor-slot");
     const editor = element.querySelector("textarea.tb-code__editor");
-    fallback.getBoundingClientRect = () => ({ height: 240 });
+    const caption = document.createElement("figcaption");
+    caption.className = "tb-code__caption";
+    caption.textContent = "Example code";
+    fallback.prepend(caption);
+    sourceListing.getBoundingClientRect = () => ({ height: 240 });
 
     click(edit);
-    expect(fallback.hidden).toBe(true);
+    expect(fallback.hidden).toBe(false);
+    expect(caption.hidden).toBe(false);
+    expect(sourceListing.hidden).toBe(true);
     expect(editorSlot.hidden).toBe(false);
     expect(editor.hidden).toBe(false);
     expect(editor.style.height).toBe("240px");
@@ -202,6 +209,8 @@ describe("tb-code Web Component", () => {
 
     click(edit);
     expect(fallback.hidden).toBe(false);
+    expect(caption.hidden).toBe(false);
+    expect(sourceListing.hidden).toBe(false);
     expect(editorSlot.hidden).toBe(true);
     expect(editor.style.height).toBe("");
     expect(editor.style.minHeight).toBe("");
@@ -550,7 +559,7 @@ describe("tb-code Web Component", () => {
       .toEqual([" 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10"]);
   });
 
-  it("renders attached file editors and sends current file contents with runs", async () => {
+  it("links to attached files and sends content from the source tb-file", async () => {
     const uploadedIds = [];
     const fetchMock = vi.fn(async (url, options) => {
       if (options.method === "PUT") {
@@ -576,6 +585,11 @@ describe("tb-code Web Component", () => {
     });
     globalThis.fetch = fetchMock;
 
+    const sourceFile = document.createElement("tb-file");
+    sourceFile.id = "input-file";
+    sourceFile.getFileContent = () => "edited file";
+    document.body.appendChild(sourceFile);
+
     const element = appendCode({
       filesEndpoint: "https://example.test/files/",
       files: [
@@ -585,6 +599,8 @@ describe("tb-code Web Component", () => {
           mime_type: "text/plain",
           is_text: true,
           editable: true,
+          source_id: "input-file",
+          href: "#input-file",
         },
         {
           filename: "images/pic.png",
@@ -592,19 +608,21 @@ describe("tb-code Web Component", () => {
           mime_type: "image/png",
           is_text: false,
           editable: false,
+          href: null,
         },
       ],
     });
     const attachedFiles = element.querySelector(".tb-code__attached-files");
-    const fileEditor = element.querySelector("textarea.tb-code__attached-file-editor");
+    const fileLink = element.querySelector("a.tb-code__attached-file-link");
     const fileNote = element.querySelector(".tb-code__attached-file-note");
     const run = runButton(element);
 
     expect(attachedFiles.hidden).toBe(false);
-    expect(fileEditor.value).toBe("original file");
-    expect(fileNote.textContent).toBe("image/png file");
+    expect(fileLink.textContent).toBe("input.txt");
+    expect(fileLink.getAttribute("href")).toBe("#input-file");
+    expect(element.querySelector("textarea.tb-code__attached-file-editor")).toBeNull();
+    expect(fileNote.textContent).toBe("images/pic.png (image/png file)");
 
-    fileEditor.value = "edited file";
     await click(run);
     await flushPromises();
 

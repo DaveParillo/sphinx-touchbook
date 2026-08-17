@@ -12,18 +12,20 @@ class TbCode extends HTMLElement {
     this.sourceDisplay = this.querySelector(":scope > .tb-code__fallback code")
       || this.querySelector(":scope > .tb-code__fallback pre");
     this.fallback = this.querySelector(":scope > .tb-code__fallback");
+    this.sourceListing = this.fallback?.querySelector(":scope > .highlight, :scope > pre");
     this.editorSlot = document.createElement("div");
     this.editorSlot.className = "tb-code__editor-slot";
     this.editorSlot.hidden = true;
-    if (this.fallback) {
-      this.fallback.before(this.editorSlot);
+    if (this.sourceListing) {
+      this.sourceListing.before(this.editorSlot);
+    } else if (this.fallback) {
+      this.fallback.append(this.editorSlot);
     } else {
       this.prepend(this.editorSlot);
     }
     this.editing = false;
     this.revisions = [this.source];
     this.revisionIndex = 0;
-    this.fileEditors = new Map();
     this.renderControls();
     this.preloadSupportedLanguages();
   }
@@ -192,24 +194,17 @@ class TbCode extends HTMLElement {
       const wrapper = document.createElement("div");
       wrapper.className = "tb-code__attached-file";
 
-      const label = document.createElement("label");
-      label.className = "tb-code__attached-file-label";
-      label.textContent = file.filename;
-
-      if (file.is_text) {
-        const editor = document.createElement("textarea");
-        editor.className = "tb-code__attached-file-editor";
-        editor.value = file.content || "";
-        editor.readOnly = file.editable === false;
-        editor.id = `${this.safeId()}-file-${this.fileEditors.size + 1}`;
-        label.htmlFor = editor.id;
-        this.fileEditors.set(file.filename, editor);
-        wrapper.append(label, editor);
+      if (file.href) {
+        const link = document.createElement("a");
+        link.className = "tb-code__attached-file-link";
+        link.href = file.href;
+        link.textContent = file.filename;
+        wrapper.append(link);
       } else {
         const note = document.createElement("div");
         note.className = "tb-code__attached-file-note";
-        note.textContent = `${file.mime_type || "application/octet-stream"} file`;
-        wrapper.append(label, note);
+        note.textContent = `${file.filename} (${file.mime_type || "application/octet-stream"} file)`;
+        wrapper.append(note);
       }
 
       this.attachedFiles.appendChild(wrapper);
@@ -245,14 +240,14 @@ class TbCode extends HTMLElement {
 
   showEditor() {
     this.editing = true;
-    const fallbackHeight = this.fallback?.getBoundingClientRect().height;
+    const fallbackHeight = this.sourceListing?.getBoundingClientRect().height;
     if (fallbackHeight) {
       const height = `${Math.ceil(fallbackHeight)}px`;
       this.editor.style.height = height;
       this.editor.style.minHeight = height;
     }
-    if (this.fallback) {
-      this.fallback.hidden = true;
+    if (this.sourceListing) {
+      this.sourceListing.hidden = true;
     }
     this.editorSlot.hidden = false;
     this.editor.hidden = false;
@@ -267,8 +262,8 @@ class TbCode extends HTMLElement {
     this.captureCurrentRevision();
     this.editing = false;
     this.editorSlot.hidden = true;
-    if (this.fallback) {
-      this.fallback.hidden = false;
+    if (this.sourceListing) {
+      this.sourceListing.hidden = false;
     }
     this.editor.hidden = true;
     this.editorLabel.hidden = true;
@@ -505,7 +500,7 @@ class TbCode extends HTMLElement {
   runtimeFiles() {
     return this.attachedFileConfigs().map((file) => {
       const content = file.is_text
-        ? this.textFileContent(file)
+        ? this.sourceFileContent(file)
         : this.base64FromDataUrl(file.data_url || "");
       const runtimeFile = {
         id: this.fileIdentifier(file.filename, content),
@@ -523,9 +518,12 @@ class TbCode extends HTMLElement {
     });
   }
 
-  textFileContent(file) {
-    const editor = this.fileEditors.get(file.filename);
-    return editor ? editor.value : file.content || "";
+  sourceFileContent(file) {
+    const source = file.source_id ? document.getElementById(file.source_id) : null;
+    if (typeof source?.getFileContent === "function") {
+      return source.getFileContent();
+    }
+    return file.content || "";
   }
 
   async uploadRuntimeFiles() {

@@ -189,6 +189,41 @@ describe("tb-group Web Component", () => {
     expect(panels[1].hidden).toBe(false);
   });
 
+  it("reopens a hidden tab when a link repeats the current target hash", async () => {
+    window.history.replaceState(null, "", "/#tb-file-poem-txt");
+    const link = document.createElement("a");
+    link.href = "#tb-file-poem-txt";
+    link.textContent = "poem.txt";
+    document.body.appendChild(link);
+
+    const element = document.createElement("tb-group");
+    element.id = "file-tabs";
+    element.innerHTML = `
+      <div class="tb-group__fallback">
+        <tb-tab label="Source">
+          <div class="tb-tab__content"><p>Source content</p></div>
+        </tb-tab>
+        <tb-tab label="File">
+          <div class="tb-tab__content"><tb-file id="tb-file-poem-txt"></tb-file></div>
+        </tb-tab>
+      </div>
+    `;
+    document.body.appendChild(element);
+    await nextFrame();
+
+    const tabs = ownTabs(element);
+    const panels = ownPanels(element);
+    expect(panels[1].hidden).toBe(false);
+
+    click(tabs[0]);
+    expect(panels[1].hidden).toBe(true);
+
+    click(link);
+    await nextFrame();
+
+    expect(panels[1].hidden).toBe(false);
+  });
+
   it("selects the owning tab when a same-page link changes the hash to hidden panel content", async () => {
     const element = appendGroup();
     const panels = ownPanels(element);

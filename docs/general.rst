@@ -76,6 +76,9 @@ Common options
 Every Touchbook directive accepts the optional ``name`` and ``class``
 parameters as described in 
 `Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
+Use lowercase letters, digits, and hyphens for ``name``, beginning with a
+letter. Other characters are converted for the generated HTML ID and produce a
+build warning that reports the converted value.
 If ``name`` is omitted, an ID is automatically generated based on the current
 document and node position.
 This ID is deterministic, but not stable:
@@ -106,4 +109,3 @@ HTML output attaches those classes to the directive's root ``tb-*`` element.
       :class: highlight-override
 
       print("Hello")
-
