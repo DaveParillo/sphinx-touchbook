@@ -28,7 +28,7 @@ def _node_id(node: TbCodeNode) -> str:
 def _config(node: TbCodeNode) -> dict[str, object]:
     code_options = node.get("code_block_options", {})
     highlight_args = code_options.get("highlight_args", {})
-    return {
+    config = {
         "language": node["language"],
         "jobeLanguage": node["jobe_language"],
         "source": node["source"],
@@ -38,7 +38,6 @@ def _config(node: TbCodeNode) -> dict[str, object]:
         "filesEndpoint": node["files_endpoint"],
         "languagesEndpoint": node["languages_endpoint"],
         "validateLanguage": node["validate_language"],
-        "stdin": node["stdin"],
         "parameters": node["parameters"],
         "files": node.get("files", []),
         "readonly": node["readonly"],
@@ -51,6 +50,9 @@ def _config(node: TbCodeNode) -> dict[str, object]:
         "hideEditLabel": node["hide_edit_label"],
         "revisionLabel": node["revision_label"],
     }
+    if "stdin" in node:
+        config["stdin"] = node["stdin"]
+    return config
 
 
 def _highlight_html(self: HTML5Translator, node: TbCodeNode) -> str:

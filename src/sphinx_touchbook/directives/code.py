@@ -274,7 +274,8 @@ class TbCodeDirective(Directive):
             DEFAULT_LANGUAGES_ENDPOINT,
         )
         node["validate_language"] = _config_value(config, "tb_code_validate_language", True)
-        node["stdin"] = self.options.get("stdin", "")
+        if "stdin" in self.options:
+            node["stdin"] = self.options["stdin"]
         node["parameters"] = {}
         for name in ("compileargs", "linkargs", "runargs", "interpreterargs"):
             value = self.options[name] if name in self.options else language_defaults.get(name)

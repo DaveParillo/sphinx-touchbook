@@ -21,7 +21,6 @@ function appendCode(config = {}) {
     endpoint: "https://example.test/runs/",
     languagesEndpoint: "https://example.test/languages",
     validateLanguage: false,
-    stdin: "",
     parameters: {},
     readonly: false,
     runLabel: "Run",
@@ -49,7 +48,6 @@ function appendSphinxHighlightedCode(config = {}) {
     endpoint: "https://example.test/runs/",
     languagesEndpoint: "https://example.test/languages",
     validateLanguage: false,
-    stdin: "",
     parameters: {},
     readonly: false,
     runLabel: "Run",
@@ -278,6 +276,26 @@ describe("tb-code Web Component", () => {
     expect(fields[1].querySelector("label").textContent).toBe("Run arguments");
     expect(inputs[0].value).toBe("Alice");
     expect(inputs[1].value).toBe("--count 2");
+  });
+
+  it("renders and submits empty stdin when the directive explicitly configures it", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ outcome: 15, stdout: "", stderr: "", cmpinfo: "" }),
+    });
+    globalThis.fetch = fetchMock;
+    const element = appendCode({ stdin: "" });
+    const runtimeInputs = element.querySelector(".tb-code__runtime-inputs");
+    const stdin = element.querySelector("input.tb-code__runtime-input");
+
+    expect(runtimeInputs.hidden).toBe(false);
+    expect(stdin.value).toBe("");
+
+    click(runButton(element));
+    await flushPromises();
+
+    const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(payload.run_spec.input).toBe("");
   });
 
   it("shows the Python Tutor button only for requested supported languages", () => {

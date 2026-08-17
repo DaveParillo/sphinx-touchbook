@@ -155,6 +155,20 @@ def test_directive_accepts_language_argument_and_options():
     assert node["code_block_options"]["classes"] == ["sample-code"]
 
 
+def test_directive_preserves_an_explicit_empty_stdin_option():
+    document = parse_rst(
+        """
+.. tb-code:: python
+   :stdin:
+
+   print("Hello")
+"""
+    )
+
+    node = next(document.findall(TbCodeNode))
+    assert node["stdin"] == ""
+
+
 def test_html_build_emits_custom_element_config_and_assets(tmp_path):
     outdir = build_sphinx(
         tmp_path,
@@ -189,6 +203,7 @@ Title
     assert config["filesEndpoint"] == DEFAULT_FILES_ENDPOINT
     assert config["languagesEndpoint"] == DEFAULT_LANGUAGES_ENDPOINT
     assert config["validateLanguage"] is True
+    assert "stdin" not in config
     assert config["readonly"] is False
     assert config["lineNumbers"] is False
     assert config["lineNumberStart"] == 1

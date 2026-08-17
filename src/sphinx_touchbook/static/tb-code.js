@@ -111,7 +111,7 @@ class TbCode extends HTMLElement {
     this.runtimeInputs.className = "tb-code__runtime-inputs";
     this.runtimeInputs.hidden = !this.hasRuntimeInputs();
 
-    if (this.config.stdin) {
+    if (this.hasConfiguredStdin()) {
       const stdinField = this.createRuntimeInput(
         "stdin",
         "Standard input",
@@ -167,7 +167,11 @@ class TbCode extends HTMLElement {
   }
 
   hasRuntimeInputs() {
-    return Boolean(this.config.stdin) || this.cleanArgumentList(this.config.parameters?.runargs || []).length > 0;
+    return this.hasConfiguredStdin() || this.cleanArgumentList(this.config.parameters?.runargs || []).length > 0;
+  }
+
+  hasConfiguredStdin() {
+    return Object.hasOwn(this.config, "stdin");
   }
 
   hasAttachedFiles() {
@@ -364,7 +368,7 @@ class TbCode extends HTMLElement {
     };
     if (this.stdinInput) {
       payload.run_spec.input = this.stdinInput.value;
-    } else if (this.config.stdin) {
+    } else if (this.hasConfiguredStdin()) {
       payload.run_spec.input = this.config.stdin;
     }
 
