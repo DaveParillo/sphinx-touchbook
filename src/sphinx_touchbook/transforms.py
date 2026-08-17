@@ -75,17 +75,21 @@ def collect_tb_files(app: Sphinx, doctree: nodes.document) -> None:
                 "duplicate tb-file filename "
                 f"{filename!r} in {docname!r}; already defined in {existing['docname']!r}"
             )
-        env.tb_files[filename] = {
-            "docname": docname,
-            "source_id": node["ids"][0],
-            "filename": filename,
-            "content": node.get("content", ""),
-            "data_url": node.get("data_url"),
-            "mime_type": node["mime_type"],
-            "is_text": node["is_text"],
-            "editable": node["editable"],
-            "hidden": node.get("hidden", False),
-        }
+        env.tb_files[filename] = _file_info(node, docname)
+
+
+def _file_info(node: TbFileNode, docname: str) -> dict[str, object]:
+    return {
+        "docname": docname,
+        "source_id": node["ids"][0],
+        "filename": node["filename"],
+        "content": node.get("content", ""),
+        "data_url": node.get("data_url"),
+        "mime_type": node["mime_type"],
+        "is_text": node["is_text"],
+        "editable": node["editable"],
+        "hidden": node.get("hidden", False),
+    }
 
 
 def merge_tb_code_snippets(app: Sphinx, env: BuildEnvironment, docnames, other: BuildEnvironment) -> None:
@@ -135,7 +139,10 @@ class TbCodeIncludeTransform(Transform):
     def apply(self) -> None:
         env = getattr(self.document.settings, "env", None)
         code_by_name = getattr(env, "tb_code_snippets", {}) if env is not None else {}
-        file_by_filename = getattr(env, "tb_files", {}) if env is not None else {}
+        file_by_filename = dict(getattr(env, "tb_files", {}) if env is not None else {})
+        local_docname = getattr(env, "docname", "") if env is not None else ""
+        for file_node in self.document.findall(TbFileNode):
+            file_by_filename[file_node["filename"]] = _file_info(file_node, local_docname)
         for node in self.document.findall(TbCodeNode):
             specs = node.get("include_specs", [])
             if specs:

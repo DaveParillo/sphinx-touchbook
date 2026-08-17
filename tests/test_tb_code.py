@@ -802,6 +802,35 @@ Title
     assert file_info["href"] == "#input-file"
 
 
+def test_tb_code_attaches_file_declared_later_in_the_same_document(tmp_path):
+    outdir = build_sphinx_files(
+        tmp_path,
+        "html",
+        {
+            "index.rst": """
+Title
+=====
+
+.. tb-code:: python
+   :files: input.txt
+
+   print(open("input.txt").read())
+
+.. tb-file::
+   :name: input-file
+   :filename: input.txt
+
+   Alice Bob
+""",
+        },
+    )
+
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    config = json.loads(soup.find("tb-code").find("script", class_="tb-code__config").string)
+    assert config["files"][0]["filename"] == "input.txt"
+    assert config["files"][0]["content"] == "Alice Bob"
+
+
 def test_tb_code_attaches_tb_files_from_another_document(tmp_path):
     outdir = build_sphinx_files(
         tmp_path,
