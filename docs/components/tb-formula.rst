@@ -35,7 +35,8 @@ Options
    ``String``. Required.
    Comma-separated or semicolon-separated variable ranges. Each range uses
    ``name=min..max`` syntax. If both endpoints are integers, HTML generates
-   integer values. Decimal endpoints generate decimal values.
+   integer values. Decimal endpoints generate values rounded to four decimal
+   places; the formula uses those same displayed values.
 
 **class**
    ``String`` or ``List``. Optional.
@@ -72,10 +73,23 @@ Answer formula
 The nested ``answer-formula`` block accepts an optional language argument.
 When omitted, the language is ``javascript``.
 
-JavaScript formulas run in the browser and can refer to each variable by name.
-Other languages are sent to a remote server execution endpoint.
+``javascript`` and ``js`` select a local formula-expression language, not
+general JavaScript. Expressions can refer to each variable by name and support
+numeric literals; ``+``, ``-``, ``*``, ``/``, and ``**``; parentheses; a
+two-item array; and an object with ``min`` and ``max`` keys. The allowed
+``Math`` constants are ``Math.E`` and ``Math.PI``. The complete allowed
+``Math`` function list is ``abs``, ``acos``, ``acosh``, ``asin``, ``asinh``,
+``atan``, ``atan2``, ``atanh``, ``cbrt``, ``ceil``, ``cos``, ``cosh``,
+``exp``, ``expm1``, ``floor``, ``hypot``, ``log``, ``log10``, ``log1p``,
+``log2``, ``max``, ``min``, ``pow``, ``round``, ``sign``, ``sin``, ``sinh``,
+``sqrt``, ``tan``, ``tanh``, and ``trunc``. Other languages are sent to a
+remote server execution endpoint.
 ``tb-formula`` sends the generated variables as JSON text on standard input.
 Results should print to standard output.
+
+Numeric formula answers always use a small floating-point tolerance in addition
+to any configured ``:tolerance:``, so results are never rejected solely because
+of floating-point representation.
 
 Remote formula blocks can set JOBE parameters with ``:compileargs:``,
 ``:linkargs:``, ``:runargs:``, and ``:interpreterargs:`` options. These options

@@ -15,6 +15,10 @@ function appendFormula({
   source = "4 * y + 3 * x",
   tolerance = 0,
   parameters = {},
+  variables = {
+    x: { min: 80, max: 90, integer: true },
+    y: { min: 10, max: 20, integer: true },
+  },
 } = {}) {
   const element = document.createElement("tb-formula");
   element.id = "formula-example";
@@ -27,10 +31,7 @@ function appendFormula({
     </div>
     <script type="application/json" class="tb-formula__config">
       ${JSON.stringify({
-        variables: {
-          x: { min: 80, max: 90, integer: true },
-          y: { min: 10, max: 20, integer: true },
-        },
+        variables,
         formula: { language, source, parameters },
         tolerance,
       })}
@@ -81,6 +82,54 @@ describe("tb-formula Web Component", () => {
 
     expect(element.querySelector(".tb-formula__status").textContent).toBe("Enter a numeric answer.");
     expect(answer.classList.contains("tb-formula__input--incorrect")).toBe(true);
+  });
+
+  it("rejects a blank answer even when zero is correct", async () => {
+    const element = appendFormula({ source: "0" });
+    const answer = element.querySelector(".tb-formula__input");
+    click(element.querySelector(".tb-formula__check"));
+    await Promise.resolve();
+
+    expect(element.querySelector(".tb-formula__status").textContent).toBe("Enter a numeric answer.");
+    expect(answer.classList.contains("tb-formula__input--incorrect")).toBe(true);
+  });
+
+  it("evaluates decimal formulas from the displayed values with floating-point tolerance", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const element = appendFormula({
+      source: "x + y",
+      variables: {
+        x: { min: 0.1, max: 0.1, integer: false },
+        y: { min: 0.2, max: 0.2, integer: false },
+      },
+    });
+    const answer = element.querySelector(".tb-formula__input");
+    expect(element.querySelector('[data-variable="x"]').textContent).toBe("0.1");
+    expect(element.querySelector('[data-variable="y"]').textContent).toBe("0.2");
+
+    answer.value = "0.3";
+    click(element.querySelector(".tb-formula__check"));
+    await Promise.resolve();
+
+    expect(element.querySelector(".tb-formula__status").textContent).toBe("Correct.");
+  });
+
+  it("supports only whitelisted Math functions in local formulas", async () => {
+    const element = appendFormula({ source: "Math.sqrt(81)" });
+    const answer = element.querySelector(".tb-formula__input");
+    answer.value = "9";
+    click(element.querySelector(".tb-formula__check"));
+    await Promise.resolve();
+
+    expect(element.querySelector(".tb-formula__status").textContent).toBe("Correct.");
+
+    const restricted = appendFormula({ source: "Math.random()" });
+    const restrictedAnswer = restricted.querySelector(".tb-formula__input");
+    restrictedAnswer.value = "0";
+    click(restricted.querySelector(".tb-formula__check"));
+    await Promise.resolve();
+
+    expect(restricted.querySelector(".tb-formula__status").textContent).toContain("Unsupported Math function");
   });
 
   it("accepts tolerance for numeric JavaScript formulas", async () => {
