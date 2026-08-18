@@ -133,6 +133,20 @@ def test_directive_warns_when_name_is_normalized(capsys):
     assert ":name: 'poem.txt' is not a valid identifier; it was converted to 'poem-txt'" in capsys.readouterr().err
 
 
+def test_directive_allows_names_beginning_with_an_underscore(capsys):
+    parse_rst(
+        """
+.. tb-file::
+   :name: _poem_file
+   :filename: poem.txt
+
+   A poem
+"""
+    )
+
+    assert capsys.readouterr().err == ""
+
+
 def test_directive_rejects_invalid_filenames():
     document = parse_rst(
         """

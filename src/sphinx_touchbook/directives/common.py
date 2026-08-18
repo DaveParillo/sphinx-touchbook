@@ -12,7 +12,7 @@ from docutils import nodes
 from docutils.parsers.rst import directives
 
 
-NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
 
 
 def class_names(value) -> list[str]:
@@ -36,7 +36,7 @@ def assign_node_id(directive, node: nodes.Element) -> None:
         if not NAME_PATTERN.fullmatch(explicit_name):
             directive.state_machine.reporter.warning(
                 f":name: {explicit_name!r} is not a valid identifier; it was converted to {node_id!r}. "
-                "Use letters, digits, underscores, and hyphens, beginning with a letter.",
+                "Use letters, digits, underscores, and hyphens, beginning with a letter or underscore.",
                 line=directive.lineno,
             )
         if node_id:
