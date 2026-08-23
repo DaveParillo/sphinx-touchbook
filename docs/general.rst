@@ -16,17 +16,13 @@ line and begin with ``:``:
 
       .. code-block:: rst
 
-         .. tb-reveal::
-            :showlabel: Show answer
-            :hidelabel: Hide answer
+         .. tb-reveal:: Answer
 
             The answer is 42.
 
    .. tb-tab:: Rendered
 
-      .. tb-reveal::
-         :showlabel: Show answer
-         :hidelabel: Hide answer
+      .. tb-reveal:: Answer
 
          The answer is 42.
 

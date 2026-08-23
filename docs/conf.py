@@ -18,7 +18,7 @@ version = project_version()
 release = version + '-alpha'
 
 
-extensions = ['sphinx_touchbook']
+extensions = ['sphinx_touchbook', 'sphinx_copybutton']
 language = 'en'
 html_theme = 'sphinx_nefertiti'
 html_theme_options = {
@@ -29,6 +29,7 @@ html_theme_options = {
         },
     ],
     'logo': 'touchbook-logo.svg',
+    'logo_alt': '',
     'logo_width': 40,
     'logo_height': 24,
 }

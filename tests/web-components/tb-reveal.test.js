@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { click, loadComponentScript } from "./helpers.js";
 
 beforeAll(async () => {
@@ -9,17 +9,12 @@ beforeEach(() => {
   document.body.innerHTML = "";
 });
 
-function appendReveal({ modal = false } = {}) {
+function appendReveal() {
   const element = document.createElement("tb-reveal");
-  element.id = modal ? "modal-reveal" : "inline-reveal";
-  element.setAttribute("showlabel", "Open");
-  element.setAttribute("hidelabel", "Close");
-  if (modal) {
-    element.setAttribute("modal", "");
-    element.setAttribute("modal-titlebar", "Author message");
-  }
+  element.id = "inline-reveal";
+  element.setAttribute("label", "Hint");
   element.innerHTML = `
-    <details class="tb-reveal__fallback"><summary>Open</summary></details>
+    <details class="tb-reveal__fallback"><summary>Hint</summary></details>
     <div class="tb-reveal__content"><p>Hidden answer</p></div>
   `;
   document.body.appendChild(element);
@@ -32,56 +27,29 @@ describe("tb-reveal Web Component", () => {
 
     const fallback = element.querySelector(".tb-reveal__fallback");
     const button = element.querySelector("button.tb-reveal__button");
+    const chevron = button.querySelector("svg.tb-reveal__chevron");
     const panel = element.querySelector(".tb-reveal__panel");
 
     expect(customElements.get("tb-reveal")).toBeTypeOf("function");
     expect(element.dataset.enhanced).toBe("true");
     expect(fallback.hidden).toBe(true);
-    expect(button.textContent).toBe("Open");
+    expect(button.textContent).toBe("Hint");
+    expect(chevron.getAttribute("aria-hidden")).toBe("true");
+    expect(chevron.getAttribute("focusable")).toBe("false");
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(button.getAttribute("aria-controls")).toBe(panel.id);
     expect(panel.hidden).toBe(true);
     expect(panel.textContent).toContain("Hidden answer");
 
     click(button);
-    expect(button.textContent).toBe("Close");
+    expect(button.textContent).toBe("Hint");
     expect(button.getAttribute("aria-expanded")).toBe("true");
     expect(panel.hidden).toBe(false);
 
     click(button);
-    expect(button.textContent).toBe("Open");
+    expect(button.textContent).toBe("Hint");
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(panel.hidden).toBe(true);
   });
 
-  it("enhances modal reveal content with dialog controls", () => {
-    HTMLDialogElement.prototype.showModal = vi.fn(function showModal() {
-      this.setAttribute("open", "");
-    });
-    HTMLDialogElement.prototype.close = vi.fn(function close() {
-      this.removeAttribute("open");
-    });
-
-    const element = appendReveal({ modal: true });
-    const fallback = element.querySelector(".tb-reveal__fallback");
-    const openButton = element.querySelector("button.tb-reveal__button");
-    const dialog = element.querySelector("dialog.tb-reveal__dialog");
-    const closeButton = dialog.querySelector("button.tb-reveal__button");
-    const label = dialog.querySelector(".tb-reveal__dialog-label");
-
-    expect(fallback.hidden).toBe(true);
-    expect(openButton.getAttribute("aria-haspopup")).toBe("dialog");
-    expect(openButton.textContent).toBe("Open");
-    expect(dialog.getAttribute("aria-labelledby")).toBe(label.id);
-    expect(label.textContent).toBe("Author message");
-    expect(dialog.textContent).toContain("Hidden answer");
-
-    click(openButton);
-    expect(dialog.hasAttribute("open")).toBe(true);
-    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce();
-
-    click(closeButton);
-    expect(dialog.hasAttribute("open")).toBe(false);
-    expect(HTMLDialogElement.prototype.close).toHaveBeenCalledOnce();
-  });
 });

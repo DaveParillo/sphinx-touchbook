@@ -12,8 +12,7 @@ The general format of the ``tb-reveal`` directive is:
 
 .. code-block:: rst
 
-   .. tb-reveal::
-      :optional parameter: value
+   .. tb-reveal:: [title]
 
       + --- Content area ---
       |
@@ -32,29 +31,14 @@ Options
    A CSS class to add to the directive.
    See :ref:`common` for details.
 
-**hidelabel**
-   ``String``. Optional. Label for the hide or close button.
-   Default is ``Hide``.
-
-**modal**
-   ``Boolean``. Optional.
-   If included, the revealed content is presented in a modal dialog.
-   The default behavior reveals content inline.
-
-**modal-titlebar**
-   ``String``. Optional.
-   Text displayed in the modal dialog titlebar and used as the dialog's
-   accessible label.
-   Default is ``Message from the author``.
-
 **name**
    ``String``. Optional.
    Sphinx reference name for this reveal block.
    See :ref:`common` for details.
 
-**showlabel**
-   ``String``. Optional. Label for the show button.
-   Default is ``Show``.
+**title**
+   ``String``. Optional.
+   The disclosure control label. The default is ``Details``.
 
 Sphinx configuration options
 ----------------------------
@@ -64,10 +48,8 @@ No directive-specific configuration options exist.
 Accessibility behavior
 ----------------------
 
-The no-JS HTML fallback uses native ``details`` and ``summary``. Inline HTML
-uses a native ``button`` and synchronizes ``aria-expanded``. Modal content uses
-a native ``dialog`` element when available and includes an accessible dialog
-label.
+The no-JS HTML fallback uses native ``details`` and ``summary``. HTML uses a
+native ``button`` and synchronizes ``aria-expanded`` and ``aria-controls``.
 
 Fallback behavior
 -----------------
@@ -93,9 +75,7 @@ Example 1: Basic reveal
 
             - *Any* valid `Sphinx markup <http://www.sphinx-doc.org>`__ can be
               included.
-            - Hidden content can be shown by using the Show button.
-            - When shown, a Hide button appears at the end of the hidden
-              content.
+            - Select Details to show or hide the content.
 
    .. tb-tab:: Rendered
 
@@ -105,11 +85,10 @@ Example 1: Basic reveal
 
          - *Any* valid `Sphinx markup <http://www.sphinx-doc.org>`__ can be
            included.
-         - Hidden content can be shown by using the Show button.
-         - When shown, a Hide button appears at the end of the hidden content.
+           - Select Details to show or hide the content.
 
-Example 2: Custom button labels
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example 2: Title and nested content
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tb-group::
    :name: reveal-ex2-tabs
@@ -118,10 +97,8 @@ Example 2: Custom button labels
 
       .. code-block:: rst
 
-         .. tb-reveal::
+         .. tb-reveal:: Explanation
             :name: re-ex2
-            :showlabel: Reveal Content
-            :hidelabel: Hide Content
 
             The reveal block can contain other directives. This example uses a
             standard Sphinx code block:
@@ -138,10 +115,8 @@ Example 2: Custom button labels
 
    .. tb-tab:: Rendered
 
-      .. tb-reveal::
+      .. tb-reveal:: Explanation
          :name: re-ex2
-         :showlabel: Reveal Content
-         :hidelabel: Hide Content
 
          The reveal block can contain other directives. This example uses a
          standard Sphinx code block:
@@ -155,59 +130,3 @@ Example 2: Custom button labels
          .. tb-code:: python
 
             print("Hello, world")
-
-Example 3: Modal reveal
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. tb-group::
-   :name: reveal-ex3-tabs
-
-   .. tb-tab:: Source
-
-      .. code-block:: rst
-
-         Given the following C++ statements:
-
-         .. code-block:: cpp
-
-            int  val = 0;
-            int& ir  = val;
-            auto x   = ir;
-
-         What type is x?
-
-         .. tb-reveal::
-            :name: reveal-ex3
-            :modal:
-            :modal-titlebar: Understanding auto type deduction
-
-            If you said, ``int``, excellent job!
-
-            ``ir`` is a reference to ``val``,
-            which makes ``ir`` just another name for ``val``.
-            ``auto x = ir;`` is exactly the same as if we had written
-            ``auto x = val;`` here.
-
-   .. tb-tab:: Rendered
-
-      Given the following C++ statements:
-
-      .. code-block:: cpp
-
-         int  val = 0;
-         int& ir  = val;
-         auto x   = ir;
-
-      What type is x?
-
-      .. tb-reveal::
-         :name: reveal-ex3
-         :modal:
-         :modal-titlebar: Understanding auto type deduction
-
-         If you said, ``int``, excellent job!
-
-         ``ir`` is a reference to ``val``,
-         which makes ``ir`` just another name for ``val``.
-         ``auto x = ir;`` is exactly the same as if we had written
-         ``auto x = val;`` here.

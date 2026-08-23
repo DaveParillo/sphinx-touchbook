@@ -27,13 +27,9 @@ def _node_id(node: TbRevealNode) -> str:
 def _attrs(node: TbRevealNode) -> str:
     attrs = {
         "id": _node_id(node),
-        "showlabel": node["showlabel"],
-        "hidelabel": node["hidelabel"],
-        "modal-titlebar": node["modal_titlebar"],
+        "label": node["title"],
     }
     parts = [f'{name}="{escape(value, quote=True)}"' for name, value in attrs.items()]
-    if node["modal"]:
-        parts.append("modal")
     class_attr = html_class_attr(node)
     if class_attr:
         parts.append(class_attr.strip())
@@ -44,7 +40,7 @@ def visit_tb_reveal_html(self: HTML5Translator, node: TbRevealNode) -> None:
     self.body.append(html_additional_targets(node))
     self.body.append(f'<tb-reveal {_attrs(node)}>\n')
     self.body.append('<details class="tb-reveal__fallback">\n')
-    self.body.append(f'<summary>{escape(node["showlabel"])}</summary>\n')
+    self.body.append(f'<summary>{escape(node["title"])}</summary>\n')
     self.body.append('<div class="tb-reveal__content">\n')
 
 
@@ -57,7 +53,7 @@ def depart_tb_reveal_html(self: HTML5Translator, node: TbRevealNode) -> None:
 def visit_tb_reveal_latex(self: LaTeXTranslator, node: TbRevealNode) -> None:
     latex_targets(self, node)
     self.body.append("\n\\begin{sphinxadmonition}{note}{")
-    self.body.append(self.encode(node["modal_titlebar"] if node["modal"] else node["showlabel"]))
+    self.body.append(self.encode(node["title"]))
     self.body.append("}\n")
 
 
@@ -66,8 +62,7 @@ def depart_tb_reveal_latex(self: LaTeXTranslator, node: TbRevealNode) -> None:
 
 
 def visit_tb_reveal_text(self: TextTranslator, node: TbRevealNode) -> None:
-    label = node["modal_titlebar"] if node["modal"] else node["showlabel"]
-    self.add_text(f"\n[{label}]\n")
+    self.add_text(f"\n[{node['title']}]\n")
 
 
 def depart_tb_reveal_text(self: TextTranslator, node: TbRevealNode) -> None:

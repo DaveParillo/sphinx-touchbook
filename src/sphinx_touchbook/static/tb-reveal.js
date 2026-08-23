@@ -4,10 +4,7 @@ class TbReveal extends HTMLElement {
       return;
     }
     this.dataset.enhanced = "true";
-    this.modal = this.hasAttribute("modal");
-    this.showLabel = this.getAttribute("showlabel") || "Show";
-    this.hideLabel = this.getAttribute("hidelabel") || "Hide";
-    this.modalTitlebar = this.getAttribute("modal-titlebar") || "Message from the author";
+    this.revealTitle = this.getAttribute("label") || "Details";
     this.fallback = this.querySelector(".tb-reveal__fallback");
     if (!this.fallback) {
       return;
@@ -16,7 +13,7 @@ class TbReveal extends HTMLElement {
     if (!this.content) {
       return;
     }
-    this.modal ? this.enhanceModal() : this.enhanceInline();
+    this.enhanceInline();
   }
 
   enhanceInline() {
@@ -26,7 +23,7 @@ class TbReveal extends HTMLElement {
     const panelId = this.contentId();
     button.type = "button";
     button.className = "tb-reveal__button";
-    button.textContent = this.showLabel;
+    button.append(this.chevron(), document.createTextNode(this.revealTitle));
     button.setAttribute("aria-expanded", "false");
     button.setAttribute("aria-controls", panelId);
 
@@ -41,70 +38,10 @@ class TbReveal extends HTMLElement {
     button.addEventListener("click", () => {
       const expanded = button.getAttribute("aria-expanded") === "true";
       button.setAttribute("aria-expanded", String(!expanded));
-      button.textContent = expanded ? this.showLabel : this.hideLabel;
       panel.hidden = expanded;
     });
 
     this.append(button, panel);
-  }
-
-  enhanceModal() {
-    this.fallback.hidden = true;
-
-    const openButton = document.createElement("button");
-    openButton.type = "button";
-    openButton.className = "tb-reveal__button";
-    openButton.textContent = this.showLabel;
-    openButton.setAttribute("aria-haspopup", "dialog");
-
-    const dialog = document.createElement("dialog");
-    dialog.className = "tb-reveal__dialog";
-    dialog.setAttribute("aria-labelledby", this.labelId());
-
-    const header = document.createElement("div");
-    header.className = "tb-reveal__dialog-header";
-
-    const label = document.createElement("div");
-    label.className = "tb-reveal__dialog-label";
-    label.id = dialog.getAttribute("aria-labelledby");
-    label.textContent = this.modalTitlebar;
-
-    const closeButton = document.createElement("button");
-    closeButton.type = "button";
-    closeButton.className = "tb-reveal__button";
-    closeButton.textContent = this.hideLabel;
-
-    const body = document.createElement("div");
-    body.className = "tb-reveal__panel";
-    while (this.content.firstChild) {
-      body.appendChild(this.content.firstChild);
-    }
-
-    closeButton.addEventListener("click", () => {
-      if (typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog.removeAttribute("open");
-      }
-    });
-    openButton.addEventListener("click", () => {
-      if (typeof dialog.showModal === "function") {
-        dialog.showModal();
-      } else {
-        dialog.setAttribute("open", "");
-      }
-    });
-
-    header.append(label, closeButton);
-    dialog.append(header, body);
-    this.append(openButton, dialog);
-  }
-
-  labelId() {
-    if (!this.id) {
-      this.id = `tb-reveal-${TbReveal.nextId++}`;
-    }
-    return `${this.id}-label`;
   }
 
   contentId() {
@@ -112,6 +49,24 @@ class TbReveal extends HTMLElement {
       this.id = `tb-reveal-${TbReveal.nextId++}`;
     }
     return `${this.id}-content`;
+  }
+
+  chevron() {
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.classList.add("tb-reveal__chevron");
+    icon.setAttribute("aria-hidden", "true");
+    icon.setAttribute("focusable", "false");
+    icon.setAttribute("viewBox", "0 0 24 24");
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "m9 18 6-6-6-6");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "currentcolor");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    path.setAttribute("stroke-width", "2");
+    icon.appendChild(path);
+    return icon;
   }
 }
 

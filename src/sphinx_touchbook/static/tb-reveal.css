@@ -12,32 +12,36 @@ tb-reveal .tb-reveal__content {
 }
 
 .tb-reveal__button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
   cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 600;
+  gap: 0.35rem;
+  padding: 0.25rem 0;
+  text-align: left;
+}
+
+.tb-reveal__chevron {
+  fill: currentcolor;
+  flex: 0 0 1.5rem;
+  height: 1.5rem;
+  transition: transform 0.15s ease;
+  width: 1.5rem;
+}
+
+.tb-reveal__button[aria-expanded="true"] .tb-reveal__chevron {
+  transform: rotate(90deg);
+}
+
+.tb-reveal__button:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
 }
 
 .tb-reveal__panel {
   margin-top: 0.75rem;
-}
-
-.tb-reveal__dialog {
-  max-width: min(42rem, calc(100vw - 2rem));
-  border: 1px solid var(--color-background-border, #999);
-  border-radius: 0.25rem;
-  padding: 1rem;
-}
-
-.tb-reveal__dialog::backdrop {
-  background: rgb(0 0 0 / 0.45);
-}
-
-.tb-reveal__dialog-header {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-}
-
-.tb-reveal__dialog-label {
-  font-weight: 700;
 }

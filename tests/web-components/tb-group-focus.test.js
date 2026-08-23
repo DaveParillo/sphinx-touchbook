@@ -231,8 +231,8 @@ const fixtures = [
     name: "tb-reveal",
     selector: ".tb-reveal__button",
     html: `
-      <tb-reveal id="inline-reveal" showlabel="Open" hidelabel="Close">
-        <details class="tb-reveal__fallback"><summary>Open</summary></details>
+      <tb-reveal id="inline-reveal" label="Hint">
+        <details class="tb-reveal__fallback"><summary>Hint</summary></details>
         <div class="tb-reveal__content"><p>Hidden answer</p></div>
       </tb-reveal>
     `,
