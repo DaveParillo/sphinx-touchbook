@@ -43,6 +43,7 @@ test = [
 ]
 docs = [
     "Sphinx>=8.1",
+    "sphinx-copybutton",
     "sphinx-nefertiti",
 ]
 publish = [
