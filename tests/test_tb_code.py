@@ -370,7 +370,7 @@ Title
    print("two")
 """,
         conf_extra=(
-            'tb_code_block_defaults = {"linenos": True, "lineno-start": 25, "emphasize-lines": "2", "class": ["from-conf"]}\n'
+            'tb_code_block_defaults = {"linenos": True, "lineno-start": 25, "emphasize-lines": "2", "class": ["from-conf"], "show-tutor": True}\n'
         ),
     )
 
@@ -381,6 +381,8 @@ Title
     assert fallback.find(class_="linenos") is not None
     assert "25" in fallback.get_text()
     assert fallback.find(class_="hll") is not None
+    config = json.loads(element.find("script", class_="tb-code__config").string)
+    assert config["showTutor"] is True
 
 
 def test_html_uses_inline_line_numbers_when_sphinx_requests_table_style(tmp_path):

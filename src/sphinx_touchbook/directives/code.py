@@ -255,7 +255,13 @@ class TbCodeDirective(Directive):
         node["file_specs"] = _parse_file_specs(self.options.get("files"))
         node["files"] = []
         node["hidden"] = "hidden" in self.options
-        node["show_tutor"] = "show-tutor" in self.options
+        # ``show-tutor`` is a flag, so it is not part of the standard
+        # ``code-block`` option set merged above.  Still honor the project
+        # default when configured, while allowing the directive flag to
+        # enable it for an individual block.
+        block_defaults = _config_value(config, "tb_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS)
+        show_tutor_default = dict(block_defaults).get("show-tutor", False)
+        node["show_tutor"] = "show-tutor" in self.options or _as_bool_flag(show_tutor_default)
         node["caption"] = code_block_options.get("caption")
         node["code_block_options"] = normalized_code_block_options
         node["endpoint"] = self.options.get("endpoint") or _config_value(

@@ -276,7 +276,9 @@ Sphinx configuration options
 ``tb_code_block_defaults``
    ``dict``. Optional defaults for standard Sphinx ``code-block`` options used
    by ``tb-code``. This is useful for presentation settings that should apply
-   to every runnable code block, such as line numbers or custom styling.
+   to every runnable code block, such as line numbers or custom styling. The
+   ``show-tutor`` flag may also be set here to show the C++ Tutor button by
+   default for eligible blocks.
 
    .. code-block:: python
 
