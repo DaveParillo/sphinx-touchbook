@@ -70,7 +70,6 @@ def depart_tb_choice_prompt_html(self: HTML5Translator, node: TbChoicePromptNode
 
 def visit_tb_choice_option_html(self: HTML5Translator, node: TbChoiceOptionNode) -> None:
     parent = node.parent
-    node_id = escape(_node_id(parent), quote=True)
     index = int(node["index"])
     input_id = escape(f"{_node_id(parent)}-option-{index}", quote=True)
     input_type = "checkbox" if parent["multiple"] else "radio"
@@ -78,10 +77,14 @@ def visit_tb_choice_option_html(self: HTML5Translator, node: TbChoiceOptionNode)
     correct = "true" if node["correct"] else "false"
 
     self.body.append(f'<div class="tb-choice__option" data-correct="{correct}">\n')
-    self.body.append('<label class="tb-choice__label">\n')
+    answer = next(child for child in node if isinstance(child, TbChoiceAnswerNode))
+    has_intro = isinstance(answer[0], nodes.paragraph)
+    has_details = len(answer) > 1 or not has_intro
+    describedby = f' aria-describedby="{input_id}-details"' if has_details else ""
+    self.body.append('<div class="tb-choice__row">\n')
     self.body.append(
         f'<input id="{input_id}" class="tb-choice__input" type="{input_type}" '
-        f'name="{name}" value="{index}">\n'
+        f'name="{name}" value="{index}"{describedby}>\n'
     )
     self.body.append('<div class="tb-choice__answer">\n')
 
@@ -91,12 +94,31 @@ def depart_tb_choice_option_html(self: HTML5Translator, node: TbChoiceOptionNode
 
 
 def visit_tb_choice_answer_html(self: HTML5Translator, node: TbChoiceAnswerNode) -> None:
-    pass
+    option = node.parent
+    input_id = escape(f"{_node_id(option.parent)}-option-{int(option['index'])}", quote=True)
+    children = list(node.children)
+    if isinstance(children[0], nodes.paragraph):
+        paragraph = children.pop(0)
+        self.body.append(self.starttag(paragraph, "p", ""))
+        self.body.append(f'<label class="tb-choice__label" for="{input_id}">')
+        for child in paragraph.children:
+            child.walkabout(self)
+        self.body.append("</label></p>\n")
+    else:
+        # Nested-list answers may start with a block rather than a paragraph.
+        self.body.append(f'<p><label class="tb-choice__label" for="{input_id}">'
+                         f'Option {int(option["index"]) + 1}</label></p>\n')
+    if children:
+        self.body.append(f'<div id="{input_id}-details" class="tb-choice__details">\n')
+        for child in children:
+            child.walkabout(self)
+        self.body.append("</div>\n")
+    self.body.append("</div>\n</div>\n")
+    raise nodes.SkipNode
 
 
 def depart_tb_choice_answer_html(self: HTML5Translator, node: TbChoiceAnswerNode) -> None:
-    self.body.append("</div>\n")
-    self.body.append("</label>\n")
+    pass
 
 
 def visit_tb_choice_feedback_html(self: HTML5Translator, node: TbChoiceFeedbackNode) -> None:

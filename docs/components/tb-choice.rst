@@ -108,6 +108,13 @@ HTML uses native radio buttons or checkboxes. A native button checks the
 selection. The result text uses a status region so assistive technology can
 announce the result after checking.
 
+Clicking the input or the first answer paragraph selects that answer, including
+when the paragraph wraps across lines. Later paragraphs, code blocks, and other
+answer content do not select the answer when clicked. The first paragraph
+labels the input; additional answer blocks provide its accessible description.
+An answer that starts with a block instead of a paragraph receives an
+``Option N`` label. Feedback is separate from the label and description.
+
 Fallback behavior
 -----------------
 
@@ -418,3 +425,81 @@ Example 5: Nested feedback with math
              .. math::
 
                 c = \sqrt{25} = 5
+
+Example 6: Multiple blocks in an answer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use nested feedback when an answer contains several paragraphs or a code
+block. In this example, the description, code, and final paragraph belong to
+the answer; only the nested bullet supplies feedback.
+
+Click the first paragraph beside an input to select the answer. The code block
+and final paragraph remain outside the clickable label, so their text can be
+selected without selecting the answer.
+
+.. tb-group::
+   :name: choice-ex6-tabs
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-choice::
+            :name: choice-multiblock-answer
+
+            Which loop prints the integers from 0 through 2?
+
+            - Start at zero and stop before three.
+
+              .. code-block:: cpp
+
+                 for (int i = 0; i < 3; ++i) {
+                     std::cout << i << '\n';
+                 }
+
+              The upper bound is excluded.
+
+              + Correct. The loop prints 0, 1, and 2.
+
+            - Start at zero and include three.
+
+              .. code-block:: cpp
+
+                 for (int i = 0; i <= 3; ++i) {
+                     std::cout << i << '\n';
+                 }
+
+              The upper bound is included.
+
+              - This loop also prints 3.
+
+   .. tb-tab:: Rendered
+
+      .. tb-choice::
+         :name: choice-multiblock-answer
+
+         Which loop prints the integers from 0 through 2?
+
+         - Start at zero and stop before three.
+
+           .. code-block:: cpp
+
+              for (int i = 0; i < 3; ++i) {
+                  std::cout << i << '\n';
+              }
+
+           The upper bound is excluded.
+
+           + Correct. The loop prints 0, 1, and 2.
+
+         - Start at zero and include three.
+
+           .. code-block:: cpp
+
+              for (int i = 0; i <= 3; ++i) {
+                  std::cout << i << '\n';
+              }
+
+           The upper bound is included.
+
+           - This loop also prints 3.

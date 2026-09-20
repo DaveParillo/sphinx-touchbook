@@ -55,6 +55,49 @@ CHOICE_FALLBACK_RST = """
 """
 
 
+def test_multiblock_answer_labels_only_first_paragraph(tmp_path):
+    output = build_sphinx(tmp_path, "html", """
+Question
+========
+
+.. tb-choice::
+   :name: blocks
+
+   Choose a loop.
+
+   - Use **three** iterations with ``i < 3``.
+
+     .. code-block:: cpp
+
+        for (int i = 0; i < 3; ++i) {}
+
+     This excludes the upper bound.
+
+     + Correct feedback.
+
+   - .. code-block:: cpp
+
+        for (int i = 0; i <= 3; ++i) {}
+
+     - Incorrect feedback.
+""")
+    soup = BeautifulSoup((output / "index.html").read_text(), "html.parser")
+    options = soup.select("tb-choice .tb-choice__option")
+    for option in options:
+        control = option.select_one("input")
+        label = option.select_one("label")
+        assert label["for"] == control["id"]
+        assert not label.select("div, p, pre, ul, input")
+        details = soup.find(id=control["aria-describedby"])
+        assert details.select_one("pre")
+        assert not details.select(".tb-choice__feedback")
+        assert control.parent == option.select_one(".tb-choice__answer").parent
+    assert options[0].select_one("label strong").text == "three"
+    assert options[0].select_one("label code").text == "i < 3"
+    assert "upper bound" not in options[0].select_one("label").text
+    assert options[1].select_one("label").text == "Option 2"
+
+
 def parse_rst(source: str):
     parser = Parser()
     settings = get_default_settings(Parser)

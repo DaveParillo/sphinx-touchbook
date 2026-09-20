@@ -18,11 +18,19 @@ tb-choice {
   padding: 0.75rem;
 }
 
-.tb-choice__label {
+.tb-choice__row {
   align-items: flex-start;
-  cursor: pointer;
   display: flex;
   gap: 0.5rem;
+}
+
+.tb-choice__label {
+  cursor: pointer;
+}
+
+.tb-choice__answer {
+  min-width: 0;
+  flex: 1;
 }
 
 .tb-choice__input {
@@ -36,6 +44,7 @@ tb-choice {
 }
 
 .tb-choice__answer > :last-child,
+.tb-choice__details > :last-child,
 .tb-choice__feedback > :last-child {
   margin-bottom: 0;
 }
