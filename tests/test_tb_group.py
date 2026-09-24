@@ -237,8 +237,9 @@ Title
     )
 
     latex = read_latex_output(outdir)
-    assert r"\subsubsection*{Source}" in latex
-    assert r"\subsubsection*{Rendered}" in latex
+    assert r"\textbf{Source}\par" in latex
+    assert r"\textbf{Rendered}\par" in latex
+    assert r"\subsubsection*" not in latex
 
 
 def test_web_component_asset_defines_custom_element():

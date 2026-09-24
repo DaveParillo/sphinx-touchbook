@@ -107,6 +107,10 @@ def visit_tb_parsons_latex(self: LaTeXTranslator, node: TbParsonsNode) -> None:
 
 def depart_tb_parsons_latex(self: LaTeXTranslator, node: TbParsonsNode) -> None:
     fragments = "\n\n".join(item["code"] for item in _display_order(node))
+    if self.config.tb_pdf_tagging:
+        from .common import tagged_listing
+        tagged_listing(self, fragments, 'text', 'Code fragments', location=node)
+        return
     self.body.append("\n\\textbf{Code fragments}\\par\n")
     self.body.append("\\begin{sphinxVerbatim}[commandchars=\\\\\\{\\}]\n")
     self.body.append(self.encode(fragments))

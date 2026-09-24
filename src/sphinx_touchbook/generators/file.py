@@ -16,9 +16,12 @@ from docutils import nodes
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
+from sphinx.util import logging
 
-from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets, tagged_listing
 from sphinx_touchbook.nodes import TbFileNode
+
+logger = logging.getLogger(__name__)
 
 
 def _node_id(node: TbFileNode) -> str:
@@ -58,13 +61,17 @@ def visit_tb_file_html(self: HTML5Translator, node: TbFileNode) -> None:
         self.body.append(f'<pre class="tb-file__content"><code>{escape(node.get("content", ""))}</code></pre>\n')
     elif node["mime_type"].startswith("image/"):
         src = escape(node["data_url"], quote=True)
-        self.body.append(f'<img class="tb-file__image" src="{src}" alt="{filename}">\n')
+        description = '' if 'tb-pdf-artifact' in node.get('classes', []) else (
+            node.get('alt') or node['filename'])
+        alt = escape(description, quote=True)
+        self.body.append(f'<img class="tb-file__image" src="{src}" alt="{alt}">\n')
     else:
         mime_type = escape(node["mime_type"])
         self.body.append(f'<p class="tb-file__binary">Binary file: {filename} ({mime_type})</p>\n')
     self.body.append("</figure>\n")
     payload = json.dumps(_config(node), ensure_ascii=False).replace("</", "<\\/")
     self.body.append(f'<script type="application/json" class="tb-file__config">{payload}</script>\n')
+    raise nodes.SkipChildren
 
 
 def depart_tb_file_html(self: HTML5Translator, node: TbFileNode) -> None:
@@ -75,18 +82,29 @@ def visit_tb_file_latex(self: LaTeXTranslator, node: TbFileNode) -> None:
     if node.get("hidden"):
         raise nodes.SkipNode
     latex_targets(self, node)
+    if not node['is_text']:
+        if not node.children:
+            if self.config.tb_pdf_tagging and not (node.get('alt') or node.get('caption')):
+                logger.warning('Tagged PDF binary file needs an equivalent :alt: description',
+                               location=node, type='touchbook', subtype='pdf_alt')
+            description = node.get('alt') or node.get('caption') or node['filename']
+            self.body.append('\n\\par ' + self.encode(
+                f"File {node['filename']} ({node['mime_type']}): {description}") + '\\par\n')
+            raise nodes.SkipNode
+        return
+    if self.config.tb_pdf_tagging:
+        tagged_listing(self, node.get('content', ''), 'text', _caption(node), location=node)
+        raise nodes.SkipNode
     self.body.append("\n\\sphinxSetupCaptionForVerbatim{")
     self.body.append(self.encode(_caption(node)))
     self.body.append("}\n")
     self.body.append("\n\\begin{sphinxVerbatim}[commandchars=\\\\\\{\\}]\n")
-    if node["is_text"]:
-        self.body.append(self.encode(node.get("content", "")))
-    else:
-        self.body.append(self.encode(f"Image file: {node['filename']}"))
+    self.body.append(self.encode(node.get("content", "")))
 
 
 def depart_tb_file_latex(self: LaTeXTranslator, node: TbFileNode) -> None:
-    self.body.append("\n\\end{sphinxVerbatim}\n")
+    if node['is_text']:
+        self.body.append("\n\\end{sphinxVerbatim}\n")
 
 
 def visit_tb_file_text(self: TextTranslator, node: TbFileNode) -> None:
@@ -96,7 +114,8 @@ def visit_tb_file_text(self: TextTranslator, node: TbFileNode) -> None:
     if node["is_text"]:
         self.add_text(f"\n{node.get('content', '')}\n")
     else:
-        self.add_text(f"\nImage file: {node['filename']}\n")
+        self.add_text(f"\nFile: {node['filename']}\n{node.get('alt', '')}\n")
+    raise nodes.SkipChildren
 
 
 def depart_tb_file_text(self: TextTranslator, node: TbFileNode) -> None:

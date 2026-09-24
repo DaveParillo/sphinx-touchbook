@@ -123,6 +123,10 @@ def depart_tb_click_prompt_latex(self: LaTeXTranslator, node: TbClickPromptNode)
 
 
 def visit_tb_click_source_latex(self: LaTeXTranslator, node: TbClickSourceNode) -> None:
+    if self.config.tb_pdf_tagging:
+        from .common import tagged_listing
+        tagged_listing(self, node['source'], 'text', '', location=node)
+        raise nodes.SkipNode
     self.body.append("\n\\begin{sphinxVerbatim}\n")
     self.body.append(node["source"])
     self.body.append("\n\\end{sphinxVerbatim}\n")

@@ -98,6 +98,11 @@ def visit_tb_micro_parsons_latex(self: LaTeXTranslator, node: TbMicroParsonsNode
 
 def depart_tb_micro_parsons_latex(self: LaTeXTranslator, node: TbMicroParsonsNode) -> None:
     tokens = " ".join(token.astext() for token in _display_order(node))
+    if self.config.tb_pdf_tagging:
+        from .common import tagged_listing
+        tagged_listing(self, tokens, 'text', 'Tokens', location=node)
+        self.body.append("\\par\\textbf{Answer:} \\underline{\\hspace{6cm}}\n")
+        return
     self.body.append("\n\\textbf{Tokens}\\par\n")
     self.body.append("\\begin{sphinxVerbatim}[commandchars=\\\\\\{\\}]\n")
     self.body.append(self.encode(tokens))

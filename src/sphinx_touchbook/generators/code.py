@@ -17,7 +17,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
-from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
+from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets, tagged_listing
 from sphinx_touchbook.nodes import TbCodeNode
 
 
@@ -131,6 +131,10 @@ def visit_tb_code_latex(self: LaTeXTranslator, node: TbCodeNode) -> None:
     if node.get("hidden"):
         raise nodes.SkipNode
     latex_targets(self, node)
+    if self.config.tb_pdf_tagging:
+        tagged_listing(self, node['source'], node['language'], node['caption'],
+                       node.get('code_block_options'), node)
+        raise nodes.SkipNode
     if node["caption"]:
         self.body.append("\n\\sphinxSetupCaptionForVerbatim{")
         self.body.append(self.encode(node["caption"]))

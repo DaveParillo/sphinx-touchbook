@@ -62,9 +62,9 @@ def depart_tb_group_latex(self: LaTeXTranslator, node: TbGroupNode) -> None:
 
 def visit_tb_tab_latex(self: LaTeXTranslator, node: TbTabNode) -> None:
     latex_targets(self, node)
-    self.body.append("\n\\subsubsection*{")
+    self.body.append("\n\\par\\noindent\\textbf{")
     self.body.append(self.encode(node["label"]))
-    self.body.append("}\n")
+    self.body.append("}\\par\n")
 
 
 def depart_tb_tab_latex(self: LaTeXTranslator, node: TbTabNode) -> None:

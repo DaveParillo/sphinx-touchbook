@@ -336,6 +336,9 @@ def _add_static_path(app: Sphinx) -> None:
 
 
 def setup(app: Sphinx) -> dict[str, object]:
+    from .pdf import setup_pdf
+
+    setup_pdf(app)
     app.add_config_value(
         "tb_code_default_endpoint",
         DEFAULT_ENDPOINT,

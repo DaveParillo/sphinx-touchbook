@@ -18,6 +18,7 @@ import mimetypes
 import re
 from pathlib import Path
 
+from docutils import nodes
 from docutils.parsers.rst import Directive, directives
 
 from sphinx_touchbook.directives.common import assign_node_id
@@ -86,6 +87,7 @@ class TbFileDirective(Directive):
     optional_arguments = 1
     final_argument_whitespace = True
     option_spec = {
+        "alt": directives.unchanged,
         "caption": directives.unchanged,
         "class": directives.class_option,
         "filename": validate_filename,
@@ -103,6 +105,7 @@ class TbFileDirective(Directive):
         assign_node_id(self, node)
         node["filename"] = self.options["filename"]
         node["caption"] = self.options.get("caption")
+        node["alt"] = self.options.get("alt", "")
         node["hidden"] = "hidden" in self.options
         node["source_path"] = None
         node["mime_type"] = _mime_type(node["filename"], None)
@@ -135,6 +138,13 @@ class TbFileDirective(Directive):
             self.assert_has_content()
             node["content"] = "\n".join(self.content)
 
+        if not node['is_text'] and node['mime_type'] in {'image/png', 'image/jpeg', 'application/pdf'}:
+            figure = nodes.figure()
+            figure += nodes.image(uri=self.arguments[0], alt=node['alt'],
+                                  classes=['tb-pdf-artifact'] if 'tb-pdf-artifact' in node['classes'] else [])
+            caption = node.get('caption') or node['filename']
+            figure += nodes.caption('', caption)
+            node += figure
         result = [node]
         if node["hidden"] and node["is_text"] and node["editable"]:
             result.append(

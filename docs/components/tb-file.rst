@@ -47,6 +47,12 @@ Options
    Empty path segments, ``.``, ``..``, absolute paths, spaces, and other
    punctuation are rejected.
 
+**alt**
+   ``String``. Optional. An equivalent description of an image or binary file.
+   Used as HTML image alternate text and tagged PDF figure metadata. Describe
+   instructional meaning, not the filename. This follows the
+   `Docutils image alt option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#image>`__.
+
 **caption**
    ``String``. Optional.
    Caption displayed with the static file listing.
@@ -89,23 +95,25 @@ set, and their content as readable preformatted text before JavaScript runs.
 When editing is available, HTML adds a native button and textarea with
 programmatic labels.
 
-Image files render with the simulated filename as alternate text. Authors
-should choose filenames that communicate the image's instructional role when
-using image files this way.
+Use ``:alt:`` to describe image content. HTML falls back to the filename when
+no description is provided; tagged PDF builds warn about missing image alt
+text. PNG, JPEG, and PDF assets render as figures in LaTeX output. Unsupported
+binary formats render a file reference and the supplied description.
 
 Fallback behavior
 -----------------
 
 Text builders render visible text files as labeled file listings. PDF-oriented
 builders render visible text files as LaTeX listings. The listing caption uses
-``caption`` when set and otherwise uses ``filename``. Image files render as
-labeled image-file references. Hidden files are not rendered, but remain
+``caption`` when set and otherwise uses ``filename``. Compatible images render
+as figures with captions. Hidden files are not rendered, but remain
 available in the Sphinx environment registry for later execution integration.
 
 Referenced binary files are registered and marked read-only. HTML can display
-image formats supported by browsers. Text and PDF-oriented builders render a
-labeled file reference for binary files rather than embedding incompatible
-data. Authors should use builder-specific ``only`` sections when a binary file
+image formats supported by browsers. Text output always supplies a file
+reference and description. PDF output embeds PNG, JPEG, and PDF assets and
+supplies a textual reference for other binary formats. Authors should use
+builder-specific ``only`` sections when a binary file
 format is suitable for one output format but not another, such as a
 PostScript file for LaTeX-oriented output.
 

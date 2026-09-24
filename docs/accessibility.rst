@@ -81,3 +81,61 @@ When testing Touchbook content for keyboard accessibility:
 Touchbook should provide accessible controls and predictable focus behavior.
 Operating system and browser settings can still change how users move through
 native controls.
+
+Experimental Tagged PDF
+-----------------------
+
+Touchbook provides an opt-in LuaLaTeX tagging profile. Enable it in ``conf.py``:
+
+.. code-block:: python
+
+   tb_pdf_tagging = True
+   tb_pdf_language = "en-US"
+
+The profile is being tested with Sphinx 9.1 and TeX Live 2026. It requires
+LaTeX's current ``DocumentMetadata`` tagging support; older distribution
+packages may not work. It selects LuaLaTeX and supplies document metadata
+before the document class loads. Do not add a second ``DocumentMetadata``
+command in your preamble.
+For upstream package compatibility, consult the
+`LaTeX tagging project instructions <https://tagging-project.latex-project.org/documentation/usage-instructions>`__.
+
+The profile requests title display in PDF viewers and structure-based link
+tab order. Actual navigation depends on the PDF viewer. Native LaTeX tagging
+provides heading, paragraph, list, table, figure, caption, and link structures.
+Some tag names use role mappings to standard PDF roles rather than literal
+names such as ``H1`` and ``P``.
+
+.. rubric:: Tagging tips
+
+- Supply meaningful ``:alt:`` text on instructional images, including
+  ``tb-file`` images.
+- Missing image descriptions produce a ``touchbook.pdf_alt`` warning.
+- Mark purely decorative images with ``:class: tb-pdf-artifact``.
+
+  Do not apply this class to instructional content.
+
+The PDF-specific Pygments style darkens the default palette until every token
+foreground reaches at least 4.5:1 contrast against both white and the gray
+highlight background. HTML colors do not change. The optional
+``tb_pdf_pygments_style`` setting accepts a Pygments style name or import path.
+
+Compatibility changes affect layout: the profile uses native headings instead
+of ``titlesec``/``fncychap``, booktabs tables without row striping, native
+footnotes, and unframed topic and admonition boxes. It installs a custom LaTeX
+translator and should not be combined with another extension that replaces
+that translator without integration testing.
+
+This is not a PDF/UA compliance claim. Complex tables, mathematics, raw LaTeX,
+third-party diagrams, and other extensions need separate validation. Authors
+remain responsible for meaningful descriptions, correct heading hierarchy,
+table headers, reading order, and accessible source content. Validate the
+compiled PDF with a PDF accessibility checker and assistive technology.
+Avoid treating a successful compile or the presence of tags as proof of
+accessible output.
+
+The ``tests/pdf`` checks metadata, headings, lists, links, tables, images, code
+captions, footnotes, TOC, and index.
+The ``audit.py`` script inspects the compiled structure tree with ``pypdf``;
+it is not a real conformance validator.
+
