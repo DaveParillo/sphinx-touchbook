@@ -45,7 +45,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: python -m pip install tox ".[publish]"
+        run: python -m pip install tox ".[publish,docs]" "Sphinx>=9.1,<9.2"
 
       - name: Install JavaScript dependencies
         run: npm ci
@@ -58,13 +58,17 @@ jobs:
 
       - name: Build PDF author guide
         run: |
-          mkdir -p build/release-assets
+          python -m sphinx -M latex docs build/latexpdf \
+            -D tb_pdf_tagging=1 --fail-on-warning
           docker run --rm \
             -v "$PWD:/docs" \
-            -w /docs \
-            sphinxdoc/sphinx-latexpdf:latest \
-            sh -c 'python -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
-          find build/latexpdf/latex -name '*.pdf' -exec cp {} build/release-assets/ \;
+            -w /docs/build/latexpdf/latex \
+            texlive/texlive:latest \
+            make all-pdf
+          test -s build/latexpdf/latex/sphinxtouchbookauthorguide.pdf
+          mkdir -p build/release-assets
+          cp build/latexpdf/latex/sphinxtouchbookauthorguide.pdf \
+            build/release-assets/
 
       - name: Build package
         run: python -m build

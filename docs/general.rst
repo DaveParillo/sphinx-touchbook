@@ -6,6 +6,7 @@ General Syntax
 All directives start with ``..``, then a single space, followed by the name of
 the directive, then ``::``.
 
+
 Many directives also accept options. Options are indented below the directive
 line and begin with ``:``:
 
@@ -17,12 +18,14 @@ line and begin with ``:``:
       .. code-block:: rst
 
          .. tb-reveal:: Answer
+            :name: general-syntax-ex1
 
             The answer is 42.
 
    .. tb-tab:: Rendered
 
       .. tb-reveal:: Answer
+         :name: general-syntax-ex1
 
          The answer is 42.
 
@@ -71,7 +74,7 @@ Common options
 
 Every Touchbook directive accepts the optional ``name`` and ``class``
 parameters as described in 
-`Docutils common option <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
+`Docutils common options <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
 Use letters, digits, underscores, and hyphens for ``name``, beginning with a
 letter or underscore. Other characters are converted for the generated HTML ID
 and produce a build warning that reports the converted value.

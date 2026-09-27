@@ -37,22 +37,26 @@ jobs:
           python -m tox -e py3.13-sphinx9.1-docs-html
           mkdir -p build
           cp -R .tox/py3.13-sphinx9.1-docs-html/tmp/authorguide-html build/authorguide
+          echo "Disable Jekyll processing"
+          touch build/authorguide/.nojekyll
 
       - name: Build PDF author guide
         run: |
-          mkdir -p build/authorguide/_downloads
+          python -m pip install ".[docs]" "Sphinx>=9.1,<9.2"
+          python -m sphinx -M latex docs build/latexpdf \
+            -D tb_pdf_tagging=1 --fail-on-warning
           docker run --rm \
             -v "$PWD:/docs" \
-            -w /docs \
-            sphinxdoc/sphinx-latexpdf:latest \
-            sh -c 'python -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
-          find build/latexpdf/latex -name '*.pdf' -exec cp {} build/authorguide/_downloads/ \;
+            -w /docs/build/latexpdf/latex \
+            texlive/texlive:latest \
+            make all-pdf
+          test -s build/latexpdf/latex/sphinxtouchbookauthorguide.pdf
+          mkdir -p build/authorguide/_downloads
+          cp build/latexpdf/latex/sphinxtouchbookauthorguide.pdf \
+            build/authorguide/_downloads/
 
       - name: Verify Pages artifact root
         run: test -f build/authorguide/index.html
-
-      - name: Disable Jekyll processing
-        run: touch build/authorguide/.nojekyll
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
