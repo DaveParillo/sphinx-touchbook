@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { change, click, input, loadComponentScript } from "./helpers.js";
+import { change, click, input, keydown, loadComponentScript } from "./helpers.js";
 
 beforeAll(async () => {
   await loadComponentScript("tb-code.js");
@@ -95,8 +95,11 @@ function displayedSource(element) {
 }
 
 function tutorButton(element) {
-  return Array.from(element.querySelectorAll("button.tb-code__button"))
-    .find((button) => button.textContent.startsWith("Show in ") && button.textContent.endsWith(" Tutor"));
+  return element.querySelector("button.tb-code__tutor-button");
+}
+
+function compilerExplorerButton(element) {
+  return element.querySelector("button.tb-code__compiler-explorer-button");
 }
 
 describe("tb-code Web Component", () => {
@@ -121,7 +124,8 @@ describe("tb-code Web Component", () => {
     expect(element.dataset.enhanced).toBe("true");
     expect(run).toBeTruthy();
     expect(tutor.hidden).toBe(true);
-    expect(tutor.textContent).toBe("Show in Python Tutor");
+    expect(tutor.getAttribute("aria-label")).toBe("Show in Python Tutor");
+    expect(tutor.querySelector("svg[aria-hidden='true'] path")).toBeTruthy();
     expect(edit.textContent).toBe("Edit source");
     expect(edit.getAttribute("aria-expanded")).toBe("false");
     expect(edit.getAttribute("aria-controls")).toBe(editor.id);
@@ -310,15 +314,16 @@ describe("tb-code Web Component", () => {
   it("shows the Python Tutor button only for requested supported languages", () => {
     const python = appendCode({ showTutor: true, language: "python", jobeLanguage: "python3" });
     expect(tutorButton(python).hidden).toBe(false);
-    expect(tutorButton(python).textContent).toBe("Show in Python Tutor");
+    expect(tutorButton(python).getAttribute("aria-label")).toBe("Show in Python Tutor");
+    expect(tutorButton(python).dataset.tooltip).toBe("Show in Python Tutor");
 
     const cpp = appendCode({ showTutor: true, language: "c++", jobeLanguage: "cpp" });
     expect(tutorButton(cpp).hidden).toBe(false);
-    expect(tutorButton(cpp).textContent).toBe("Show in C++ Tutor");
+    expect(tutorButton(cpp).getAttribute("aria-label")).toBe("Show in C++ Tutor");
 
     const java = appendCode({ showTutor: true, language: "java", jobeLanguage: "java" });
     expect(tutorButton(java).hidden).toBe(false);
-    expect(tutorButton(java).textContent).toBe("Show in Java Tutor");
+    expect(tutorButton(java).getAttribute("aria-label")).toBe("Show in Java Tutor");
 
     const ruby = appendCode({ showTutor: true, language: "ruby", jobeLanguage: "ruby" });
     expect(tutorButton(ruby).hidden).toBe(true);
@@ -342,13 +347,17 @@ describe("tb-code Web Component", () => {
     const editor = element.querySelector("textarea.tb-code__editor");
 
     expect(tutor.hidden).toBe(false);
-    expect(tutor.textContent).toBe("Show in C++ Tutor");
+    expect(tutor.getAttribute("aria-label")).toBe("Show in C++ Tutor");
     expect(Array.from(element.querySelectorAll("button.tb-code__button")).map((button) => button.textContent)).toEqual([
       "Run",
       "Edit source",
-      "Show in C++ Tutor",
-      "Show in Compiler Explorer",
+      "",
+      "",
     ]);
+    keydown(tutor, "Escape");
+    expect(tutor.dataset.tooltipDismissed).toBe("true");
+    tutor.dispatchEvent(new Event("blur"));
+    expect(tutor.dataset.tooltipDismissed).toBeUndefined();
 
     click(edit);
     editor.value = "int answer() { return 42; }";
@@ -381,8 +390,17 @@ describe("tb-code Web Component", () => {
       runBefore: ["// café"],
       runAfter: ["int main() { return answer(); }"],
     });
-    const button = codeButton(element, "Show in Compiler Explorer");
+    const button = compilerExplorerButton(element);
     expect(button.hidden).toBe(false);
+    expect(button.getAttribute("aria-label")).toBe("Show in Compiler Explorer");
+    expect(button.dataset.tooltip).toBe("Show in Compiler Explorer");
+    const cePaths = button.querySelector("svg[aria-hidden='true']")?.querySelectorAll("path");
+    expect(cePaths).toHaveLength(2);
+    expect(Array.from(cePaths, (path) => path.hasAttribute("fill"))).toEqual([false, false]);
+    keydown(button, "Escape");
+    expect(button.dataset.tooltipDismissed).toBe("true");
+    button.dispatchEvent(new Event("blur"));
+    expect(button.dataset.tooltipDismissed).toBeUndefined();
     click(editButton(element));
     const editor = element.querySelector("textarea.tb-code__editor");
     editor.value = "int answer() { return 42; }";
@@ -417,7 +435,7 @@ describe("tb-code Web Component", () => {
     const tutorUrl = openMock.mock.calls[0][0];
     expect(new URLSearchParams(tutorUrl.split("#")[1]).get("code")).toBe(source);
 
-    click(codeButton(element, "Show in Compiler Explorer"));
+    click(compilerExplorerButton(element));
     const ceUrl = openMock.mock.calls[1][0];
     const state = JSON.parse(atob(decodeURIComponent(ceUrl.split("/clientstate/")[1])));
     expect(state.sessions[0].source).toBe(

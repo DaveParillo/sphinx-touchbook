@@ -54,15 +54,34 @@ class TbCode extends HTMLElement {
 
     this.tutorButton = document.createElement("button");
     this.tutorButton.type = "button";
-    this.tutorButton.className = "tb-code__button";
-    this.tutorButton.textContent = `Show in ${this.tutorLanguageLabel()} Tutor`;
+    this.tutorButton.className = "tb-code__button tb-code__external-button tb-code__tutor-button";
+    this.configureExternalButton(this.tutorButton, `Show in ${this.tutorLanguageLabel()} Tutor`);
+    // Bootstrap Icons mortarboard-fill (MIT); license in bootstrap-icons-LICENSE.txt.
+    const tutorIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    tutorIcon.setAttribute("viewBox", "0 0 16 16");
+    tutorIcon.setAttribute("aria-hidden", "true");
+    tutorIcon.innerHTML = '<path d="M8.211 2.047a.5.5 0 0 0-.422 0l-7.5 3.5a.5.5 0 0 0 .025.917l7.5 3a.5.5 0 0 0 .372 0L14 7.14V13a1 1 0 0 0-1 1v2h3v-2a1 1 0 0 0-1-1V6.739l.686-.275a.5.5 0 0 0 .025-.917z"/><path d="M4.176 9.032a.5.5 0 0 0-.656.327l-.5 1.7a.5.5 0 0 0 .294.605l4.5 1.8a.5.5 0 0 0 .372 0l4.5-1.8a.5.5 0 0 0 .294-.605l-.5-1.7a.5.5 0 0 0-.656-.327L8 10.466z"/>';
+    this.tutorButton.append(tutorIcon);
     this.tutorButton.hidden = !this.canShowTutor();
     this.tutorButton.addEventListener("click", () => this.openTutor());
 
     this.compilerExplorerButton = document.createElement("button");
     this.compilerExplorerButton.type = "button";
-    this.compilerExplorerButton.className = "tb-code__button";
-    this.compilerExplorerButton.textContent = "Show in Compiler Explorer";
+    this.compilerExplorerButton.className = "tb-code__button tb-code__external-button tb-code__compiler-explorer-button";
+    this.configureExternalButton(this.compilerExplorerButton, "Show in Compiler Explorer");
+    // Compiler Explorer mark (BSD 2-Clause); license in compiler-explorer-LICENSE.txt.
+    const compilerExplorerIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    compilerExplorerIcon.setAttribute("viewBox", "0 0 270 270");
+    compilerExplorerIcon.setAttribute("aria-hidden", "true");
+    for (const pathData of [
+      "M228.18 192.43c-1.1-2.1-1.1-4.6 0-6.6 1.4-2.5 2.6-5 3.8-7.6.8-1.9-.5-4-2.6-4h-22.5c-2.3 0-4.5 1.2-5.7 3.1-2.9 4.4-6.3 8.7-10.1 12.5-14.5 14.5-33.7 22.4-54.1 22.4-20.5 0-39.7-8-54.1-22.4-14.6-14.4-22.5-33.6-22.5-54.1s8-39.7 22.4-54.1c14.5-14.5 33.7-22.4 54.1-22.4 20.5 0 39.7 8 54.1 22.4 3.9 3.9 7.2 8.1 10.1 12.5 1.3 1.9 3.4 3.1 5.7 3.1h22.6c2.1 0 3.4-2.1 2.6-4-1.2-2.6-2.4-5.1-3.8-7.6-1.1-2.1-1.1-4.6 0-6.6l7.6-13.8c1.5-2.7 1-6-1.2-8.2l-19.1-19.1c-2.2-2.2-5.5-2.6-8.2-1.2l-13.9 7.7c-2.1 1.1-4.6 1.1-6.6 0-6.6-3.6-13.6-6.5-20.8-8.6-2.3-.7-4.1-2.4-4.7-4.7l-4.4-15.2c-.9-2.9-3.5-5-6.6-5h-27c-3.1 0-5.8 2-6.6 5l-4.4 15.2c-.7 2.3-2.4 4-4.7 4.7-7.2 2.1-14.2 5-20.8 8.6-2.1 1.1-4.6 1.2-6.6 0l-13.9-7.7c-2.7-1.5-6-1-8.2 1.2l-19.1 19.1c-2.2 2.2-2.6 5.5-1.2 8.2l7.7 13.9c1.1 2.1 1.1 4.6 0 6.6-3.6 6.6-6.5 13.6-8.6 20.8-.7 2.3-2.4 4.1-4.7 4.7l-15.2 4.4c-2.9.9-5 3.5-5 6.6v27c0 3.1 2 5.8 5 6.6l15.2 4.4c2.3.7 4 2.4 4.7 4.7 2.1 7.2 5 14.2 8.6 20.8 1.1 2.1 1.2 4.6 0 6.6l-7.7 13.9c-1.5 2.7-1 6 1.2 8.2l19.1 19.1c2.2 2.2 5.5 2.6 8.2 1.2l13.9-7.7c2.1-1.1 4.6-1.1 6.6 0 6.6 3.6 13.6 6.5 20.8 8.6 2.3.7 4.1 2.4 4.7 4.7l4.4 15.2c.9 2.9 3.5 5 6.6 5h27c3.1 0 5.8-2 6.6-5l4.4-15.2c.7-2.3 2.4-4 4.7-4.7 7.2-2.1 14.2-5 20.8-8.6 2.1-1.1 4.6-1.2 6.6 0l13.9 7.7c2.7 1.5 6 1 8.2-1.2l19.1-19.1c2.2-2.2 2.6-5.5 1.2-8.2z",
+      "M91.08 96.83h92.7v17.2h-92.7zm0 30.6h76.4v17.2h-76.4zm0 30.6h92.7v17.2h-92.7z",
+    ]) {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", pathData);
+      compilerExplorerIcon.append(path);
+    }
+    this.compilerExplorerButton.append(compilerExplorerIcon);
     this.compilerExplorerButton.hidden = !this.config.compilerExplorer;
     this.compilerExplorerButton.addEventListener("click", () => this.openCompilerExplorer());
 
@@ -173,6 +192,22 @@ class TbCode extends HTMLElement {
       outputLabel,
       this.output,
     );
+  }
+
+  configureExternalButton(button, label) {
+    button.setAttribute("aria-label", label);
+    button.dataset.tooltip = label;
+    button.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        button.dataset.tooltipDismissed = "true";
+      }
+    });
+    button.addEventListener("blur", () => {
+      delete button.dataset.tooltipDismissed;
+    });
+    button.addEventListener("mouseleave", () => {
+      delete button.dataset.tooltipDismissed;
+    });
   }
 
   hasRuntimeInputs() {
