@@ -119,6 +119,29 @@ def test_directive_parses_semantic_node_defaults():
     assert node["run_before"] == []
     assert node["run_after"] == []
     assert node["show_tutor"] is False
+    assert node["compiler_explorer"] is None
+
+
+def test_compiler_explorer_defaults_use_language_alias_and_emit_html_config(tmp_path):
+    outdir = build_sphinx(
+        tmp_path,
+        "html",
+        """
+Title
+=====
+
+.. tb-code:: c++
+   :show-compiler-explorer:
+   :compileargs: -Wall -std=c++11
+
+   int main() { return 0; }
+""",
+        conf_extra="tb_code_compiler_explorer_defaults = {'cpp': {'language': 'c++', 'compiler': 'gsnapshot'}}",
+    )
+    soup = BeautifulSoup((outdir / "index.html").read_text(encoding="utf-8"), "html.parser")
+    config = json.loads(soup.find("tb-code").find("script", class_="tb-code__config").string)
+    assert config["compilerExplorer"] == {"language": "c++", "compiler": "gsnapshot"}
+    assert config["parameters"]["compileargs"] == ["-Wall", "-std=c++11"]
 
 
 def test_directive_accepts_language_argument_and_options():

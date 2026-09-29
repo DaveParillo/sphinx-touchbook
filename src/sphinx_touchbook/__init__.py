@@ -9,6 +9,7 @@ from sphinx.application import Sphinx
 from .directives.blank import TbBlankDirective
 from .directives.code import (
     DEFAULT_CODE_BLOCK_OPTIONS,
+    DEFAULT_COMPILER_EXPLORER_DEFAULTS,
     DEFAULT_ENDPOINT,
     DEFAULT_FILES_ENDPOINT,
     DEFAULT_LANGUAGE,
@@ -350,6 +351,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_code_default_language", DEFAULT_LANGUAGE, "env")
     app.add_config_value("tb_code_language_map", DEFAULT_LANGUAGE_MAP, "env")
     app.add_config_value("tb_code_language_defaults", DEFAULT_LANGUAGE_DEFAULTS, "env")
+    app.add_config_value("tb_code_compiler_explorer_defaults", DEFAULT_COMPILER_EXPLORER_DEFAULTS, "env")
     app.add_config_value("tb_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS, "env")
     app.add_config_value("tb_code_run_label", "Run", "html")
     app.add_config_value("tb_code_edit_label", "Edit", "html")

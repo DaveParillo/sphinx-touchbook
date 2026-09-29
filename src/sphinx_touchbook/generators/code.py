@@ -59,6 +59,7 @@ def _config(self: HTML5Translator, node: TbCodeNode) -> dict[str, object]:
         "lineNumberStart": highlight_args.get("linenostart", 1),
         "emphasizeLines": highlight_args.get("hl_lines", []),
         "showTutor": node.get("show_tutor", False),
+        "compilerExplorer": node.get("compiler_explorer"),
         "runLabel": node["run_label"],
         "editLabel": node["edit_label"],
         "hideEditLabel": node["hide_edit_label"],

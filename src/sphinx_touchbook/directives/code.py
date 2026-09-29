@@ -47,6 +47,7 @@ DEFAULT_LANGUAGE_MAP = {
     "php": "php",
 }
 DEFAULT_LANGUAGE_DEFAULTS: dict[str, dict[str, list[str]]] = {}
+DEFAULT_COMPILER_EXPLORER_DEFAULTS: dict[str, dict[str, str]] = {}
 DEFAULT_CODE_BLOCK_OPTIONS: dict[str, object] = {}
 CODE_BLOCK_OPTION_NAMES = set(CodeBlock.option_spec)
 
@@ -220,6 +221,7 @@ class TbCodeDirective(Directive):
         "readonly": directives.flag,
         "hidden": directives.flag,
         "show-tutor": directives.flag,
+        "show-compiler-explorer": directives.flag,
         "run-label": directives.unchanged,
         "edit-label": directives.unchanged,
         "hide-edit-label": directives.unchanged,
@@ -262,6 +264,27 @@ class TbCodeDirective(Directive):
         block_defaults = _config_value(config, "tb_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS)
         show_tutor_default = dict(block_defaults).get("show-tutor", False)
         node["show_tutor"] = "show-tutor" in self.options or _as_bool_flag(show_tutor_default)
+        show_ce_default = dict(block_defaults).get("show-compiler-explorer", False)
+        show_ce = "show-compiler-explorer" in self.options or _as_bool_flag(show_ce_default)
+        node["compiler_explorer"] = None
+        if show_ce and not node["hidden"]:
+            ce_defaults = _config_value(
+                config, "tb_code_compiler_explorer_defaults", DEFAULT_COMPILER_EXPLORER_DEFAULTS
+            )
+            profile = ce_defaults.get(node["language"], ce_defaults.get(node["jobe_language"]))
+            if not isinstance(profile, dict) or not profile.get("language") or not profile.get("compiler"):
+                self.state.document.reporter.warning(
+                    "tb-code :show-compiler-explorer: needs a language and compiler in "
+                    "tb_code_compiler_explorer_defaults",
+                    line=self.lineno,
+                )
+            else:
+                node["compiler_explorer"] = {
+                    "language": str(profile["language"]),
+                    "compiler": str(profile["compiler"]),
+                }
+                if "options" in profile:
+                    node["compiler_explorer"]["options"] = str(profile["options"])
         node["caption"] = code_block_options.get("caption")
         node["code_block_options"] = normalized_code_block_options
         node["endpoint"] = self.options.get("endpoint") or _config_value(

@@ -59,6 +59,13 @@ class TbCode extends HTMLElement {
     this.tutorButton.hidden = !this.canShowTutor();
     this.tutorButton.addEventListener("click", () => this.openTutor());
 
+    this.compilerExplorerButton = document.createElement("button");
+    this.compilerExplorerButton.type = "button";
+    this.compilerExplorerButton.className = "tb-code__button";
+    this.compilerExplorerButton.textContent = "Show in Compiler Explorer";
+    this.compilerExplorerButton.hidden = !this.config.compilerExplorer;
+    this.compilerExplorerButton.addEventListener("click", () => this.openCompilerExplorer());
+
     this.editButton = document.createElement("button");
     this.editButton.type = "button";
     this.editButton.className = "tb-code__button";
@@ -68,7 +75,7 @@ class TbCode extends HTMLElement {
     this.editButton.setAttribute("aria-controls", `${this.safeId()}-editor`);
     this.editButton.addEventListener("click", () => this.toggleEditor());
 
-    controls.append(this.runButton, this.editButton, this.tutorButton);
+    controls.append(this.runButton, this.editButton, this.tutorButton, this.compilerExplorerButton);
 
     const editorLabel = document.createElement("label");
     editorLabel.className = "tb-code__editor-label tb-code__visually-hidden";
@@ -471,6 +478,43 @@ class TbCode extends HTMLElement {
     const source = this.executionSource(this.currentSource());
     const url = `https://pythontutor.com/visualize.html#code=${encodeURIComponent(source)}&curInstr=0&mode=display&py=${encodeURIComponent(tutorLanguage)}`;
     window.open(url, "_blank", "noopener");
+  }
+
+  openCompilerExplorer() {
+    const profile = this.config.compilerExplorer;
+    if (!profile) {
+      return;
+    }
+    const compileargs = this.cleanArgumentList(this.config.parameters?.compileargs || []);
+    const state = {
+      sessions: [{
+        id: 1,
+        language: profile.language,
+        source: this.compilerExplorerSource(),
+        compilers: [{
+          id: profile.compiler,
+          options: profile.options ?? compileargs.join(" "),
+        }],
+      }],
+    };
+    // CE accepts JSON in base64; escape non-ASCII so btoa receives ASCII data.
+    const json = JSON.stringify(state).replace(/[\u007f-\uffff]/g, (character) =>
+      `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`);
+    const url = `https://godbolt.org/clientstate/${encodeURIComponent(btoa(json))}`;
+    window.open(url, "_blank", "noopener");
+  }
+
+  compilerExplorerSource() {
+    const source = this.executionSource(this.currentSource());
+    if (this.config.compilerExplorer?.language !== "java") {
+      return source;
+    }
+    // CE compiles its single-file Java editor as example.java. A public
+    // top-level type with another name cannot compile under that filename.
+    return source.replace(
+      /^public[ \t]+(?=(?:(?:abstract|final|sealed|non-sealed|strictfp)[ \t]+)*(?:class|interface|enum|record|@interface)[ \t]+)/gm,
+      "",
+    );
   }
 
   cleanParameters(parameters) {

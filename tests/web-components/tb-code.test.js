@@ -347,6 +347,7 @@ describe("tb-code Web Component", () => {
       "Run",
       "Edit source",
       "Show in C++ Tutor",
+      "Show in Compiler Explorer",
     ]);
 
     click(edit);
@@ -369,6 +370,62 @@ describe("tb-code Web Component", () => {
     expect(target).toBe("_blank");
     expect(features).toBe("noopener");
   });
+
+  it("opens Compiler Explorer with edited source, fragments, and compile arguments", () => {
+    const openMock = vi.spyOn(window, "open").mockImplementation(() => null);
+    const element = appendCode({
+      language: "c++",
+      source: "int answer() { return 41; }",
+      compilerExplorer: { language: "c++", compiler: "gsnapshot" },
+      parameters: { compileargs: ["-Wall", "-std=c++11"] },
+      runBefore: ["// café"],
+      runAfter: ["int main() { return answer(); }"],
+    });
+    const button = codeButton(element, "Show in Compiler Explorer");
+    expect(button.hidden).toBe(false);
+    click(editButton(element));
+    const editor = element.querySelector("textarea.tb-code__editor");
+    editor.value = "int answer() { return 42; }";
+    input(editor);
+    click(button);
+
+    const [url, target, features] = openMock.mock.calls[0];
+    const state = JSON.parse(atob(decodeURIComponent(url.split("/clientstate/")[1])));
+    expect(url.startsWith("https://godbolt.org/clientstate/")).toBe(true);
+    expect(target).toBe("_blank");
+    expect(features).toBe("noopener");
+    expect(state.sessions[0]).toEqual({
+      id: 1,
+      language: "c++",
+      source: "// café\nint answer() { return 42; }\nint main() { return answer(); }",
+      compilers: [{ id: "gsnapshot", options: "-Wall -std=c++11" }],
+    });
+  });
+
+  it("keeps public Java source for Tutor while adapting its CE copy", () => {
+    const openMock = vi.spyOn(window, "open").mockImplementation(() => null);
+    const source = "public class TempConv {\n  public static void main(String[] args) {}\n}";
+    const element = appendCode({
+      language: "java",
+      jobeLanguage: "java",
+      source,
+      showTutor: true,
+      compilerExplorer: { language: "java", compiler: "java1702" },
+    });
+
+    click(tutorButton(element));
+    const tutorUrl = openMock.mock.calls[0][0];
+    expect(new URLSearchParams(tutorUrl.split("#")[1]).get("code")).toBe(source);
+
+    click(codeButton(element, "Show in Compiler Explorer"));
+    const ceUrl = openMock.mock.calls[1][0];
+    const state = JSON.parse(atob(decodeURIComponent(ceUrl.split("/clientstate/")[1])));
+    expect(state.sessions[0].source).toBe(
+      "class TempConv {\n  public static void main(String[] args) {}\n}",
+    );
+    expect(element.querySelector(".tb-code__fallback").textContent).toContain("public class TempConv");
+  });
+
 
   it("runs the selected revision with modified stdin and runargs values", async () => {
     const fetchMock = vi.fn(async (url, options) => {

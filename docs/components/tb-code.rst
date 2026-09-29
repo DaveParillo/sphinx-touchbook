@@ -190,6 +190,12 @@ Options
 **run-label**
    ``String``. Optional. Label for the HTML run button.
 
+**show-compiler-explorer**
+   ``Boolean``. Optional. If present, HTML adds a button that opens the
+   current execution source in Compiler Explorer. Configure the language and
+   compiler in ``tb_code_compiler_explorer_defaults``. Source includes
+   ``run-before`` and ``run-after`` fragments; attached ``files`` are omitted.
+
 **show-tutor**
    ``Boolean``. Optional. If present, HTML adds a Python Tutor button for
    supported languages: C, C++, Python, Java, and JavaScript.
@@ -273,12 +279,28 @@ Sphinx configuration options
    author-facing name and its mapped Jobe ID have defaults, the author-facing
    name takes precedence.
 
+``tb_code_compiler_explorer_defaults``
+   ``dict``. Per-language Compiler Explorer settings. Each entry needs a
+   Compiler Explorer ``language`` and ``compiler`` identifier. Optional
+   ``options`` override the block's ``compileargs`` in Compiler Explorer.
+   Entries may use the author-facing language or its Jobe identifier.
+   Standard input, run arguments, and Jobe support files are not transferred.
+
+   .. code-block:: python
+
+      tb_code_compiler_explorer_defaults = {
+          "c++": {"language": "c++", "compiler": "gsnapshot"},
+      }
+
+   See the `Compiler Explorer API <https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md>`__
+   for its language and compiler discovery endpoints.
+
 ``tb_code_block_defaults``
    ``dict``. Optional defaults for standard Sphinx ``code-block`` options used
    by ``tb-code``. This is useful for presentation settings that should apply
    to every runnable code block, such as line numbers or custom styling. The
-   ``show-tutor`` flag may also be set here to show the C++ Tutor button by
-   default for eligible blocks.
+   ``show-tutor`` and ``show-compiler-explorer`` may also be set here to show
+   their buttons by default for eligible blocks.
 
    .. code-block:: python
 
@@ -386,6 +408,10 @@ PDF and text builders render the source code as static readable content.
 Examples
 --------
 
+The rendered examples use the Compiler Explorer defaults in this guide's
+``conf.py`` for Python, C++, and Java. Set the same defaults in your project
+before using ``:show-compiler-explorer:``.
+
 Example 1: Basic Python
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -435,6 +461,8 @@ still be set in ``conf.py``. The example below maps ``python`` to Jobe's
       .. code-block:: rst
 
          .. tb-code:: python
+            :show-compiler-explorer:
+            :show-tutor:
             :caption: Hello from Python
             :interpreterargs: ['-B']
 
@@ -443,6 +471,8 @@ still be set in ``conf.py``. The example below maps ``python`` to Jobe's
    .. tb-tab:: Rendered
 
       .. tb-code:: python
+         :show-compiler-explorer:
+         :show-tutor:
          :caption: Hello from Python
          :interpreterargs: ['-B']
 
@@ -477,6 +507,7 @@ run it in a larger context.
 
          .. tb-code:: cpp
             :name: code-ex3
+            :show-compiler-explorer:
             :caption: Account class assembled from named code
             :include:
                PUBLIC_MEMBERS: account-methods
@@ -504,6 +535,7 @@ run it in a larger context.
 
       .. tb-code:: cpp
          :name: code-ex3
+         :show-compiler-explorer:
          :caption: Account class assembled from named code
          :include:
             PUBLIC_MEMBERS: account-methods
@@ -539,9 +571,10 @@ or support code that would distract from the code students should read.
 
          .. tb-code:: cpp
             :name: code-ex4
+            :show-compiler-explorer:
+            :show-tutor:
             :caption: Account implementation with hidden tests
             :run-after: account-balance-tests
-            :show-tutor:
 
             class account {
             public:
@@ -563,9 +596,10 @@ or support code that would distract from the code students should read.
 
       .. tb-code:: cpp
          :name: code-ex4
+         :show-compiler-explorer:
+         :show-tutor:
          :caption: Account implementation with hidden tests
          :run-after: account-balance-tests
-         :show-tutor:
 
          class account {
          public:
@@ -589,6 +623,8 @@ initial value appears in an editable text input before the program runs.
 
          .. tb-code:: python
             :name: code-ex5
+            :show-compiler-explorer:
+            :show-tutor:
             :caption: Python command-line arguments
             :runargs: Ada Lovelace
 
@@ -603,8 +639,13 @@ initial value appears in an editable text input before the program runs.
 
    .. tb-tab:: Rendered
 
+      The Python tutor example should fail to compile because the module
+      ``sys`` is not supported.
+
       .. tb-code:: python
          :name: code-ex5
+         :show-compiler-explorer:
+         :show-tutor:
          :caption: Python command-line arguments
          :runargs: Ada Lovelace
 
@@ -622,6 +663,10 @@ Example 6: Java
 
 Java examples often need JVM limits. These can be configured once in
 ``conf.py`` and overridden on a specific ``tb-code`` block when needed.
+Compiler Explorer compiles single-file Java source as ``example.java``. When
+opening Java code there, Touchbook removes ``public`` from a top-level type
+declaration so its name need not match that filename. The editor, Jobe, and
+Python Tutor receive the original source.
 
 .. rubric:: ``conf.py``
 
@@ -642,6 +687,8 @@ Java examples often need JVM limits. These can be configured once in
 
          .. tb-code:: java
             :name: code-ex6
+            :show-compiler-explorer:
+            :show-tutor:
             :caption: Fahrenheit to Celsius
             :emphasize-lines: 9
             :interpreterargs: ['-Xrs', '-Xss8m', '-Xmx128m']
@@ -669,6 +716,8 @@ Java examples often need JVM limits. These can be configured once in
 
       .. tb-code:: java
          :name: code-ex6
+         :show-compiler-explorer:
+         :show-tutor:
          :caption: Fahrenheit to Celsius
          :emphasize-lines: 9
          :interpreterargs: ['-Xrs', '-Xss8m', '-Xmx128m']
@@ -722,6 +771,8 @@ flags. The language map lets authors write ``c++`` while sending Jobe the
 
          .. tb-code:: c++
             :name: code-ex7
+            :show-compiler-explorer:
+            :show-tutor:
             :caption: Hello from C++
             :compileargs: ['-Wall', '-Wextra', '-pedantic', '-std=c++11']
             :runargs: --repeat=3
@@ -759,8 +810,13 @@ flags. The language map lets authors write ``c++`` while sending Jobe the
 
    .. tb-tab:: Rendered
 
+      The C++ Tutor accepts input from standard input, but does not allow
+      providing command line arguments.
+
       .. tb-code:: c++
          :name: code-ex7
+         :show-compiler-explorer:
+         :show-tutor:
          :caption: Hello from C++
          :compileargs: ['-Wall', '-Wextra', '-pedantic', '-std=c++11']
          :runargs: --repeat=3
@@ -795,43 +851,3 @@ flags. The language map lets authors write ``c++`` while sending Jobe the
            }
            return 0;
          }
-
-
-Example 8: GNU Octave
-~~~~~~~~~~~~~~~~~~~~~
-Octave is a powerful Scientific Programming Language designed to be largely
-compatible with Matlab.
-Although Octave does support built-in 2D/3D plotting and visualization tools
-those tools are not available through the touchbook interface.
-Output is limited to text.
-
-.. tb-group::
-   :name: code-ex8-tabs
-
-   .. tb-tab:: Source
-
-      .. code-block:: rst
-
-         .. tb-code:: octave
-            :name: code-ex8
-            :caption: Solve Linear Algebra Equations with Octave
-
-            # Define matrices
-            A = [2, 1; 1, 3];
-            B = [5, 6; 4, 7];
-
-            # Solve matrix equation X = A\B
-            X = A \ B
-
-   .. tb-tab:: Rendered
-
-      .. tb-code:: octave
-         :name: code-ex8
-         :caption: Solve Linear Algebra Equations with Octave
-
-         # Define matrices
-         A = [2, 1; 1, 3];
-         B = [5, 6; 4, 7];
-
-         # Solve matrix equation X = A\B
-         X = A \ B
