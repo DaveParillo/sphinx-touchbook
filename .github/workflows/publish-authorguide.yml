@@ -32,6 +32,9 @@ jobs:
       - name: Install tox
         run: python -m pip install tox
 
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
       - name: Build HTML author guide
         run: |
           python -m tox -e py3.13-sphinx9.1-docs-html

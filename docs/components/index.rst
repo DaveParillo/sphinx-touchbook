@@ -21,7 +21,12 @@ Categories        Directives
 ================= ===================================
 Working with Code - :doc:`tb-code`
                   - :doc:`tb-file`
+Visualizations    - :doc:`tb-array`
+                  - :doc:`tb-graph`
+                  - :doc:`tb-pointer`
 Containers        - :doc:`tb-group`
+                  - :doc:`tb-animation`
+                  - :doc:`tb-scene`
                   - :doc:`tb-reveal`
                   - :doc:`tb-video`
 Assessments       - :doc:`tb-blank`
@@ -38,6 +43,8 @@ Assessments       - :doc:`tb-blank`
    :titlesonly:
    :hidden:
 
+   tb-array
+   tb-animation
    tb-blank
    tb-choice
    tb-click
@@ -45,11 +52,12 @@ Assessments       - :doc:`tb-blank`
    tb-file
    tb-formula
    tb-group
+   tb-graph
    tb-match
    tb-micro-parsons
    tb-order
    tb-parsons
+   tb-pointer
    tb-reveal
+   tb-scene
    tb-video
-
-

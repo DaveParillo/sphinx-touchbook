@@ -4,12 +4,14 @@ tb-click
 ========
 
 The ``tb-click`` directive creates a click-on-source question.
-Authors provide normal prompt content, exactly one literal source block, and
+Authors provide normal prompt content, exactly one source block, and
 one or more ``tb-hit`` or ``tb-miss`` regions.
 
 Use ``tb-hit`` for correct clickable regions.
 Use ``tb-miss`` for incorrect clickable regions with feedback.
-Selectors are exact, case-sensitive matches against the source text.
+Use a code-block, literal block, :ref:`tb-array`, or :ref:`tb-graph` as the
+source. Selectors are case-sensitive: text selectors match source text;
+array and graph selectors match local item or node keys.
 
 Synopsis
 --------
@@ -27,7 +29,7 @@ The general format of the ``tb-click`` directive is:
       |
       + --- Source area ---
       |
-      | exactly one code-block or literal block
+      | exactly one code-block, literal block, tb-array, or tb-graph
       |
       + --- Region area ---
       |
@@ -43,6 +45,8 @@ The general format of the ``tb-click`` directive is:
 
 Selector Forms
 --------------
+
+For code and literal blocks, use these text selectors:
 
 Bare selector
    A bare selector is the same as ``text:``.
@@ -60,6 +64,20 @@ Bare selector
 ``range:line:start-end``
    Selects a 1-based, inclusive line and column range.
    For example, ``range:3:11-12`` selects columns 11 through 12 on line 3.
+
+For arrays and graphs, give the bare local key to ``tb-hit`` or ``tb-miss``.
+For example, ``.. tb-hit:: middle`` selects the item or node named ``middle``.
+Keys identify targets independently of displayed values and indices. Repeated
+values can receive different feedback. An array source must declare keyed
+items, such as ``middle = 13``. A graph source uses node keys, such as
+``middle[13]``. The source's object key is optional.
+
+Each selected key must exist in the source and appear in only one ``tb-hit``
+or ``tb-miss``. Invisible graph nodes cannot be selected. Graph relationships,
+indicator labels, and array indices are not selectable targets. Items and nodes
+without a region remain ordinary source content. Text selector prefixes do not
+apply to arrays or graphs. At least one ``tb-hit`` is required for every source
+type.
 
 Options
 -------
@@ -93,17 +111,23 @@ Sphinx configuration options
 Accessibility behavior
 ----------------------
 
-HTML renders each clickable source region as a native button. The selected
-region receives visible state, feedback is shown, and result text uses a status
-region so assistive technology can announce the result after a click. Clickable
+HTML renders text regions and array items as native buttons. Graph nodes are
+focusable controls in the diagram; press Enter or Space to select a focused
+node. Accessible labels identify keyed targets by their keys and values.
+The selected region receives visible state, feedback is shown, and result text
+uses a status region so assistive technology can announce the result after a
+click. Clickable
 regions have neutral accessible labels before selection, so correctness is not
 revealed before the user answers.
 
 Fallback behavior
 -----------------
 
-HTML without JavaScript renders the prompt, source, and feedback in document
-order. Text and PDF-oriented builders render the prompt and source only.
+HTML without JavaScript retains the prompt and source. Selecting targets and
+revealing feedback requires JavaScript. Text and PDF-oriented builders render
+the prompt and source only: arrays retain their tables, and graphs retain their
+PDF diagrams or text descriptions. If a diagram cannot be generated, HTML shows
+the graph's description and buttons for its selected keys.
 Feedback is omitted from paper-oriented output so the printed document can ask
 the complete question without revealing the answer.
 
@@ -275,3 +299,131 @@ Example 3: Poetry line
          .. tb-miss:: line:The woods are still.
 
             This line describes the setting.
+
+Example 4: Select an array item by key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The two middle values are equal. The keys distinguish their positions without
+making the displayed value or index part of the answer selector.
+
+.. tb-group::
+   :name: click-ex4-tabs
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-click::
+
+            Select the first occurrence of 13.
+
+            .. tb-array::
+
+               first = 8
+               second = 13
+               third = 13
+               fourth = 21
+
+            .. tb-hit:: second
+
+               This is the first occurrence of 13, at index 1.
+
+            .. tb-miss:: third
+
+               This is the second occurrence of 13, at index 2.
+
+            .. tb-miss:: first
+
+               This item's value is 8.
+
+            .. tb-miss:: fourth
+
+               This item's value is 21.
+
+   .. tb-tab:: Rendered
+
+      .. tb-click::
+
+         Select the first occurrence of 13.
+
+         .. tb-array::
+
+            first = 8
+            second = 13
+            third = 13
+            fourth = 21
+
+         .. tb-hit:: second
+
+            This is the first occurrence of 13, at index 1.
+
+         .. tb-miss:: third
+
+            This is the second occurrence of 13, at index 2.
+
+         .. tb-miss:: first
+
+            This item's value is 8.
+
+         .. tb-miss:: fourth
+
+            This item's value is 21.
+
+Example 5: Select a tree node by key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Graph keys select nodes in the diagram. The same selector syntax works with
+all graph styles, including ``array`` and ``ring``.
+
+.. tb-group::
+   :name: click-ex5-tabs
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-click::
+
+            Select the right child of the root.
+
+            .. tb-graph::
+               :style: tree
+
+               root[8] -left-> left[3]
+               root -right-> right[12]
+
+            .. tb-hit:: right
+
+               Node 12 is the right child of root 8.
+
+            .. tb-miss:: left
+
+               Node 3 is the left child of root 8.
+
+            .. tb-miss:: root
+
+               Node 8 is the root, not one of its children.
+
+   .. tb-tab:: Rendered
+
+      .. tb-click::
+
+         Select the right child of the root.
+
+         .. tb-graph::
+            :style: tree
+
+            root[8] -left-> left[3]
+            root -right-> right[12]
+
+         .. tb-hit:: right
+
+            Node 12 is the right child of root 8.
+
+         .. tb-miss:: left
+
+            Node 3 is the left child of root 8.
+
+         .. tb-miss:: root
+
+            Node 8 is the root, not one of its children.

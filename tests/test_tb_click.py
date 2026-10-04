@@ -8,6 +8,10 @@ from docutils.frontend import get_default_settings
 from docutils.parsers.rst import Parser, directives
 from docutils.utils import new_document
 from sphinx.application import Sphinx
+import pytest
+
+from sphinx_touchbook.directives.array import TbArrayDirective
+from sphinx_touchbook.directives.graph import TbGraphDirective
 
 from sphinx_touchbook.directives.click import (
     TbClickDirective,
@@ -15,7 +19,7 @@ from sphinx_touchbook.directives.click import (
     TbClickMissDirective,
     resolve_selector,
 )
-from sphinx_touchbook.nodes import TbClickNode, TbClickRegionNode
+from sphinx_touchbook.nodes import TbArrayNode, TbClickNode, TbClickRegionNode, TbGraphNode
 
 
 CLICK_RST = """
@@ -44,14 +48,12 @@ def parse_rst(source: str):
     parser = Parser()
     settings = get_default_settings(Parser)
     document = new_document("<test>", settings=settings)
-    previous = {
-        "tb-click": directives._directives.get("tb-click"),
-        "tb-hit": directives._directives.get("tb-hit"),
-        "tb-miss": directives._directives.get("tb-miss"),
-    }
-    directives.register_directive("tb-click", TbClickDirective)
-    directives.register_directive("tb-hit", TbClickHitDirective)
-    directives.register_directive("tb-miss", TbClickMissDirective)
+    registered = {"tb-click": TbClickDirective, "tb-hit": TbClickHitDirective,
+                  "tb-miss": TbClickMissDirective, "tb-array": TbArrayDirective,
+                  "tb-graph": TbGraphDirective}
+    previous = {name: directives._directives.get(name) for name in registered}
+    for name, directive in registered.items():
+        directives.register_directive(name, directive)
     try:
         parser.parse(source, document)
     finally:
@@ -288,3 +290,148 @@ Title
     assert "Click the comparison operator" in latex
     assert "WHERE age >= 18;" in latex
     assert "This line selects output columns." not in latex
+
+
+def keyed_question(source, regions=None):
+    regions = regions or """.. tb-hit:: b
+
+   Correct keyed feedback.
+
+.. tb-miss:: a
+
+   Incorrect keyed feedback."""
+    return (".. tb-click::\n   :name: keyed-question\n\n"
+            "   Choose the second item, even though its value repeats.\n\n"
+            + "\n".join("   " + line for line in source.splitlines()) + "\n\n"
+            + "\n".join("   " + line for line in regions.splitlines()) + "\n")
+
+
+ARRAY_SOURCE = """.. tb-array:: values
+   :name: keyed-array
+   :class: source-array
+   :start-index: 10
+
+   a = 'same'
+   b = 'same'
+   c = 'other'"""
+
+
+def graph_source(style="graph"):
+    return f""".. tb-graph:: values
+   :name: keyed-graph
+   :class: source-graph
+   :style: {style}
+   :indicators: current=b
+
+   a['same'] -> b['same'] -> c['other']
+   hidden['secret'] {{invisible}}"""
+
+
+@pytest.mark.parametrize("source,source_type", [(ARRAY_SOURCE, TbArrayNode), (graph_source(), TbGraphNode)])
+def test_keyed_sources_preserve_nodes_and_resolve_identity(source, source_type):
+    document = parse_rst(keyed_question(source))
+    assert not list(document.findall(nodes.system_message))
+    question = next(document.findall(TbClickNode))
+    source_node = next(question.findall(source_type))
+    assert source_node["click_question_id"] == "keyed-question"
+    assert list(source_node["click_regions"]) == ["b", "a"]
+    assert [(region["selector"], region["correct"]) for region in question["regions"]] == [("b", True), ("a", False)]
+    assert all("start" not in region for region in question["regions"])
+    assert source_node["ids"] == ["keyed-array" if source_type is TbArrayNode else "keyed-graph"]
+
+
+@pytest.mark.parametrize("source,regions,message", [
+    (".. tb-array::\n\n   1 2 3", None, "explicitly keyed items"),
+    (ARRAY_SOURCE, ".. tb-hit:: same\n\n   Feedback.", "visible source key"),
+    (graph_source(), ".. tb-hit:: hidden\n\n   Feedback.", "visible source key"),
+    (graph_source(), ".. tb-hit:: text:same\n\n   Feedback.", "visible source key"),
+    (graph_source(), ".. tb-hit:: missing\n\n   Feedback.", "visible source key"),
+    (ARRAY_SOURCE, ".. tb-hit:: a\n\n   Hit.\n\n.. tb-miss:: a\n\n   Miss.", "Duplicate tb-click source key"),
+    (ARRAY_SOURCE + "\n\n" + graph_source(), None, "exactly one"),
+    (".. code-block:: text\n\n   abc\n\n" + graph_source(), None, "exactly one"),
+])
+def test_keyed_source_validation(source, regions, message):
+    document = parse_rst(keyed_question(source, regions))
+    assert list(document.findall(nodes.system_message))
+    assert message in document.astext()
+
+
+@pytest.mark.parametrize("orientation", ["horizontal", "vertical"])
+def test_array_question_html_has_native_keyed_controls(tmp_path, orientation):
+    source = ARRAY_SOURCE.replace(":start-index: 10", f":start-index: 10\n   :orientation: {orientation}")
+    outdir = build_sphinx(tmp_path, "html", keyed_question(source))
+    soup = BeautifulSoup((outdir / "index.html").read_text(), "html.parser")
+    assert len(soup.find_all("tb-click")) == len(soup.find_all("tb-array")) == 1
+    array = soup.find("tb-array", id="keyed-array")
+    assert "source-array" in array["class"]
+    targets = array.select("td button.tb-click__target")
+    assert [target["data-key"] for target in targets] == ["a", "b"]
+    assert [target["data-correct"] for target in targets] == ["false", "true"]
+    assert [target.get_text() for target in targets] == ["same", "same"]
+    assert [target["aria-label"] for target in targets] == ["a: same", "b: same"]
+    assert "10" in array.get_text() and "12" in array.get_text()
+    for target in targets:
+        assert soup.find(id=target["data-feedback-id"]) is not None
+    assert not array.select('[data-key="c"].tb-click__target')
+
+
+@pytest.mark.parametrize("style", ["graph", "list", "tree", "ring", "array"])
+def test_graph_question_html_has_inline_keyed_controls(tmp_path, style):
+    outdir = build_sphinx(tmp_path, "html", keyed_question(graph_source(style)))
+    soup = BeautifulSoup((outdir / "index.html").read_text(), "html.parser")
+    assert len(soup.find_all("tb-click")) == len(soup.find_all("tb-graph")) == 1
+    graph = soup.find("tb-graph", id="keyed-graph")
+    assert "source-graph" in graph["class"]
+    svg = graph.find("svg")
+    assert svg is not None and svg["role"] == "group"
+    targets = svg.select(".tb-click__target")
+    assert {target["data-key"]: target["data-correct"] for target in targets} == {"a": "false", "b": "true"}
+    for target in targets:
+        assert target.name == "g" and target["role"] == "button"
+        assert target["tabindex"] == "0" and target["aria-pressed"] == "false"
+        assert target["aria-label"] == f"{target['data-key']}: same"
+        assert not target.has_attr("aria-describedby")
+        assert soup.find(id=target["data-feedback-id"]) is not None
+    assert not svg.find("a")
+    assert "secret" not in svg.get_text()
+    assert not svg.select('[data-key="current"], [data-key="hidden"], [data-key="c"]')
+    assert all(item["id"].startswith("keyed-graph-") for item in svg.select("[id]"))
+
+
+@pytest.mark.parametrize("source", [ARRAY_SOURCE, graph_source(), graph_source("array")])
+@pytest.mark.parametrize("builder", ["text", "latex"])
+def test_keyed_questions_keep_static_sources_without_answer_feedback(tmp_path, source, builder):
+    outdir = build_sphinx(tmp_path, builder, keyed_question(source))
+    output = (outdir / "index.txt").read_text() if builder == "text" else read_latex_output(outdir)
+    assert "Choose the second item" in output and "same" in output and "other" in output
+    assert "Correct keyed feedback" not in output
+    assert "Incorrect keyed feedback" not in output
+    assert "tb-click-region-" not in output
+    if builder == "latex" and "tb-graph" in source:
+        assert list(outdir.glob("tb-graph*.pdf"))
+
+
+def test_graph_question_has_keyed_buttons_when_diagram_is_unavailable(tmp_path, monkeypatch):
+    from sphinx_touchbook.generators import graph
+    monkeypatch.setattr(graph, "render_graph", lambda *args, **kwargs: None)
+    outdir = build_sphinx(tmp_path, "html", keyed_question(graph_source()))
+    soup = BeautifulSoup((outdir / "index.html").read_text(), "html.parser")
+    assert {target["data-key"] for target in soup.select("tb-graph button.tb-click__target")} == {"a", "b"}
+    assert "other" in soup.find("tb-graph").get_text()
+
+
+@pytest.mark.parametrize("kind", ["array", "graph"])
+def test_keyed_controls_escape_literal_markup_and_keep_empty_values_selectable(tmp_path, kind):
+    value = '<script>alert("x")</script> & same'
+    body = (f"a = '{value}'\nb = ''" if kind == "array" else
+            f"a['{value}'] -> b['']")
+    source = f".. tb-{kind}::\n\n" + "\n".join("   " + line for line in body.splitlines())
+    outdir = build_sphinx(tmp_path, "html", keyed_question(source))
+    soup = BeautifulSoup((outdir / "index.html").read_text(), "html.parser")
+    rendered = soup.find(f"tb-{kind}")
+    assert not rendered.find("script")
+    targets = {target["data-key"]: target for target in rendered.select(".tb-click__target")}
+    assert targets["a"]["aria-label"] == f"a: {value}"
+    assert targets["b"]["aria-label"] == "b: Empty value"
+    assert value in targets["a"].get_text()
+    assert all(not target.has_attr("aria-describedby") for target in targets.values())

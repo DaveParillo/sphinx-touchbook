@@ -52,6 +52,10 @@ npm ci
 
 ## Build Documents
 
+Install [Graphviz](https://graphviz.org/download/) with its `dot` executable
+on `PATH` to build the `tb-graph` examples in HTML and LaTeX. PDF diagram
+generation requires Graphviz's Cairo renderer.
+
 Build the author guide as HTML:
 
 ```bash

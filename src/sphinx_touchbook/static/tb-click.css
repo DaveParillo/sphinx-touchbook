@@ -82,3 +82,35 @@ tb-click[data-hints-visible="true"] .tb-click__target {
   min-height: 2.25rem;
   padding: 0.35rem 0.75rem;
 }
+
+.tb-click__diagram .tb-click__target {
+  cursor: pointer;
+}
+
+.tb-click__diagram .tb-click__target polygon {
+  pointer-events: all;
+}
+
+tb-click[data-hints-visible="true"] .tb-click__diagram .tb-click__target,
+.tb-click__diagram .tb-click__target:focus-visible {
+  outline: 2px dashed var(--color-brand-primary, #1f6feb);
+  outline-offset: 2px;
+}
+
+.tb-click__diagram .tb-click__target--correct :is(ellipse, polygon, path) {
+  fill: #d9eedb;
+  stroke: #2e7d32;
+  stroke-width: 2px;
+}
+
+.tb-click__diagram .tb-click__target--incorrect :is(ellipse, polygon, path) {
+  fill: #f8dce0;
+  stroke: #b00020;
+  stroke-width: 2px;
+}
+
+.tb-array__value > .tb-click__target {
+  min-width: 2rem;
+  min-height: 2rem;
+  white-space: pre-wrap;
+}

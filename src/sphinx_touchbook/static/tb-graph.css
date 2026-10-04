@@ -1,0 +1,24 @@
+tb-graph {
+  display: block;
+  margin-block: 1rem;
+}
+
+tb-graph .tb-graph__diagram {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: white;
+}
+
+tb-graph .tb-graph__label,
+tb-graph .tb-graph__caption {
+  font-weight: bold;
+}
+
+tb-graph .tb-graph__description {
+  margin-block: .5rem;
+}
+
+tb-graph summary {
+  cursor: pointer;
+}

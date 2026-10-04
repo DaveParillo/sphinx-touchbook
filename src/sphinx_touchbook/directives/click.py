@@ -1,7 +1,7 @@
 """Sphinx-Touchbook: Interactive textbook widgets for Sphinx-doc.
 Copyright (C) 2026 Dave Parillo.
 
-A Touchbook directive for selecting exact regions in literal source text.
+A Touchbook directive for selecting source text or keyed diagram objects.
 
 See:
 https://daveparillo.github.io/sphinx-touchbook/
@@ -22,6 +22,8 @@ from sphinx_touchbook.nodes import (
     TbClickPromptNode,
     TbClickRegionNode,
     TbClickSourceNode,
+    TbArrayNode,
+    TbGraphNode,
 )
 
 TEXT_SELECTOR_RE = re.compile(r"^(?P<text>.*)#(?P<ordinal>[1-9]\d*)$")
@@ -30,6 +32,8 @@ RANGE_SELECTOR_RE = re.compile(
 )
 DEFAULT_SHOW_HINTS = False
 HINTS_NEVER = "never"
+SOURCE_TYPES = (nodes.literal_block, TbArrayNode, TbGraphNode)
+SOURCE_ERROR = "tb-click must contain exactly one code-block, literal block, tb-array, or tb-graph."
 
 
 class SelectorError(ValueError):
@@ -230,11 +234,11 @@ class TbClickDirective(Directive):
     def _build_node(self, parsed: nodes.container) -> TbClickNode:
         source_index = self._source_index(parsed)
         if source_index is None:
-            raise SelectorError("tb-click must contain exactly one code-block or literal block.")
+            raise SelectorError(SOURCE_ERROR)
 
         source_block = parsed.children[source_index]
-        if len([child for child in parsed.children if isinstance(child, nodes.literal_block)]) != 1:
-            raise SelectorError("tb-click must contain exactly one code-block or literal block.")
+        if len([child for child in parsed.children if isinstance(child, SOURCE_TYPES)]) != 1:
+            raise SelectorError(SOURCE_ERROR)
 
         prompt_children = [deepcopy(child) for child in parsed.children[:source_index]]
         region_nodes = self._region_nodes(parsed.children[source_index + 1 :])
@@ -243,29 +247,44 @@ class TbClickDirective(Directive):
         if not any(region["correct"] for region in region_nodes):
             raise SelectorError("tb-click must contain at least one tb-hit region.")
 
-        source = source_block.astext()
+        keyed = isinstance(source_block, (TbArrayNode, TbGraphNode))
+        if isinstance(source_block, TbArrayNode):
+            if source_block["mode"] != "keyed":
+                raise SelectorError("tb-click array sources require explicitly keyed items.")
+            keys = {item["key"] for item in source_block["elements"]}
+        elif isinstance(source_block, TbGraphNode):
+            keys = {item["key"] for item in source_block["nodes"] if not item["invisible"]}
+        source = "" if keyed else source_block.astext()
         regions = []
         for index, region_node in enumerate(region_nodes):
-            start, end = resolve_selector(source, region_node["selector"])
             region_node["index"] = index
-            region_node["start"] = start
-            region_node["end"] = end
-            regions.append(
-                {
-                    "selector": region_node["selector"],
-                    "correct": region_node["correct"],
-                    "start": start,
-                    "end": end,
-                    "index": index,
-                }
-            )
-        _validate_non_overlapping(regions)
+            region = {
+                "selector": region_node["selector"],
+                "correct": region_node["correct"],
+                "index": index,
+            }
+            if keyed:
+                if region["selector"] not in keys:
+                    raise SelectorError(f"tb-click selector must name a visible source key: {region['selector']!r}.")
+                if any(previous["selector"] == region["selector"] for previous in regions):
+                    raise SelectorError(f"Duplicate tb-click source key: {region['selector']!r}.")
+            else:
+                start, end = resolve_selector(source, region_node["selector"])
+                region_node["start"], region_node["end"] = start, end
+                region.update(start=start, end=end)
+            regions.append(region)
+        if not keyed:
+            _validate_non_overlapping(regions)
 
         node = TbClickNode()
         assign_node_id(self, node)
         node["source"] = source
         node["regions"] = regions
         node["language"] = self._language(source_block)
+        node["source_kind"] = (
+            "array" if isinstance(source_block, TbArrayNode) else
+            "graph" if keyed else "text"
+        )
         config = _config(self)
         node["hints"] = (
             "true"
@@ -280,6 +299,12 @@ class TbClickDirective(Directive):
         source_node = TbClickSourceNode()
         source_node["source"] = source
         source_node["language"] = node["language"]
+        source_node["kind"] = node["source_kind"]
+        if keyed:
+            # Retain the semantic source node and its normal builder fallbacks.
+            source_block["click_regions"] = {region["selector"]: region for region in regions}
+            source_block["click_question_id"] = node["ids"][0]
+            source_node += source_block
         node += source_node
 
         node.extend(region_nodes)
@@ -287,7 +312,7 @@ class TbClickDirective(Directive):
 
     def _source_index(self, parsed: nodes.container) -> int | None:
         for index, child in enumerate(parsed.children):
-            if isinstance(child, nodes.literal_block):
+            if isinstance(child, SOURCE_TYPES):
                 return index
         return None
 

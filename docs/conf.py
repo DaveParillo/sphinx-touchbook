@@ -44,3 +44,13 @@ tb_code_compiler_explorer_defaults = {
     'c++': {'language': 'c++', 'compiler': 'g153'},
     'java': {'language': 'java', 'compiler': 'java1702'},
 }
+
+tb_graph_styles = {
+    "list": {"fill": "#e0f2fe", "font-size": 14},
+    "plain-list": {"base": "list", "shape": "ellipse","fill": None},
+    "tree": {
+        "fill": "#dcfce7", "highlight-fill": "#fde68a",
+        "level-spacing": 0.4,
+    },
+}
+

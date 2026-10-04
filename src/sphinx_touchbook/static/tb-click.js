@@ -13,7 +13,17 @@ class TbClick extends HTMLElement {
       item.hidden = true;
     });
     this.targets.forEach((target) => {
+      target.setAttribute("aria-pressed", "false");
+      target.removeAttribute("aria-describedby");
       target.addEventListener("click", () => this.selectTarget(target));
+      if (target.namespaceURI === "http://www.w3.org/2000/svg") {
+        target.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            this.selectTarget(target);
+          }
+        });
+      }
     });
     this.hintsVisible = this.getAttribute("hints") === "true";
     if (this.getAttribute("hints") === "never" && this.hintToggle) {
@@ -42,6 +52,7 @@ class TbClick extends HTMLElement {
     this.targets.forEach((item) => {
       item.classList.remove("tb-click__target--correct", "tb-click__target--incorrect");
       item.setAttribute("aria-pressed", "false");
+      item.removeAttribute("aria-describedby");
     });
     this.feedback.forEach((item) => {
       item.hidden = true;
@@ -51,9 +62,10 @@ class TbClick extends HTMLElement {
     target.classList.add(correct ? "tb-click__target--correct" : "tb-click__target--incorrect");
     target.setAttribute("aria-pressed", "true");
 
-    const feedback = document.getElementById(target.dataset.feedbackId);
+    const feedback = this.feedback.find((item) => item.id === target.dataset.feedbackId);
     if (feedback) {
       feedback.hidden = false;
+      target.setAttribute("aria-describedby", feedback.id);
     }
     this.setStatus(correct ? "Correct." : "Not quite.");
   }

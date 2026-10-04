@@ -11,6 +11,33 @@ from __future__ import annotations
 
 from docutils import nodes
 
+class TbAnimationNode(nodes.General, nodes.Element):
+    """An ordered sequence of complete instructional scenes."""
+
+
+class TbSceneNode(nodes.General, nodes.Element):
+    """A complete, independently renderable scene and local object scope."""
+
+
+class TbPointerNode(nodes.General, nodes.Element):
+    """A pointer or bounded iterator with a resolved scene-local position."""
+
+
+class TbArrayNode(nodes.General, nodes.Element):
+    """Semantic node for an ordered array of values or keyed items."""
+
+
+class TbGraphNode(nodes.General, nodes.Element):
+    """Semantic node for a complete directed graph."""
+
+
+def is_scene_object(node):
+    """Recognize semantic object keys independently of directive type."""
+    return isinstance(node, nodes.Element) and (
+        "key" in node or isinstance(node, (TbArrayNode, TbGraphNode, TbPointerNode))
+    )
+
+
 class TbRevealNode(nodes.General, nodes.Element):
     """Semantic node for content revealed inline or in a modal."""
 

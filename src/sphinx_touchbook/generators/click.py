@@ -8,6 +8,8 @@ for details.
 from __future__ import annotations
 
 from html import escape
+from urllib.parse import urlsplit
+from xml.etree import ElementTree
 
 from docutils import nodes
 from sphinx.writers.html5 import HTML5Translator
@@ -27,6 +29,59 @@ def _node_id(node: TbClickNode) -> str:
     return node["ids"][0]
 
 
+def keyed_target_attributes(node, key, value):
+    """Connect a rendered keyed object to its question's semantic region."""
+    region = node.get("click_regions", {}).get(key)
+    if region is None:
+        return {}
+    feedback_id = f"{node['click_question_id']}-feedback-{region['index']}"
+    return {
+        "class": "tb-click__target",
+        "data-key": key,
+        "data-correct": "true" if region["correct"] else "false",
+        "data-feedback-id": feedback_id,
+        "aria-label": f"{key}: {value or 'Empty value'}",
+        "aria-pressed": "false",
+    }
+
+
+def keyed_target_html(node, key, value):
+    attributes = keyed_target_attributes(node, key, value)
+    if not attributes:
+        return escape(value)
+    attrs = " ".join(f'{name}="{escape(value, quote=True)}"' for name, value in attributes.items())
+    return f'<button type="button" {attrs}>{escape(value) or "&#8203;"}</button>'
+
+
+def keyed_graph_svg(node, filename):
+    """Make Graphviz's generated link regions accessible question controls."""
+    root = ElementTree.parse(filename).getroot()
+    svg_ns = "http://www.w3.org/2000/svg"
+    href = "{http://www.w3.org/1999/xlink}href"
+    items = {item["key"]: item for item in node["nodes"]}
+    regions = {f"tb-click-region-{region['index']}": key
+               for key, region in node["click_regions"].items()}
+    root.set("class", "tb-graph__diagram tb-click__diagram")
+    root.set("role", "group")
+    root.set("aria-label", node["label"] or node["caption"] or "Graph diagram")
+    for element in root.iter():
+        # Graphviz titles expose renderer IDs such as n0, not author content.
+        for title in element.findall(f"{{{svg_ns}}}title"):
+            element.remove(title)
+        if "id" in element.attrib:
+            element.set("id", f"{node['ids'][0]}-{element.get('id')}")
+        if element.tag == f"{{{svg_ns}}}a":
+            key = regions[urlsplit(element.attrib.pop(href, "")).fragment]
+            element.attrib.clear()
+            element.tag = f"{{{svg_ns}}}g"
+            element.attrib.update(keyed_target_attributes(node, key, items[key]["value"]))
+            element.set("role", "button")
+            element.set("tabindex", "0")
+    # Register the default namespace so the inline SVG also parses as HTML.
+    ElementTree.register_namespace("", svg_ns)
+    return ElementTree.tostring(root, encoding="unicode")
+
+
 def _annotated_source_html(node: TbClickSourceNode) -> str:
     source = node["source"]
     regions = sorted(node.parent["regions"], key=lambda region: region["start"])
@@ -42,7 +97,7 @@ def _annotated_source_html(node: TbClickSourceNode) -> str:
         parts.append(
             '<button type="button" class="tb-click__target" '
             f'data-correct="{correct}" data-feedback-id="{feedback_id}" '
-            f'aria-describedby="{feedback_id}" aria-label="Clickable source region">'
+            'aria-label="Clickable source region">'
             f"{selected}</button>"
         )
         offset = end
@@ -76,6 +131,9 @@ def depart_tb_click_prompt_html(self: HTML5Translator, node: TbClickPromptNode) 
 
 
 def visit_tb_click_source_html(self: HTML5Translator, node: TbClickSourceNode) -> None:
+    if node.get("kind", "text") != "text":
+        self.body.append('<div class="tb-click__source">\n')
+        return
     language = escape(node.get("language", "none"), quote=True)
     self.body.append(f'<div class="highlight-{language} notranslate tb-click__source">\n')
     self.body.append("<div class=\"highlight\"><pre>")
@@ -86,7 +144,8 @@ def visit_tb_click_source_html(self: HTML5Translator, node: TbClickSourceNode) -
 
 
 def depart_tb_click_source_html(self: HTML5Translator, node: TbClickSourceNode) -> None:
-    pass
+    if node.get("kind", "text") != "text":
+        self.body.append('</div>\n')
 
 
 def visit_tb_click_region_html(self: HTML5Translator, node: TbClickRegionNode) -> None:
@@ -123,6 +182,8 @@ def depart_tb_click_prompt_latex(self: LaTeXTranslator, node: TbClickPromptNode)
 
 
 def visit_tb_click_source_latex(self: LaTeXTranslator, node: TbClickSourceNode) -> None:
+    if node.get("kind", "text") != "text":
+        return
     if self.config.tb_pdf_tagging:
         from .common import tagged_listing
         tagged_listing(self, node['source'], 'text', '', location=node)
@@ -162,6 +223,8 @@ def depart_tb_click_prompt_text(self: TextTranslator, node: TbClickPromptNode) -
 
 
 def visit_tb_click_source_text(self: TextTranslator, node: TbClickSourceNode) -> None:
+    if node.get("kind", "text") != "text":
+        return
     self.add_text(node["source"])
     self.add_text("\n")
     raise nodes.SkipNode
