@@ -166,10 +166,16 @@ def static_content(node, *, text=False):
             for value in values:
                 entry = nodes.entry()
                 if "\n" in value:
-                    lines = nodes.line_block()
-                    for line in value.split("\n"):
-                        lines += nodes.line(text=line)
-                    entry += lines
+                    # A table value is text, not a list. DUlineblock's legacy
+                    # list environment fails with LaTeX's PDF tagging enabled.
+                    paragraph = nodes.paragraph()
+                    for line_index, line in enumerate(value.split("\n")):
+                        if line_index:
+                            paragraph += nodes.raw("", r"\newline{}", format="latex")
+                        # Keep leading, trailing, and consecutive empty lines.
+                        paragraph += nodes.raw("", r"\strut{}", format="latex")
+                        paragraph += nodes.Text(line)
+                    entry += paragraph
                 else:
                     entry += nodes.paragraph(text=value)
                 row += entry

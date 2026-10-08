@@ -333,17 +333,20 @@ def test_long_array_preserves_all_entries(tmp_path, builder):
         assert len(soup.select("tb-array td")) == 150
 
 
-@pytest.mark.parametrize("builder", ["html", "text", "latex"])
-def test_newline_values_render_with_line_breaks(tmp_path, builder):
-    source = "Line breaks\n===========\n\n" + array_source(r'''"dark\ngreen" "literal\\n"''')
-    out = build_sphinx(tmp_path, builder, source)
+@pytest.mark.parametrize("builder,tagged", [
+    ("html", False), ("text", False), ("latex", False), ("latex", True),
+])
+def test_newline_values_render_with_line_breaks(tmp_path, builder, tagged):
+    source = "Line breaks\n===========\n\n" + array_source(
+        r'''"dark\ngreen" "literal\\n" "\n\n" "\n<&%_>\n"''')
+    out = build_sphinx(tmp_path, builder, source, tagged=tagged)
     filename = next(out.glob("*.tex")) if builder == "latex" else out / (
         "index.html" if builder == "html" else "index.txt")
     result = filename.read_text()
     if builder == "html":
-        soup = BeautifulSoup(result, "html.parser")
+        soup = BeautifulSoup(result, "html.parser", preserve_whitespace_tags={"span"})
         assert [value.get_text() for value in soup.select(".tb-array__value")] == [
-            "dark\ngreen", r"literal\n"]
+            "dark\ngreen", r"literal\n", "\n\n", "\n<&%_>\n"]
         css = (out / "_static" / "tb-array.css").read_text()
         assert "white-space: pre-wrap" in css
     elif builder == "text":
@@ -351,8 +354,10 @@ def test_newline_values_render_with_line_breaks(tmp_path, builder):
         assert not any("dark" in line and "green" in line for line in result.splitlines())
         assert r"literal\n" in result
     else:
-        assert r"\begin{DUlineblock}" in result
-        assert r"\item[] dark" in result and r"\item[] green" in result
+        assert r"\strut{}dark\newline{}\strut{}green" in result
+        assert r"\strut{}\newline{}\strut{}\newline{}\strut{}" in result
+        escaped = r"<\&\%\_>" if tagged else r"\textless{}\&\%\_\textgreater{}"
+        assert r"\strut{}\newline{}\strut{}" + escaped + r"\newline{}\strut{}" in result
 
 
 def test_array_works_with_tagged_pdf_translator(tmp_path):
