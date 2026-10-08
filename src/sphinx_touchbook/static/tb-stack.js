@@ -1,4 +1,4 @@
-class TbAnimation extends HTMLElement {
+class TbStack extends HTMLElement {
   connectedCallback() {
     if (this.dataset.enhanced === "true") {
       this.attachNavigation();
@@ -6,8 +6,8 @@ class TbAnimation extends HTMLElement {
       return;
     }
     const script = this.querySelector(':scope > script[type="application/json"]');
-    const controls = this.querySelector(":scope > .tb-animation__controls");
-    const scenes = Array.from(this.querySelectorAll(":scope > .tb-animation__scenes > tb-scene"));
+    const controls = this.querySelector(":scope > .tb-stack__controls");
+    const scenes = Array.from(this.querySelectorAll(":scope > .tb-stack__scenes > tb-scene"));
     let config;
     try {
       config = JSON.parse(script?.textContent || "");
@@ -19,13 +19,18 @@ class TbAnimation extends HTMLElement {
         !config.scenes.every((scene, index) => scene.id === scenes[index].id)) return;
     const buttons = Array.from(controls.querySelectorAll("button[data-action]"));
     const actions = ["first", "previous", "next", "last"];
-    this.status = controls.querySelector(".tb-animation__status");
-    if (!this.status || actions.some((action) => !buttons.some((button) => button.dataset.action === action))) return;
+    this.status = controls.querySelector(".tb-stack__status");
+    this.caption = controls.querySelector(".tb-stack__scene-caption");
+    if (!this.status || !this.caption || actions.some((action) => !buttons.some((button) => button.dataset.action === action))) return;
 
     this.scenes = scenes;
     this.config = config;
     this.buttons = buttons;
     this.index = 0;
+    scenes.forEach((scene) => {
+      const heading = scene.querySelector(":scope > .tb-scene__caption");
+      if (heading) heading.hidden = true;
+    });
     buttons.forEach((button) => {
       button.addEventListener("click", () => {
         const destination = { first: 0, previous: this.index - 1,
@@ -71,7 +76,17 @@ class TbAnimation extends HTMLElement {
       this.buttons.find((button) => button.dataset.action === action && !button.disabled)?.focus();
     }
     const caption = this.config.scenes[this.index].caption;
-    this.status.textContent = `Scene ${this.index + 1} of ${this.scenes.length}${caption ? `: ${caption}` : ""}`;
+    this.caption.textContent = caption;
+    this.caption.hidden = !caption;
+    this.status.textContent = `Scene ${this.index + 1} of ${this.scenes.length}`;
+    if (caption) {
+      // Keep the caption in the navigation announcement as well as its own
+      // visible line, without repeating it beside the scene count.
+      const description = document.createElement("span");
+      description.className = "tb-stack__status-caption";
+      description.textContent = `: ${caption}`;
+      this.status.append(description);
+    }
     this.dataset.scene = String(this.index + 1);
   }
 
@@ -88,4 +103,4 @@ class TbAnimation extends HTMLElement {
   }
 }
 
-if (!customElements.get("tb-animation")) customElements.define("tb-animation", TbAnimation);
+if (!customElements.get("tb-stack")) customElements.define("tb-stack", TbStack);

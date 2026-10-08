@@ -4,7 +4,7 @@ tb-scene
 ========
 
 The ``tb-scene`` directive groups a complete instructional scene. Use it alone
-for a static composition or inside :ref:`tb-animation` for a navigable step.
+for a static composition or inside :ref:`tb-stack` for a navigable step.
 Objects and references are local to the scene. Every referenced object must be
 declared in that scene; no content is inherited from an earlier scene.
 
@@ -30,8 +30,8 @@ Options
 
 **caption**
    ``String``. Optional.
-   Plain-text explanation of this scene. Animations include it in the scene
-   status beside the navigation buttons.
+   Plain-text explanation of this scene. Stacks include it in the scene
+   heading above the navigation buttons and scene count.
 
 **class**
    ``String`` or ``List``. Optional.
@@ -49,7 +49,7 @@ Content and references
 Arrays, graphs, and pointers must be immediate children with unique object
 keys in the scene. They can accompany normal RST content and code blocks.
 References can precede their target declarations. A scene may be empty.
-Do not place another scene or animation inside a scene, even through a nested
+Do not place another scene or stack inside a scene, even through a nested
 container. Separate static scenes may reuse the same object keys.
 
 Accessibility behavior
@@ -57,7 +57,7 @@ Accessibility behavior
 
 A scene retains the accessibility of its prose, code, arrays, and graphs.
 Pointer descriptions identify target positions as text as well as visual
-arrows. When a scene is part of an animation, inactive scenes are hidden until
+arrows. When a scene is part of a stack, inactive scenes are hidden until
 navigation selects them or a document link reveals their named content.
 
 Fallback behavior

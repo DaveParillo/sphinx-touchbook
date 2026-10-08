@@ -52,7 +52,7 @@ Options
    Either ``pointer`` or ``iterator``. Iterator kind requires an array range
    and a position within its bounds, including its end boundary. Null ranges
    and positions are invalid for iterators. Kind remains stable for a pointer
-   key across animation scenes.
+   key across stack scenes.
 
 **label**
    ``String``. Optional. Default: the object key.
@@ -80,7 +80,10 @@ HTML places array pointer labels and arrows above horizontal arrays or beside
 vertical arrays. An end pointer marks a separate boundary position, and an
 empty array retains its end-position description. Pointers to graph nodes have
 labelled arrows in their diagrams and text descriptions beside them. Tree
-styles accept one node pointer or indicator in total. Whole-object pointers
+styles support multiple pointers and indicators, including shared targets.
+Labels sharing a target are grouped, each with its own arrow. Tree pointers
+use a gap between the target's children, or a position below a leaf, so their
+arrows do not cross other tree nodes. Whole-object pointers
 show a labelled arrow and a document link to the target object. They can also
 target pointers, including themselves; the target is the object itself and is
 not dereferenced. Document ``name`` values remain separate from object keys.
@@ -171,14 +174,49 @@ Example 2: An iterator at the end
             :range: values
             :at: values.end
 
-For a complete traversal example, see :ref:`tb-animation`.
+For a complete traversal example, see :ref:`tb-stack`.
 
-Example 3: Point to a graph or another pointer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example 3: Point to a graph node
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``network.node[b]`` draws a labelled arrow pointing directly to node ``b``,
+whose value is ``13``. This serves the same purpose as an array pointer:
+identifying the current element visually. The list style arranges the graph
+horizontally and places the pointer below its target node.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-scene::
+
+            .. tb-pointer:: current
+               :at: network.node[b]
+
+            .. tb-graph:: network
+               :style: list
+
+               a[8] -> b[13] -> c[21]
+
+   .. tb-tab:: Rendered
+
+      .. tb-scene::
+
+         .. tb-pointer:: current
+            :at: network.node[b]
+
+         .. tb-graph:: network
+            :style: list
+
+            a[8] -> b[13] -> c[21]
+
+Example 4: Point to a whole object or another pointer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The bare key ``network`` selects the complete graph. The bare key ``current``
-selects the pointer object itself. Use ``network.node[a]`` to select a specific
-node instead.
+selects the pointer object itself. These targets show links to the objects.
 
 .. tb-group::
 
@@ -211,3 +249,50 @@ node instead.
          .. tb-graph:: network
 
             a[8] -> b[13] -> c[21]
+
+Example 5: Track multiple tree positions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pointers and local indicators can share a tree. Here ``head`` and ``previous``
+both point to the root, while ``current`` points to its left child. Each label
+has its own arrow below its target.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-scene::
+
+            .. tb-graph:: tree
+               :style: tree
+               :indicators: head=root
+
+               root[8] -left-> child[3]
+               root -right-> other[12]
+               child -right-> inserted[6]
+
+            .. tb-pointer:: previous
+               :at: tree.node[root]
+
+            .. tb-pointer:: current
+               :at: tree.node[child]
+
+   .. tb-tab:: Rendered
+
+      .. tb-scene::
+
+         .. tb-graph:: tree
+            :style: tree
+            :indicators: head=root
+
+            root[8] -left-> child[3]
+            root -right-> other[12]
+            child -right-> inserted[6]
+
+         .. tb-pointer:: previous
+            :at: tree.node[root]
+
+         .. tb-pointer:: current
+            :at: tree.node[child]

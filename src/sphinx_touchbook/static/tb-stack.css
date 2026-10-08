@@ -1,8 +1,8 @@
-tb-animation, tb-scene, tb-pointer {
+tb-stack, tb-scene, tb-pointer {
   display: block;
 }
 
-tb-animation {
+tb-stack {
   margin-block: 1rem;
   border: 1px solid var(--color-background-border, #aaa);
   border-radius: .4rem;
@@ -13,41 +13,60 @@ tb-scene {
   margin-block: 1rem;
 }
 
-tb-scene[hidden], .tb-animation__controls[hidden] {
+tb-scene[hidden], .tb-stack__controls[hidden], .tb-scene__caption[hidden],
+.tb-stack__scene-caption[hidden] {
   display: none;
 }
 
-.tb-animation__caption, .tb-scene__caption {
+.tb-stack__caption, .tb-scene__caption {
   font-weight: bold;
 }
 
-.tb-animation__controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .5rem;
-  border-top: 1px solid var(--color-background-border, #aaa);
-  padding-top: .75rem;
+.tb-stack__controls {
+  border-bottom: 1px solid var(--color-background-border, #aaa);
+  padding-bottom: .75rem;
 }
 
-.tb-animation__controls button {
+.tb-stack__scene-caption {
+  margin: 0 0 .75rem;
+}
+
+.tb-stack__navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+.tb-stack__controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   min-width: 2.75rem;
   min-height: 2.75rem;
   cursor: pointer;
   font: inherit;
 }
 
-.tb-animation__controls button:disabled {
+.tb-stack__controls button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.tb-stack__controls button:disabled {
   cursor: default;
 }
 
-.tb-animation__controls button:focus-visible {
+.tb-stack__controls button:focus-visible {
   outline: 2px solid var(--color-brand-primary, #1f6feb);
   outline-offset: 2px;
 }
 
-.tb-animation__status {
-  margin: 0 .5rem;
+.tb-stack__status {
+  margin: 0;
+  padding-block: .5rem;
+  white-space: nowrap;
 }
 
 .tb-pointer__marker {
@@ -70,7 +89,7 @@ tb-scene[hidden], .tb-animation__controls[hidden] {
   line-height: 1;
 }
 
-.tb-pointer__description--placed {
+.tb-pointer__description--placed, .tb-stack__status-caption {
   position: absolute;
   width: 1px;
   height: 1px;

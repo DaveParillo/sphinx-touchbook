@@ -15,10 +15,11 @@ from sphinx_touchbook.generators.common import (
     html_additional_targets, html_class_attr, latex_targets,
 )
 from sphinx_touchbook.generators.click import keyed_graph_svg, keyed_target_html
-from sphinx_touchbook.generators.animation import graph_pointer_indicators
+from sphinx_touchbook.generators.stack import graph_pointer_indicators
 from sphinx_touchbook.generators.graph_array import (
     array_dot, array_origin, cell_dimensions, measurement_dot,
 )
+from sphinx_touchbook.generators.graph_annotations import annotated_asset
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +70,10 @@ def edge_dot(edge, ids, style, *, weight=None):
 
 
 def tree_edges(node, ids, style, edges):
-    """Center parents over children using invisible ranks and weighted anchors."""
+    """Center parents and put annotations in child gaps, or below leaves."""
     eligible = tree_components(node)
+    grouped = grouped_indicators(node)
+    annotations = {target: f'tb_indicators_{ids[target]}' for target in grouped}
     outgoing = {}
     for edge in edges:
         outgoing.setdefault(edge["source"], []).append(edge)
@@ -87,7 +90,12 @@ def tree_edges(node, ids, style, edges):
                 targets.insert(0, missing)
             else:
                 targets.append(missing)
-        if len(targets) % 2 == 0:
+        if parent in annotations:
+            # Give the label its own central slot even for an odd child count;
+            # keeping a real child on the centerline could obstruct the arrow.
+            anchor = annotations[parent]
+            targets.insert((len(targets) + 1) // 2, anchor)
+        elif len(targets) % 2 == 0:
             anchor = f'tb_middle_{ids[parent]}'
             lines.append(f'{anchor} [label="", style="invis", shape="point", width="0", height="0"];')
             targets.insert(len(targets) // 2, anchor)
@@ -98,37 +106,63 @@ def tree_edges(node, ids, style, edges):
             if target in by_target:
                 lines.append(edge_dot(by_target[target], ids, style,
                                       weight=100 if target == anchor else 1))
+            elif target == annotations.get(parent):
+                lines.extend(tree_annotation_edges(ids[parent], target, style, len(grouped[parent])))
             else:
                 weight = 100 if target == anchor else 1
                 lines.append(f'{ids[parent]} -> {target} [style="invis", weight="{weight}"];')
         if len(targets) > 1:
             lines.append('{rank="same"; ' + ' -> '.join(targets) +
                          ' [style="invis", weight="1"]; }')
+    for target, annotation in annotations.items():
+        if target not in outgoing or target not in eligible:
+            # Leaves have no child row to reuse. A weighted edge keeps the
+            # label just below the target, clear of its siblings on either side.
+            lines.extend(tree_annotation_edges(ids[target], annotation, style, len(grouped[target])))
     return lines
 
 
-def graph_indicators(node, ids):
-    """Let Graphviz place annotations alongside targets without adding levels."""
-    style = node["style"]
-    horizontal = style["orientation"] == "horizontal" and style["layout"] != "ring"
-    lines = []
+def tree_annotation_edges(target, annotation, style, count):
+    horizontal = style["orientation"] == "horizontal"
+    return [f'{target} -> {annotation} [dir="back", arrowtail="vee", arrowhead="none", '
+            f'arrowsize="0.6", weight="100", '
+            f'tailport="{"e" if horizontal else "s"}", '
+            f'headport="i{index}:{"w" if horizontal else "n"}"];'
+            for index in range(count)]
+
+
+def grouped_indicators(node):
     grouped = {}
     for indicator in graph_pointer_indicators(node):
         grouped.setdefault(indicator["target"], []).append(indicator)
-    for target_key, indicators in grouped.items():
+    return grouped
+
+
+def graph_indicators(node, ids):
+    """Define annotation labels and position those outside tree spacing."""
+    style = node["style"]
+    horizontal = style["orientation"] == "horizontal" and style["layout"] != "ring"
+    lines = []
+    for target_key, indicators in grouped_indicators(node).items():
         target = ids[target_key]
         identifier = f"tb_indicators_{target}"
         cells = []
         for index, indicator in enumerate(indicators):
             label = escape(indicator["key"].replace("\\", "\\\\"))
             cells.append(f'<TD PORT="i{index}">{label}</TD>')
-        rows = ("<TR>" + "".join(cells) + "</TR>" if horizontal else
+        # Tree labels sit below targets (to their right in horizontal trees),
+        # so shared labels face the target in a row (or a column, respectively).
+        label_row = not horizontal if style["layout"] == "tree" else horizontal
+        rows = ("<TR>" + "".join(cells) + "</TR>" if label_row else
                 "".join(f"<TR>{cell}</TR>" for cell in cells))
         spacing = 8 if len(indicators) > 1 else 0
         label = (f'<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="0" CELLSPACING="{spacing}">'
                  + rows + '</TABLE>')
         lines.append(f'{identifier} [label=<{label}>, '
                      'shape="plain", style="solid", width="0", height="0", margin="0"];')
+        if style["layout"] == "tree":
+            # Tree edges attach this label within the tree's reserved spacing.
+            continue
         if style["layout"] != "ring":
             lines.append(f'{{rank="same"; {target}; {identifier};}}')
         for index in range(len(indicators)):
@@ -199,6 +233,17 @@ def prose_list(items):
 
 
 def graph_description(node):
+    content = base_graph_description(node)
+    by_key = {item["key"]: item for item in node["nodes"]}
+    for annotation in node.get("annotations", []):
+        labels = [f'“{by_key[key]["value"]}” (node {key})' for key in annotation["targets"]]
+        shape = annotation["shape"]
+        article = "An" if shape == "ellipse" else "A"
+        content += nodes.paragraph(text=f'{article} {shape} surrounds {prose_list(labels)}.')
+    return content
+
+
+def base_graph_description(node):
     """Explain the diagram in prose, using values rather than an edge inventory."""
     content = nodes.container()
     if description := node.get("description"):
@@ -339,7 +384,9 @@ def render_graph(translator, node, format, *, return_path=False):
         filename, output_path = render_dot(
             translator, graph_dot(node, array_size=array_size, array_position=array_position),
             options,
-            format, prefix="tb-graph")
+            "svg" if node.get("annotations") else format, prefix="tb-graph")
+        if output_path is not None and node.get("annotations"):
+            filename, output_path = annotated_asset(filename, output_path, node, format)
         return output_path if return_path else filename
     except GraphvizError as error:
         logger.warning("tb-graph could not render its diagram: %s", error,

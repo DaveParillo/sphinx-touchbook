@@ -18,7 +18,15 @@ version = project_version()
 release = version + '-alpha'
 
 
-extensions = ['sphinx_touchbook', 'sphinx_copybutton']
+extensions = ['sphinx_touchbook',
+              'sphinx_accessibility',
+              'sphinx_copybutton',
+              'sphinx_dropdown_toggle']
+
+templates_path = ['_templates']
+html_static_path = ['_static']
+html_css_files = ['accessibility-nefertiti.css']
+html_js_files = ['accessibility-nefertiti.js']
 language = 'en'
 html_theme = 'sphinx_nefertiti'
 html_theme_options = {
@@ -32,6 +40,8 @@ html_theme_options = {
     'logo_alt': '',
     'logo_width': 40,
     'logo_height': 24,
+    'sans_serif_font': 'Open Sans',
+    'documentation_font_size': '1.125rem',
 }
 
 tb_code_block_defaults = {
@@ -52,5 +62,5 @@ tb_graph_styles = {
         "fill": "#dcfce7", "highlight-fill": "#fde68a",
         "level-spacing": 0.4,
     },
+    "print-tree": {"base": "tree", "arrows": "vee"},
 }
-

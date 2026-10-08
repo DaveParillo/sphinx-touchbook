@@ -10,7 +10,7 @@ from sphinx_touchbook.generators.common import (
     html_additional_targets, html_class_attr, latex_targets,
 )
 from sphinx_touchbook.generators.click import keyed_target_html
-from sphinx_touchbook.generators.animation import pointer_html, pointers_for
+from sphinx_touchbook.generators.stack import pointer_html, pointers_for
 
 
 def annotations(node, index, *, include_highlight=True):

@@ -9,6 +9,26 @@ from sphinx_touchbook.generators.common import html_additional_targets, html_cla
 from sphinx_touchbook.nodes import TbArrayNode, TbGraphNode, TbPointerNode, TbSceneNode, is_scene_object
 
 
+# Bootstrap Icons (MIT); license in static/bootstrap-icons-LICENSE.txt.
+# https://icons.getbootstrap.com/icons/chevron-double-left/ and related chevrons.
+NAVIGATION_ICONS = (
+    ("first", "chevron-double-left", "First scene", (
+        "M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0",
+        "M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0",
+    )),
+    ("previous", "chevron-left", "Previous scene", (
+        "M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0",
+    )),
+    ("next", "chevron-right", "Next scene", (
+        "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708",
+    )),
+    ("last", "chevron-double-right", "Last scene", (
+        "M3.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L9.293 8 3.646 2.354a.5.5 0 0 1 0-.708",
+        "M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708",
+    )),
+)
+
+
 def pointers_for(node, *, position_type=None):
     if not isinstance(node.parent, TbSceneNode):
         return []
@@ -29,7 +49,7 @@ def scene_model(scene):
         TbArrayNode: ("elements", "mode", "highlighted", "range", "range_label",
                       "label", "orientation", "start_index", "show_keys"),
         TbGraphNode: ("nodes", "edges", "highlighted", "style", "style_name",
-                      "label", "description", "show_indices", "indicators"),
+                      "label", "description", "show_indices", "indicators", "annotations"),
         TbPointerNode: ("kind", "label", "position", "range", "at"),
     }
     objects = []
@@ -111,27 +131,32 @@ def visit_tb_pointer_text(self, node):
     raise nodes.SkipNode
 
 
-def visit_tb_animation_html(self, node):
-    self.body.append(f'<tb-animation id="{escape(node["ids"][0], quote=True)}"{html_class_attr(node)}>\n')
+def visit_tb_stack_html(self, node):
+    self.body.append(f'<tb-stack id="{escape(node["ids"][0], quote=True)}"{html_class_attr(node)}>\n')
     self.body.append(html_additional_targets(node))
     if node["caption"]:
-        self.body.append(f'<p class="tb-animation__caption">{escape(node["caption"])}</p>\n')
-    self.body.append('<div class="tb-animation__scenes">\n')
+        self.body.append(f'<p class="tb-stack__caption">{escape(node["caption"])}</p>\n')
+    self.body.append('<div class="tb-stack__controls" hidden>\n')
+    self.body.append('<p class="tb-stack__scene-caption" hidden></p>\n')
+    self.body.append('<div class="tb-stack__navigation">\n')
+    for action, icon, label, paths in NAVIGATION_ICONS:
+        self.body.append(f'<button type="button" data-action="{action}" aria-label="{label}" title="{label}">'
+                         f'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" '
+                         f'viewBox="0 0 16 16" fill="currentColor" class="bi bi-{icon}" '
+                         'aria-hidden="true" focusable="false">')
+        self.body.extend(f'<path fill-rule="evenodd" d="{path}"/>' for path in paths)
+        self.body.append('</svg></button>\n')
+    self.body.append('<p class="tb-stack__status" role="status" aria-live="polite" aria-atomic="true"></p>\n')
+    self.body.append('</div>\n</div>\n')
+    self.body.append('<div class="tb-stack__scenes">\n')
 
 
-def depart_tb_animation_html(self, node):
+def depart_tb_stack_html(self, node):
     self.body.append('</div>\n')
     config = {"version": 1, "scenes": [scene_model(scene) for scene in node.children]}
     encoded = json.dumps(config, ensure_ascii=False).replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
     self.body.append(f'<script type="application/json">{encoded}</script>\n')
-    self.body.append('<div class="tb-animation__controls" hidden>\n')
-    for action, symbol, label in (("first", "&lt;&lt;", "First scene"),
-                                  ("previous", "&lt;", "Previous scene"),
-                                  ("next", "&gt;", "Next scene"),
-                                  ("last", "&gt;&gt;", "Last scene")):
-        self.body.append(f'<button type="button" data-action="{action}" aria-label="{label}">{symbol}</button>\n')
-    self.body.append('<p class="tb-animation__status" role="status" aria-live="polite" aria-atomic="true"></p>\n')
-    self.body.append('</div>\n</tb-animation>\n')
+    self.body.append('</tb-stack>\n')
 
 
 def scene_heading(node):
@@ -149,7 +174,7 @@ def depart_tb_scene_html(self, node):
     self.body.append('</tb-scene>\n')
 
 
-def visit_tb_animation_latex(self, node):
+def visit_tb_stack_latex(self, node):
     latex_targets(self, node)
     if node["caption"]:
         content = nodes.container()
@@ -164,7 +189,7 @@ def visit_tb_scene_latex(self, node):
     content.walkabout(self)
 
 
-def visit_tb_animation_text(self, node):
+def visit_tb_stack_text(self, node):
     if node["caption"]:
         self.add_text(node["caption"] + "\n")
 

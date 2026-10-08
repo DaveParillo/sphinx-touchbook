@@ -2,7 +2,7 @@
 
 from html import escape
 from math import ceil
-from sphinx_touchbook.generators.animation import graph_pointer_indicators
+from sphinx_touchbook.generators.stack import graph_pointer_indicators
 
 
 def dot_string(value):

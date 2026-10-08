@@ -6,8 +6,8 @@ from pathlib import Path
 
 from sphinx.application import Sphinx
 
-from .directives.animation import TbAnimationDirective, TbSceneDirective, TbPointerDirective
-from .generators import animation as animation_generator
+from .directives.stack import TbStackDirective, TbSceneDirective, TbPointerDirective
+from .generators import stack as stack_generator
 from .directives.array import TbArrayDirective
 from .directives.graph import TbGraphDirective
 from .graph_styles import configure_graph_styles
@@ -52,7 +52,7 @@ from .directives.reveal import TbRevealDirective
 from .directives.tabs import TbGroupDirective, TbTabDirective
 from .directives.video import TbVideoDirective
 from .nodes import (
-    TbAnimationNode,
+    TbStackNode,
     TbSceneNode,
     TbPointerNode,
     TbArrayNode,
@@ -363,16 +363,16 @@ def setup(app: Sphinx) -> dict[str, object]:
 
     setup_pdf(app)
     for node_type, directive_name, directive, html_departure in (
-        (TbAnimationNode, "tb-animation", TbAnimationDirective, animation_generator.depart_tb_animation_html),
-        (TbSceneNode, "tb-scene", TbSceneDirective, animation_generator.depart_tb_scene_html),
-        (TbPointerNode, "tb-pointer", TbPointerDirective, animation_generator.depart_static),
+        (TbStackNode, "tb-stack", TbStackDirective, stack_generator.depart_tb_stack_html),
+        (TbSceneNode, "tb-scene", TbSceneDirective, stack_generator.depart_tb_scene_html),
+        (TbPointerNode, "tb-pointer", TbPointerDirective, stack_generator.depart_static),
     ):
         visitor_name = directive_name.replace("-", "_")
         app.add_node(
             node_type,
-            html=(getattr(animation_generator, f"visit_{visitor_name}_html"), html_departure),
-            latex=(getattr(animation_generator, f"visit_{visitor_name}_latex"), animation_generator.depart_static),
-            text=(getattr(animation_generator, f"visit_{visitor_name}_text"), animation_generator.depart_static),
+            html=(getattr(stack_generator, f"visit_{visitor_name}_html"), html_departure),
+            latex=(getattr(stack_generator, f"visit_{visitor_name}_latex"), stack_generator.depart_static),
+            text=(getattr(stack_generator, f"visit_{visitor_name}_text"), stack_generator.depart_static),
         )
         app.add_directive(directive_name, directive)
     app.setup_extension("sphinx.ext.graphviz")
@@ -660,7 +660,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.connect("builder-inited", _add_static_path)
     app.add_css_file("tb-reveal.css")
     app.add_css_file("tb-array.css")
-    app.add_css_file("tb-animation.css")
+    app.add_css_file("tb-stack.css")
     app.add_css_file("tb-graph.css")
     app.add_css_file("tb-group.css")
     app.add_css_file("tb-code.css")
@@ -675,7 +675,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_css_file("tb-parsons.css")
     app.add_css_file("tb-video.css")
     app.add_js_file("tb-reveal.js", loading_method="defer")
-    app.add_js_file("tb-animation.js", loading_method="defer")
+    app.add_js_file("tb-stack.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
     app.add_js_file("tb-code.js", loading_method="defer")
     app.add_js_file("tb-blank.js", loading_method="defer")

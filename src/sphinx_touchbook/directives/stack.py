@@ -1,4 +1,4 @@
-"""Parse complete scenes, local references, and manual animation sequences."""
+"""Parse instructional stacks, complete scenes, and local references."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 from sphinx_touchbook.directives.array import KEY, INDEX, validate_key
 from sphinx_touchbook.directives.common import assign_node_id
 from sphinx_touchbook.nodes import (
-    TbAnimationNode, TbSceneNode, TbPointerNode, TbArrayNode, TbGraphNode, is_scene_object,
+    TbStackNode, TbSceneNode, TbPointerNode, TbArrayNode, TbGraphNode, is_scene_object,
 )
 
 COMMON_OPTIONS = {
@@ -91,8 +91,8 @@ def normalize_scene(scene, document=None):
     for descendant in scene.findall():
         if descendant is scene:
             continue
-        if isinstance(descendant, (TbAnimationNode, TbSceneNode)):
-            raise ValueError("Scenes cannot contain nested scenes or animations.")
+        if isinstance(descendant, (TbStackNode, TbSceneNode)):
+            raise ValueError("Scenes cannot contain nested scenes or stacks.")
         if is_scene_object(descendant):
             if descendant.parent is not scene:
                 raise ValueError("Scene objects must be immediate children of tb-scene.")
@@ -123,20 +123,13 @@ def normalize_scene(scene, document=None):
             pointer["at"] = at
         except ValueError as error:
             raise ValueError(f"pointer {pointer['key']!r}: {error}") from error
-    for graph in (item for item in objects.values() if isinstance(item, TbGraphNode)):
-        count = len(graph["indicators"]) + sum(
-            pointer["position"] is not None and pointer["position"]["type"] == "node"
-            and pointer["position"]["object"] == graph["key"]
-            for pointer in objects.values() if isinstance(pointer, TbPointerNode))
-        if graph["style"]["layout"] == "tree" and count > 1:
-            raise ValueError(f"Tree graph {graph['key']!r} supports at most one pointer or indicator.")
 
 
-def validate_animation(animation):
-    if not animation.children or any(not isinstance(child, TbSceneNode) for child in animation.children):
-        raise ValueError("tb-animation requires one or more immediate tb-scene directives and no other content.")
+def validate_stack(stack):
+    if not stack.children or any(not isinstance(child, TbSceneNode) for child in stack.children):
+        raise ValueError("tb-stack requires one or more immediate tb-scene directives and no other content.")
     types, modes, kinds = {}, {}, {}
-    for number, scene in enumerate(animation.children, 1):
+    for number, scene in enumerate(stack.children, 1):
         scene["number"] = number
         for item in scene.children:
             if not is_scene_object(item):
@@ -153,7 +146,7 @@ def validate_animation(animation):
                 if key in kinds and kinds[key] != item["kind"]:
                     raise ValueError(f"Scene {number}: pointer {key!r} changes kind across scenes.")
                 kinds[key] = item["kind"]
-    for scene in animation.children:
+    for scene in stack.children:
         for item in scene.children:
             if isinstance(item, TbArrayNode) and not item["elements"]:
                 item["mode"] = modes.get(item["key"], "unkeyed")
@@ -168,7 +161,7 @@ class TbSceneDirective(Directive):
         node.source, node.line = self.state.document.current_source, self.lineno
         assign_node_id(self, node)
         node["caption"] = self.options.get("caption", "")
-        if isinstance(self.state.parent, TbAnimationNode):
+        if isinstance(self.state.parent, TbStackNode):
             node["number"] = len(self.state.parent.children) + 1
         self.state.nested_parse(self.content, self.content_offset, node)
         if errors := [message for message in node.findall(nodes.system_message) if message["level"] >= 3]:
@@ -181,12 +174,12 @@ class TbSceneDirective(Directive):
         return [node]
 
 
-class TbAnimationDirective(Directive):
+class TbStackDirective(Directive):
     has_content = True
     option_spec = COMMON_OPTIONS
 
     def run(self):
-        node = TbAnimationNode()
+        node = TbStackNode()
         node.source, node.line = self.state.document.current_source, self.lineno
         assign_node_id(self, node)
         node["caption"] = self.options.get("caption", "")
@@ -194,7 +187,7 @@ class TbAnimationDirective(Directive):
         if errors := [message for message in node.findall(nodes.system_message) if message["level"] >= 3]:
             return errors
         try:
-            validate_animation(node)
+            validate_stack(node)
         except ValueError as error:
             return [self.state_machine.reporter.error(str(error), line=self.lineno)]
         return [node]

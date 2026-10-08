@@ -24,8 +24,9 @@ The general format of the ``tb-graph`` directive is:
       |
       + ------------------
 
-The optional argument identifies this graph when ``highlight`` references its
-nodes. It is separate from ``name``, which creates a Sphinx reference target.
+The optional argument identifies this graph when ``highlight`` or qualified
+``overlay`` references target its nodes. It is separate from ``name``, which
+creates a Sphinx reference target.
 An empty body displays an empty graph.
 
 Options
@@ -61,12 +62,11 @@ Options
    ``String``. Optional. None by default.
    Space-separated ``label=node-key`` pairs, such as
    ``head=a current=b tail=c``. Each pair adds a labelled arrow pointing to
-   that node or array cell. Supported by every style. Tree styles accept
-   at most one indicator; other styles accept multiple indicators.
+   that node or array cell. Every style supports multiple indicators.
    Labels follow the same identifier rules as node keys and must be unique
    within the directive. Targets must be declared, visible nodes in this graph;
    forward declarations and unused cells are allowed. Multiple indicators may
-   point to the same target, except for the one-indicator limit on trees.
+   point to the same target.
    An object-key argument is not required.
    Pairs may continue on indented option lines. Do not add spaces around ``=``.
 
@@ -81,6 +81,38 @@ Options
    `Docutils common option
    <https://docutils.sourceforge.io/docs/ref/rst/directives.html#common-options>`__.
    See :ref:`common` for details.
+
+**overlay**
+   ``String``. Optional. None by default.
+   Draw outlines around groups of declared, visible node keys. Each line
+   specifies one overlay, with one or more space-separated targets such as
+   ``parent child``. Bare local keys work without a graph object key.
+   Qualified local references, such as ``tree.node[parent]``, also work when
+   the graph has that object key. Repeated targets count once within a group.
+   Every graph style supports overlays, including array value cells.
+   Overlays do not change node placement and can encompass other objects
+   between their targets. See `Overlay groups`_ for multiple overlays and
+   individual settings.
+
+**overlay-layer**
+   ``String``. Optional. Defaults to ``foreground``.
+   Default layer for overlays: in front of the graph (``foreground``) or
+   behind it (``background``). Requires ``overlay``. Outlines are unfilled;
+   graph objects cover portions of background outlines.
+
+**overlay-padding**
+   ``Number``. Optional. Defaults to ``8`` points.
+   Default minimum space between target bounds and their enclosing outlines.
+   Accepts finite numbers from ``0`` to ``1000``. Requires ``overlay``.
+
+**overlay-shape**
+   ``String``. Optional. Defaults to ``ellipse``.
+   Default outline shape for overlays: ``ellipse``, ``circle``, or
+   ``rectangle``. ``box`` is an alias for ``rectangle``. Ellipses follow the
+   orientation of the target group; circles have equal width and height;
+   rectangles enclose an area parallel to the diagram edges. Requires
+   ``overlay``. This option does not change graph node shapes; use a named
+   style for those.
 
 **show-indices**
    ``Flag``. Optional. Disabled by default.
@@ -202,9 +234,14 @@ reserve extra separation when indicators are present to keep labels readable.
 Indicators annotate targets without adding semantic nodes or relationships.
 Their targets follow node identity rather than the displayed value or index.
 
-Tree styles, including book styles based on ``tree``, support one indicator.
-It may point to any visible node, including the root or an internal node.
-This keeps annotation layout simple alongside the tree's spacing rules.
+Tree styles, including book styles based on ``tree``, support multiple
+indicators and scene pointers. They may point to different nodes or share
+a target, including the root or an internal node. Labels sharing a target
+sit side by side, each with its own arrow. Each label group occupies a gap
+between the target's children, reusing the tree's
+invisible balancing space where available. A leaf's label appears directly
+below it. Arrows point back toward their targets without crossing other tree
+nodes. Horizontal tree styles use the corresponding gap to the right.
 The indicator arrow remains visible even when relationship arrowheads are
 disabled by the style.
 
@@ -285,14 +322,40 @@ Invisible edges and isolated invisible nodes are omitted from descriptions.
 A visible edge reaching an invisible node is described as reaching an
 ``undisplayed endpoint``; that node's hidden key and value are omitted.
 
+Overlay groups
+--------------
+
+Each line of ``overlay`` defines a separate group. The directive's
+``overlay-shape``, ``overlay-layer``, and ``overlay-padding`` options supply
+defaults for all groups. Override any setting by adding
+``:overlay-shape: value``, ``:overlay-layer: value``, or
+``:overlay-padding: value`` after the target keys on that line:
+
+.. code-block:: rst
+
+   :overlay: parent child
+             other :overlay-shape: circle :overlay-layer: background :overlay-padding: 4
+   :overlay-shape: rectangle
+   :overlay-padding: 12
+
+This draws a rectangle around ``parent`` and ``child`` with 12 points of
+padding, and a circle behind ``other`` with 4 points of padding. Settings on
+one line do not affect the next group. Write target keys before settings;
+each setting can appear once per line. Continue each group on its own line
+inside one ``overlay`` option; do not repeat the directive option.
+Within each layer, later groups are drawn over earlier groups.
+
 Build requirements
 ------------------
 
 Install `Graphviz <https://graphviz.org/download/>`_ on the computer that builds
 HTML or LaTeX. The ``dot`` executable must be available on ``PATH``; ring styles
 also require ``circo`` on ``PATH``. PDF asset
-generation also requires Graphviz's Cairo PDF renderer. Readers need neither
-Graphviz nor JavaScript.
+generation also requires Graphviz's Cairo PDF renderer. Graphs with an
+``overlay`` require librsvg's ``rsvg-convert`` on ``PATH`` for PDF export.
+Install ``librsvg2-bin`` on Debian/Ubuntu or ``librsvg`` with Homebrew.
+HTML annotations require only Graphviz. Readers need neither Graphviz,
+librsvg, nor JavaScript.
 
 Touchbook loads Sphinx's Graphviz support automatically. If ``dot`` is installed
 outside ``PATH``, set ``graphviz_dot`` in ``conf.py``:
@@ -325,6 +388,9 @@ Object labels and captions appear only when explicitly provided.
 Invisible components have no controls. Tree styles place named ``left`` and
 ``right`` children on their corresponding sides. Relationship names remain
 in descriptions even when a style omits them from the diagram.
+Overlays are described by shape and target values and keys, including
+when ``description`` supplies the main explanation. Outlines do not capture
+clicks or keyboard focus.
 
 Fallback behavior
 -----------------
@@ -334,6 +400,8 @@ description. PDF includes a vector diagram and the same description, with
 captions and labels outside the image. Empty graphs display ``Empty graph.``
 Array styles render the same adjacent cells and optional indices in HTML and
 PDF; text describes their order and values.
+Overlay outlines appear in HTML and PDF. Text describes the nodes they
+surround. The diagram expands to keep the complete outline visible.
 
 If Graphviz cannot render a diagram, the build warns and retains the readable
 description. Builds with ``--fail-on-warning`` fail on that warning.
@@ -371,12 +439,12 @@ Example 2: Named tree relationships
 
          .. tb-graph:: tree
             :style: tree
-            :indicators: current=inserted
+            :indicators: root=root current=inserted
             :caption: A tree with an inserted node
             :description: The root 8 has left child 3 and right child 12.
                Node 6, highlighted, is the right child of 3. Its position
                preserves the binary search tree ordering: 3 < 6 < 8.
-               The current indicator points to node 6.
+               The root indicator points to node 8; current points to node 6.
             :highlight: tree.node[inserted]
 
             root['8'] -left-> child['3']
@@ -387,12 +455,12 @@ Example 2: Named tree relationships
 
       .. tb-graph:: tree
          :style: tree
-         :indicators: current=inserted
+         :indicators: root=root current=inserted
          :caption: A tree with an inserted node
          :description: The root 8 has left child 3 and right child 12.
             Node 6, highlighted, is the right child of 3. Its position
             preserves the binary search tree ordering: 3 < 6 < 8.
-            The current indicator points to node 6.
+            The root indicator points to node 8; current points to node 6.
          :highlight: tree.node[inserted]
 
          root['8'] -left-> child['3']
@@ -574,3 +642,73 @@ Example 9: A ring
          :indicators: head=a tail=d
 
          a[8] -> b[13] -> c[21] -> d[34] -> e[''] -> f[''] -> a
+
+Example 10: Outline a comparison
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default ellipse groups the parent and child being compared. Their thicker
+borders identify both values. Use ``:overlay-layer: background`` to place the
+outline behind the graph, or ``:overlay-padding: 12`` to leave more space
+around it.
+See :ref:`tb-stack` Example 3 for outlines that follow swapped nodes.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-graph:: heap
+            :style: tree
+            :highlight: heap.node[parent] heap.node[child]
+            :overlay: parent child
+            :description: Compare 13 with its left child 8 before swapping.
+
+            parent[13] -left-> child[8]
+            parent -right-> other[20]
+
+   .. tb-tab:: Rendered
+
+      .. tb-graph:: heap
+         :style: tree
+         :highlight: heap.node[parent] heap.node[child]
+         :overlay: parent child
+         :description: Compare 13 with its left child 8 before swapping.
+
+         parent[13] -left-> child[8]
+         parent -right-> other[20]
+
+Example 11: Multiple overlay shapes and layers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An ellipse groups the parent and its left child. A rectangle separately
+marks the right subtree behind the diagram. A circle marks its leaf in front.
+The smaller padding applies only to that circle.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-graph::
+            :style: tree
+            :overlay: parent child
+                      other leaf :overlay-shape: rectangle :overlay-layer: background
+                      leaf :overlay-shape: circle :overlay-padding: 4
+
+            parent[13] -left-> child[8]
+            parent -right-> other[20]
+            other -right-> leaf[24]
+
+   .. tb-tab:: Rendered
+
+      .. tb-graph::
+         :style: tree
+         :overlay: parent child
+                   other leaf :overlay-shape: rectangle :overlay-layer: background
+                   leaf :overlay-shape: circle :overlay-padding: 4
+
+         parent[13] -left-> child[8]
+         parent -right-> other[20]
+         other -right-> leaf[24]

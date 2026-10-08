@@ -11,20 +11,20 @@ from docutils.parsers.rst import Parser, directives
 from docutils.utils import new_document
 import pytest
 
-from sphinx_touchbook.directives.animation import (
-    TbAnimationDirective, TbSceneDirective, TbPointerDirective, normalize_scene,
+from sphinx_touchbook.directives.stack import (
+    TbStackDirective, TbSceneDirective, TbPointerDirective, normalize_scene,
 )
-from sphinx_touchbook.generators.animation import scene_model
+from sphinx_touchbook.generators.stack import scene_model
 from sphinx_touchbook.directives.array import TbArrayDirective
 from sphinx_touchbook.directives.graph import TbGraphDirective
-from sphinx_touchbook.nodes import TbAnimationNode, TbSceneNode, TbPointerNode, TbArrayNode
+from sphinx_touchbook.nodes import TbStackNode, TbSceneNode, TbPointerNode, TbArrayNode, TbGraphNode
 
 
 def parse_rst(source):
     settings = get_default_settings(Parser)
     settings.warning_stream = StringIO()
-    document = new_document('animation.rst', settings)
-    registered = {'tb-animation': TbAnimationDirective, 'tb-scene': TbSceneDirective,
+    document = new_document('stack.rst', settings)
+    registered = {'tb-stack': TbStackDirective, 'tb-scene': TbSceneDirective,
                   'tb-pointer': TbPointerDirective, 'tb-array': TbArrayDirective, 'tb-graph': TbGraphDirective}
     previous = {name: directives._directives.get(name) for name in registered}
     for name, directive in registered.items():
@@ -44,8 +44,8 @@ def scene(content='', options=''):
     return '.. tb-scene::\n' + options + '\n' + '\n'.join('   ' + line for line in content.splitlines()) + '\n'
 
 
-def animation(*scenes):
-    return '.. tb-animation::\n   :name: example\n   :class: first second\n   :caption: Manual walkthrough\n\n' + '\n'.join(
+def stack(*scenes):
+    return '.. tb-stack::\n   :name: example\n   :class: first second\n   :caption: Manual walkthrough\n\n' + '\n'.join(
         '\n'.join('   ' + line for line in item.splitlines()) for item in scenes) + '\n'
 
 
@@ -67,10 +67,10 @@ def valid_document(source):
 
 
 def test_complete_scenes_defaults_forward_references_and_common_options():
-    source = animation(scene(pointer(bounds='values') + '\n' + ARRAY),
+    source = stack(scene(pointer(bounds='values') + '\n' + ARRAY),
                        scene(ARRAY + '\n' + pointer('values.slot[2]')),
                        scene(pointer(bounds='values') + '\n' + ARRAY))
-    node = next(valid_document(source).findall(TbAnimationNode))
+    node = next(valid_document(source).findall(TbStackNode))
     assert node['ids'] == ['example'] and node['classes'] == ['first', 'second']
     assert [child['number'] for child in node.children] == [1, 2, 3]
     pointers = list(node.findall(TbPointerNode))
@@ -92,7 +92,7 @@ def test_pointer_and_iterator_boundaries(at, bounds, kind, index):
 
 
 def test_item_references_follow_reordered_keys_and_empty_arrays_adopt_mode():
-    result = valid_document(animation(scene(KEYED_ARRAY + '\n' + pointer('values.item[b]')),
+    result = valid_document(stack(scene(KEYED_ARRAY + '\n' + pointer('values.item[b]')),
         scene('.. tb-array:: values\n\n   b = 4\n   a = 2\n\n' + pointer('values.item[b]')),
         scene('.. tb-array:: values\n\n' + pointer(bounds='values'))))
     assert [node['position']['index'] for node in result.findall(TbPointerNode)] == [1, 0, 0]
@@ -101,7 +101,7 @@ def test_item_references_follow_reordered_keys_and_empty_arrays_adopt_mode():
 
 
 def test_null_pointer_needs_no_target_and_does_not_inherit_objects():
-    result = valid_document(animation(scene(pointer(bounds='null')), scene(ARRAY + '\n' + pointer(bounds='values'))))
+    result = valid_document(stack(scene(pointer(bounds='null')), scene(ARRAY + '\n' + pointer(bounds='values'))))
     pointers = list(result.findall(TbPointerNode))
     assert pointers[0]['position'] is None and pointers[1]['position']['index'] == 0
     assert len(list(result.children[0].children[0].findall(TbArrayNode))) == 0
@@ -130,7 +130,7 @@ def test_null_pointer_needs_no_target_and_does_not_inherit_objects():
     (ARRAY + '\n' + pointer('values.begin', key='values'), 'Duplicate scene object key'),
     ('.. container::\n\n   ' + ARRAY.replace('\n', '\n   '), 'immediate children'),
     (scene(), 'nested scenes'),
-    (animation(scene()), 'nested scenes or animations'),
+    (stack(scene()), 'nested scenes or stacks'),
 ])
 def test_invalid_scene_references_and_structure(content, message):
     document = parse_rst(scene(content))
@@ -139,17 +139,17 @@ def test_invalid_scene_references_and_structure(content, message):
 
 
 @pytest.mark.parametrize('source,message', [
-    ('.. tb-animation::', 'one or more immediate tb-scene'),
-    (animation(scene()) + '\n', None),
-    ('.. tb-animation::\n\n   Not a scene.', 'no other content'),
+    ('.. tb-stack::', 'one or more immediate tb-scene'),
+    (stack(scene()) + '\n', None),
+    ('.. tb-stack::\n\n   Not a scene.', 'no other content'),
     (pointer('null'), 'tb-scene parent'),
-    (animation(scene(ARRAY), scene('.. tb-graph:: values\n\n   a[1]')), 'changes type'),
-    (animation(scene(ARRAY), scene(KEYED_ARRAY)), 'mixes keyed and unkeyed'),
-    (animation(scene(ARRAY + '\n' + pointer(bounds='values')),
+    (stack(scene(ARRAY), scene('.. tb-graph:: values\n\n   a[1]')), 'changes type'),
+    (stack(scene(ARRAY), scene(KEYED_ARRAY)), 'mixes keyed and unkeyed'),
+    (stack(scene(ARRAY + '\n' + pointer(bounds='values')),
                scene(ARRAY + '\n' + pointer(bounds='values', kind='iterator'))), 'changes kind'),
-    (animation(scene(ARRAY), scene(pointer('values.begin'))), 'Unknown scene object'),
+    (stack(scene(ARRAY), scene(pointer('values.begin'))), 'Unknown scene object'),
 ])
-def test_animation_validation(source, message):
+def test_stack_validation(source, message):
     document = parse_rst(source)
     if message is None:
         assert not list(document.findall(nodes.system_message))
@@ -171,14 +171,14 @@ def build_sphinx(tmp_path, builder, source):
 
 @pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
 def test_html_places_pointer_roots_once_and_emits_complete_safe_config(tmp_path, orientation):
-    source = animation(scene(ARRAY.replace('values\n', f'values\n   :orientation: {orientation}\n') + '\n'
+    source = stack(scene(ARRAY.replace('values\n', f'values\n   :orientation: {orientation}\n') + '\n'
                 + pointer('values.slot[1]', extra='   :name: current-start\n   :class: mark\n')),
                 scene(ARRAY + '\n' + pointer('values.end')),
                 scene('.. code-block:: text\n\n   </script><script>unsafe & literal</script>'))
     out = build_sphinx(tmp_path, 'html', source)
     soup = BeautifulSoup((out/'index.html').read_text(), 'html.parser')
-    root = soup.find('tb-animation', id='example')
-    assert len(soup.find_all('tb-animation')) == 1
+    root = soup.find('tb-stack', id='example')
+    assert len(soup.find_all('tb-stack')) == 1
     scenes = root.find_all('tb-scene')
     assert len(scenes) == 3 and all(not item.has_attr('hidden') for item in scenes)
     assert len(root.find_all('tb-array')) == len(root.find_all('tb-pointer')) == 2
@@ -193,15 +193,28 @@ def test_html_places_pointer_roots_once_and_emits_complete_safe_config(tmp_path,
     assert data['scenes'][0]['objects'][1]['position']['index'] == 1
     assert data['scenes'][1]['objects'][1]['position']['end']
     assert len(soup.find_all('script', string=lambda value: value and 'unsafe & literal' in value)) == 0
-    buttons = root.select('.tb-animation__controls button')
-    assert [button.get_text() for button in buttons] == ['<<', '<', '>', '>>']
+    buttons = root.select('.tb-stack__controls button')
+    assert [button['data-action'] for button in buttons] == ['first', 'previous', 'next', 'last']
     assert [button['aria-label'] for button in buttons] == ['First scene', 'Previous scene', 'Next scene', 'Last scene']
-    assert root.select_one('.tb-animation__controls').has_attr('hidden')
-    assert (out/'_static'/'tb-animation.js').exists()
+    assert all(button['title'] == button['aria-label'] for button in buttons)
+    assert [button.svg['class'] for button in buttons] == [
+        ['bi', 'bi-chevron-double-left'], ['bi', 'bi-chevron-left'],
+        ['bi', 'bi-chevron-right'], ['bi', 'bi-chevron-double-right'],
+    ]
+    assert all(button.svg['aria-hidden'] == 'true' and button.svg['focusable'] == 'false'
+               and button.svg.find('path') for button in buttons)
+    controls = root.select_one('.tb-stack__controls')
+    assert controls.has_attr('hidden')
+    assert controls.find_next_sibling('div')['class'] == ['tb-stack__scenes']
+    assert controls.select_one('.tb-stack__scene-caption').find_next_sibling('div')['class'] == ['tb-stack__navigation']
+    assert all(button.parent['class'] == ['tb-stack__navigation'] for button in buttons)
+    assert controls.select_one('.tb-stack__status')['role'] == 'status'
+    assert all(not item.select_one('.tb-scene__caption').has_attr('hidden') for item in scenes)
+    assert (out/'_static'/'tb-stack.js').exists()
 
 
 def test_empty_array_and_null_pointer_html_preserve_single_roots(tmp_path):
-    source = animation(scene('.. tb-array:: values\n\n' + pointer(bounds='values')),
+    source = stack(scene('.. tb-array:: values\n\n' + pointer(bounds='values')),
                        scene(pointer(bounds='null')))
     out = build_sphinx(tmp_path, 'html', source)
     soup = BeautifulSoup((out/'index.html').read_text(), 'html.parser')
@@ -212,7 +225,7 @@ def test_empty_array_and_null_pointer_html_preserve_single_roots(tmp_path):
 
 @pytest.mark.parametrize('builder', ['text', 'latex'])
 def test_static_builders_keep_all_scenes_code_and_pointer_positions(tmp_path, builder):
-    source = animation(scene('.. code-block:: python\n\n   message = "Hello" + "world"'),
+    source = stack(scene('.. code-block:: python\n\n   message = "Hello" + "world"'),
                        scene(ARRAY + '\n' + pointer('values.slot[1]')),
                        scene(ARRAY + '\n' + pointer('values.end')))
     out = build_sphinx(tmp_path, builder, source)
@@ -244,10 +257,12 @@ def test_graph_pointer_uses_existing_layout_and_keeps_semantic_description(tmp_p
         assert list(out.glob('tb-graph*.pdf'))
 
 
-def test_tree_scene_retains_single_annotation_limit():
-    document = parse_rst(scene(GRAPH.replace('graph\n', 'graph\n   :style: tree\n') + '\n'
-                              + pointer('graph.node[a]', key='one') + '\n' + pointer('graph.node[b]', key='two')))
-    assert 'at most one pointer or indicator' in document.astext()
+def test_tree_scene_accepts_multiple_pointers_and_local_indicators():
+    document = valid_document(scene(GRAPH.replace('graph\n', 'graph\n   :style: tree\n   :indicators: head=a current=b\n') + '\n'
+                                    + pointer('graph.node[a]', key='one') + '\n' + pointer('graph.node[b]', key='two')))
+    assert len(list(document.findall(TbPointerNode))) == 2
+    graph = next(document.findall(TbGraphNode))
+    assert graph['indicators'] == [{'key': 'head', 'target': 'a'}, {'key': 'current', 'target': 'b'}]
 
 
 @pytest.mark.parametrize('content,target', [
@@ -301,7 +316,7 @@ def test_object_target_validation_preserves_scopes_and_iterator_positions(conten
 
 @pytest.mark.parametrize('builder', ['html', 'text', 'latex'])
 def test_whole_object_targets_have_links_or_prose_in_each_builder(tmp_path, builder):
-    source = animation(scene(pointer('graph', key='current') + '\n'
+    source = stack(scene(pointer('graph', key='current') + '\n'
                        + pointer('current', key='address') + '\n'
                        + pointer('values', key='array_address') + '\n' + ARRAY + '\n' + GRAPH))
     out = build_sphinx(tmp_path, builder, source)
@@ -313,7 +328,7 @@ def test_whole_object_targets_have_links_or_prose_in_each_builder(tmp_path, buil
             assert element.find_parent('tb-array') is None
             target = soup.find(id=element.find('a')['href'][1:])
             assert target['data-key'] == element['data-at']
-        model = json.loads(soup.find('tb-animation').find('script', type='application/json').string)
+        model = json.loads(soup.find('tb-stack').find('script', type='application/json').string)
         assert [item['position']['type'] for item in model['scenes'][0]['objects'][:3]] == ['object'] * 3
         assert not root.select('.tb-array__pointers')
         assert len(root.select('tb-graph img')) == 1

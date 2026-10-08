@@ -25,7 +25,7 @@ Visualizations    - :doc:`tb-array`
                   - :doc:`tb-graph`
                   - :doc:`tb-pointer`
 Containers        - :doc:`tb-group`
-                  - :doc:`tb-animation`
+                  - :doc:`tb-stack`
                   - :doc:`tb-scene`
                   - :doc:`tb-reveal`
                   - :doc:`tb-video`
@@ -44,7 +44,7 @@ Assessments       - :doc:`tb-blank`
    :hidden:
 
    tb-array
-   tb-animation
+   tb-stack
    tb-blank
    tb-choice
    tb-click

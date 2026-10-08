@@ -54,7 +54,9 @@ npm ci
 
 Install [Graphviz](https://graphviz.org/download/) with its `dot` executable
 on `PATH` to build the `tb-graph` examples in HTML and LaTeX. PDF diagram
-generation requires Graphviz's Cairo renderer.
+generation requires Graphviz's Cairo renderer. Annotated graphs also require
+librsvg's `rsvg-convert` on `PATH` for PDF export (`librsvg2-bin` on
+Debian/Ubuntu, or `brew install librsvg` on macOS).
 
 Build the author guide as HTML:
 
@@ -84,7 +86,7 @@ docker run --rm \
   -v "$PWD:/docs" \
   -w /docs \
   sphinxdoc/sphinx-latexpdf:latest \
-  sh -c 'python3 -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
+  sh -c 'apt-get update && apt-get install -y graphviz librsvg2-bin && python3 -m pip install ".[docs]" && python -m sphinx -M latexpdf docs build/latexpdf --fail-on-warning'
 ```
 
 

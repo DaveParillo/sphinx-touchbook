@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import math
 
 from docutils.parsers.rst import Directive, directives
 
@@ -17,6 +18,89 @@ EDGE = re.compile(rf"[ \t]+(?:->|-({KEY})->)[ \t]+")
 INVISIBLE = "{invisible}"
 NODE_REFERENCE = re.compile(rf"({KEY})\.node\[({KEY})\]")
 INDICATOR = re.compile(rf"({KEY})=({KEY})")
+
+
+OVERLAY_SHAPES = ("ellipse", "circle", "rectangle", "box")
+OVERLAY_LAYERS = ("background", "foreground")
+
+
+def overlay_padding(value):
+    padding = float(value)
+    if not math.isfinite(padding) or not 0 <= padding <= 1000:
+        raise ValueError("Overlay padding must be a finite number from 0 to 1000 points.")
+    return padding
+
+
+def overlay_shape(value):
+    shape = directives.choice(value, OVERLAY_SHAPES)
+    return "rectangle" if shape == "box" else shape
+
+
+def overlay_layer(value):
+    return directives.choice(value, OVERLAY_LAYERS)
+
+
+def parse_overlays(options, graph_key, graph_nodes):
+    """One target group per option line, with defaults and local overrides."""
+    if "overlay" not in options:
+        if any(option in options for option in ("overlay-shape", "overlay-layer", "overlay-padding")):
+            raise ValueError(":overlay-shape:, :overlay-layer:, and :overlay-padding: require :overlay:.")
+        return []
+    by_key = {item["key"]: item for item in graph_nodes}
+    converters = {":overlay-shape:": overlay_shape,
+                  ":overlay-layer:": overlay_layer,
+                  ":overlay-padding:": overlay_padding}
+    defaults = {"shape": options.get("overlay-shape", "ellipse"),
+                "layer": options.get("overlay-layer", "foreground"),
+                "padding": options.get("overlay-padding", 8)}
+    overlays = []
+    for number, line in enumerate(options["overlay"].splitlines(), 1):
+        try:
+            tokens = line.split()
+            if not tokens:
+                continue
+            targets, overrides = [], {}
+            position = 0
+            while position < len(tokens):
+                token = tokens[position]
+                if token.startswith(":"):
+                    if token not in converters:
+                        raise ValueError(f"Unknown overlay setting {token!r}.")
+                    if token in overrides:
+                        raise ValueError(f"Duplicate overlay setting {token!r}.")
+                    if position + 1 == len(tokens):
+                        raise ValueError(f"Missing value for overlay setting {token!r}.")
+                    overrides[token] = converters[token](tokens[position + 1])
+                    position += 2
+                    continue
+                if overrides:
+                    raise ValueError("Overlay target keys must precede settings.")
+                if match := NODE_REFERENCE.fullmatch(token):
+                    if match[1] != graph_key:
+                        raise ValueError(f"Invalid local overlay reference {token!r}.")
+                    target = match[2]
+                else:
+                    if not IDENTIFIER.fullmatch(token):
+                        raise ValueError(f"Invalid overlay target {token!r}.")
+                    validate_key(token, kind="graph")
+                    target = token
+                if target not in by_key:
+                    raise ValueError(f"Unknown overlay target {token!r}.")
+                if by_key[target]["invisible"]:
+                    raise ValueError(f"Overlay target {token!r} is invisible.")
+                if target not in targets:
+                    targets.append(target)
+                position += 1
+            if not targets:
+                raise ValueError("An overlay requires at least one node key.")
+            overlays.append({**defaults, "targets": targets,
+                             **{option.strip(":").removeprefix("overlay-"): value
+                                for option, value in overrides.items()}})
+        except ValueError as error:
+            raise ValueError(f"overlay {number}: {error}") from error
+    if not overlays:
+        raise ValueError(":overlay: requires at least one node key.")
+    return overlays
 
 
 class GraphSyntaxError(ValueError):
@@ -157,6 +241,10 @@ class TbGraphDirective(Directive):
         "description": directives.unchanged_required,
         "show-indices": directives.flag,
         "indicators": directives.unchanged_required,
+        "overlay": directives.unchanged_required,
+        "overlay-shape": overlay_shape,
+        "overlay-layer": overlay_layer,
+        "overlay-padding": overlay_padding,
     }
 
     def run(self):
@@ -173,6 +261,7 @@ class TbGraphDirective(Directive):
             graph_nodes, edges = GraphParser().parse(self.content)
             highlighted = set()
             keys = {item["key"] for item in graph_nodes}
+            annotations = parse_overlays(self.options, key, graph_nodes)
             if "highlight" in self.options:
                 if key is None:
                     raise ValueError(":highlight: requires an explicit graph object key.")
@@ -202,8 +291,6 @@ class TbGraphDirective(Directive):
                         raise ValueError(f"Indicator {label!r} cannot point to invisible node {target!r}.")
                     indicators.append({"key": label, "target": target})
                     indicator_keys.add(label)
-                if styles[style_name]["layout"] == "tree" and len(indicators) > 1:
-                    raise ValueError("Tree styles support at most one indicator.")
         except ValueError as error:
             if isinstance(error, GraphSyntaxError):
                 error_line = self.content_offset + error.line
@@ -222,5 +309,6 @@ class TbGraphDirective(Directive):
             "description": self.options.get("description", ""),
             "show_indices": "show-indices" in self.options,
             "indicators": indicators,
+            "annotations": annotations,
         })
         return [node]

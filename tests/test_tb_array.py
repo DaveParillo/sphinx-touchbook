@@ -127,8 +127,8 @@ def test_invalid_arrays_report_context(body, options, key, message):
     assert error["line"] >= 1
 
 
-def test_unknown_and_repeated_options_are_rejected():
-    for options in ("   :id: legacy", "   :label: One\n   :label: Two",
+def test_invalid_and_repeated_options_are_rejected():
+    for options in ("   :label: One\n   :label: Two",
                     "   :orientation: diagonal", "   :orientation:",
                     "   :show-keys: true", "   :show-keys: false",
                     "   :start-index: abc", "   :start-index: 1.5",

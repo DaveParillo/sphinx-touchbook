@@ -1,0 +1,54 @@
+/* Bridge the extension's PyData icon colors to Nefertiti's navigation colors. */
+#AcccessibilityMenu .btn,
+#AcccessibilityMenu .nav-link {
+  --pst-color-text-muted: currentColor;
+  --pst-color-text-base: currentColor;
+}
+
+#AcccessibilityMenu svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Nefertiti sets a separate font for the article and project name. */
+body.dyslexic {
+  --nftt-body-font-family: "OpenDyslexic", sans-serif !important;
+  --nftt-documentation-font: "OpenDyslexic", sans-serif !important;
+  --nftt-project-name-font: "OpenDyslexic", sans-serif !important;
+  --nftt-doc-headers-font: "OpenDyslexic", sans-serif !important;
+}
+
+/* Nefertiti uses .light/.dark, rather than PyData's data-theme attribute. */
+body.high-contrast {
+  --touchbook-contrast-fg: #000;
+  --touchbook-contrast-bg: #fff;
+  --nftt-body-color: var(--touchbook-contrast-fg);
+  --nftt-body-bg: var(--touchbook-contrast-bg);
+  --nftt-secondary-color: var(--touchbook-contrast-fg);
+  --nftt-secondary-color-rgb: var(--nftt-body-color-rgb);
+  --nftt-emphasis-color: var(--touchbook-contrast-fg);
+  --nftt-headings-color: var(--touchbook-contrast-fg);
+  --nftt-doc-headers-color: var(--touchbook-contrast-fg);
+  --nftt-border-color: var(--touchbook-contrast-fg);
+  --nftt-body-color-rgb: 0, 0, 0;
+  --nftt-body-bg-rgb: 255, 255, 255;
+  /* Direct color overrides preserve the fixed header's viewport positioning. */
+  filter: none !important;
+}
+
+html.dark body.high-contrast {
+  --touchbook-contrast-fg: #fff;
+  --touchbook-contrast-bg: #000;
+  --nftt-body-color-rgb: 255, 255, 255;
+  --nftt-body-bg-rgb: 0, 0, 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light):not(.dark) body.high-contrast {
+    --touchbook-contrast-fg: #fff;
+    --touchbook-contrast-bg: #000;
+    --nftt-body-color-rgb: 255, 255, 255;
+    --nftt-body-bg-rgb: 0, 0, 0;
+  }
+}

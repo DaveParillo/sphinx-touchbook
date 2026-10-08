@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from docutils import nodes
 
-class TbAnimationNode(nodes.General, nodes.Element):
+class TbStackNode(nodes.General, nodes.Element):
     """An ordered sequence of complete instructional scenes."""
 
 
