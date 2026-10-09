@@ -57,7 +57,9 @@ def node_bounds(graph, node):
         # Array borders are paths in Graphviz's background drawing, in cell
         # declaration order. Invisible cells have no border or exposed value.
         visible = [item for item in node["nodes"] if not item["invisible"]]
-        borders = graph.findall(tag("path"))
+        # The dotted end boundary is a position, not a cell or overlay target.
+        borders = [path for path in graph.findall(tag("path"))
+                   if "stroke-dasharray" not in path.attrib]
         if len(visible) != len(borders):
             raise ValueError("Graphviz did not return the array cell borders.")
         return {item["key"]: shape_bounds(border) for item, border in zip(visible, borders)}

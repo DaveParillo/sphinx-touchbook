@@ -178,7 +178,7 @@ using ordinary code blocks for each authored expression.
 Example 2: Increment each array element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The iterator marks the current element. Each scene repeats the complete array
+The pointer marks the current element. Each scene repeats the complete array
 and pointer declaration. The final scene uses ``values.end`` to show that the
 traversal has finished; the end position does not designate an element.
 
@@ -202,8 +202,7 @@ traversal has finished; the end position does not designate an element.
                   2 4 6
 
                .. tb-pointer:: current
-                  :kind: iterator
-                  :range: values
+                  :at: values.begin
 
             .. tb-scene::
                :caption: Increment 2 to 3 and advance to the second element.
@@ -214,8 +213,6 @@ traversal has finished; the end position does not designate an element.
                   3 4 6
 
                .. tb-pointer:: current
-                  :kind: iterator
-                  :range: values
                   :at: values.slot[1]
 
             .. tb-scene::
@@ -227,21 +224,17 @@ traversal has finished; the end position does not designate an element.
                   3 5 6
 
                .. tb-pointer:: current
-                  :kind: iterator
-                  :range: values
                   :at: values.slot[2]
 
             .. tb-scene::
                :name: array-increment-done
-               :caption: Increment 6 to 7. The iterator is now at the end.
+               :caption: Increment 6 to 7. The pointer is now at the end.
 
                .. tb-array:: values
 
                   3 5 7
 
                .. tb-pointer:: current
-                  :kind: iterator
-                  :range: values
                   :at: values.end
 
    .. tb-tab:: Rendered
@@ -259,8 +252,7 @@ traversal has finished; the end position does not designate an element.
                2 4 6
 
             .. tb-pointer:: current
-               :kind: iterator
-               :range: values
+               :at: values.begin
 
          .. tb-scene::
             :caption: Increment 2 to 3 and advance to the second element.
@@ -271,8 +263,6 @@ traversal has finished; the end position does not designate an element.
                3 4 6
 
             .. tb-pointer:: current
-               :kind: iterator
-               :range: values
                :at: values.slot[1]
 
          .. tb-scene::
@@ -284,21 +274,17 @@ traversal has finished; the end position does not designate an element.
                3 5 6
 
             .. tb-pointer:: current
-               :kind: iterator
-               :range: values
                :at: values.slot[2]
 
          .. tb-scene::
             :name: array-increment-done
-            :caption: Increment 6 to 7. The iterator is now at the end.
+            :caption: Increment 6 to 7. The pointer is now at the end.
 
             .. tb-array:: values
 
                3 5 7
 
             .. tb-pointer:: current
-               :kind: iterator
-               :range: values
                :at: values.end
 
 
@@ -369,7 +355,7 @@ Very similar to the previous example, but using a :ref:`tb-graph`
 
             .. tb-scene::
                :name: array-increment-done
-               :caption: Increment 6 to 7. The iterator is now at the end.
+               :caption: Increment 6 to 7. The pointer is now at the end.
 
                .. tb-graph:: data
                   :style: array
@@ -439,7 +425,7 @@ Very similar to the previous example, but using a :ref:`tb-graph`
 
          .. tb-scene::
             :name: array-graph-increment-done
-            :caption: Increment 6 to 7. The iterator is now at the end.
+            :caption: Increment 6 to 7. The pointer is now at the end.
 
             .. tb-graph:: data
                :style: array

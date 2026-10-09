@@ -97,6 +97,10 @@ Options
    If present, clickable source regions start with hint styling visible.
    By default, clickable regions match surrounding source text until focus,
    selection state, or the user chooses to show hints.
+   For graph sources, hints draw dashed borders around selectable nodes.
+   They identify both correct and incorrect choices without changing node
+   fills or outlining nodes that cannot be selected. Selected nodes keep
+   their feedback styling when hints are toggled.
 
 Sphinx configuration options
 ----------------------------

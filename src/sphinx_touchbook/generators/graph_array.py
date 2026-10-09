@@ -27,8 +27,8 @@ def cell_dimensions(plain):
     """Use a common size large enough for every value and index (in points)."""
     sizes = [line.split()[4:6] for line in plain.splitlines()
              if line.startswith("node ")]
-    width = max(32, *(ceil(float(width) * 72) + 2 for width, height in sizes))
-    height = max(32, *(ceil(float(height) * 72) + 2 for width, height in sizes))
+    width = max([32] + [ceil(float(width) * 72) + 2 for width, height in sizes])
+    height = max([32] + [ceil(float(height) * 72) + 2 for width, height in sizes])
     return width, height
 
 
@@ -74,6 +74,10 @@ def array_dot(node, size, origin=(0, 0)):
     index_height = max(16, height - 8)
     values, indices, drawing = [], [], []
     count = len(node["nodes"])
+    markers = graph_pointer_indicators(node)
+    show_end = any(marker["target"] == ".end" for marker in markers)
+    gap = 20 if count and show_end else 0
+    extra_height = height + gap if vertical and show_end else 0
     for index, item in enumerate(node["nodes"]):
         invisible = ' STYLE="INVIS"' if item["invisible"] else ""
         value = escape(item["value"].replace("\\", "\\\\"), quote=True)
@@ -98,7 +102,7 @@ def array_dot(node, size, origin=(0, 0)):
         first, last = index == 0, index == count - 1
         if vertical:
             x = width if node["show_indices"] else 0
-            y = (count - index - 1) * height
+            y = (count - index - 1) * height + extra_height
             radii = (radius if first else 0, radius if first else 0,
                      radius if last else 0, radius if last else 0)
         else:
@@ -111,19 +115,36 @@ def array_dot(node, size, origin=(0, 0)):
     if vertical:
         rows = [f'<TR>{indices[index] if node["show_indices"] else ""}{value}</TR>'
                 for index, value in enumerate(values)]
+        if show_end:
+            if gap:
+                columns = 2 if node["show_indices"] else 1
+                rows.append(f'<TR><TD COLSPAN="{columns}" HEIGHT="{gap}" FIXEDSIZE="TRUE" WIDTH="{width * columns}"></TD></TR>')
+            rows.append('<TR>' + (f'<TD WIDTH="{width}" HEIGHT="{height}"></TD>' if node["show_indices"] else '')
+                        + f'<TD PORT="end" WIDTH="{width}" HEIGHT="{height}" FIXEDSIZE="TRUE"></TD></TR>')
     else:
+        if show_end:
+            if gap:
+                values.append(f'<TD WIDTH="{gap}" HEIGHT="{height}" FIXEDSIZE="TRUE"></TD>')
+                indices.append(f'<TD WIDTH="{gap}" HEIGHT="{index_height}" FIXEDSIZE="TRUE"></TD>')
+            values.append(f'<TD PORT="end" WIDTH="{width}" HEIGHT="{height}" FIXEDSIZE="TRUE"></TD>')
+            indices.append(f'<TD WIDTH="{width}" HEIGHT="{index_height}" FIXEDSIZE="TRUE"></TD>')
         rows = ["<TR>" + "".join(values) + "</TR>"]
         if node["show_indices"]:
             rows.append("<TR>" + "".join(indices) + "</TR>")
+    if show_end:
+        x = (width if node["show_indices"] else 0) if vertical else count * width + gap
+        y = 0 if vertical else (index_height if node["show_indices"] else 0)
+        drawing.extend(['c 5 -black S 15 -setlinewidth(1) S 6 -dotted',
+                        'B ' + rounded_box(x + origin[0], y + origin[1], width, height, (0, 0, 0, 0))])
     table = ('<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">'
              + "".join(rows) + '</TABLE>')
     direction = "LR" if vertical else "TB"
     indicators = []
     positions = {item["key"]: index for index, item in enumerate(node["nodes"])}
-    for index, indicator in enumerate(graph_pointer_indicators(node)):
+    for index, indicator in enumerate(markers):
         identifier = f"tb_indicator_{index}"
         indicators.append(f'{identifier} [label={dot_string(indicator["key"])}];')
-        port = f'tb_array:n{positions[indicator["target"]]}'
+        port = 'tb_array:end' if indicator["target"] == ".end" else f'tb_array:n{positions[indicator["target"]]}'
         if vertical:
             indicators.append(f'{port}:e -> {identifier}:w [dir="back", arrowtail="vee"];')
         else:

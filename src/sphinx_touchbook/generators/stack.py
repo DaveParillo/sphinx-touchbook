@@ -6,6 +6,7 @@ import json
 from docutils import nodes
 
 from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
+from sphinx_touchbook.directives.positions import graph_indicator_target
 from sphinx_touchbook.nodes import TbArrayNode, TbGraphNode, TbPointerNode, TbSceneNode, is_scene_object
 
 
@@ -38,9 +39,9 @@ def pointers_for(node, *, position_type=None):
 
 
 def graph_pointer_indicators(node):
-    return node.get("indicators", []) + [
-        {"key": pointer["label"], "target": pointer["position"]["key"]}
-        for pointer in pointers_for(node, position_type="node")
+    return [indicator for indicator in node.get("indicators", []) if indicator["target"] is not None] + [
+        {"key": pointer["label"], "target": graph_indicator_target(pointer["position"], node)}
+        for pointer in pointers_for(node)
     ]
 
 
@@ -50,7 +51,7 @@ def scene_model(scene):
                       "label", "orientation", "start_index", "show_keys"),
         TbGraphNode: ("nodes", "edges", "highlighted", "style", "style_name",
                       "label", "description", "show_indices", "indicators", "annotations"),
-        TbPointerNode: ("kind", "label", "position", "range", "at"),
+        TbPointerNode: ("label", "position", "at"),
     }
     objects = []
     for item in scene.children:
@@ -67,18 +68,16 @@ def pointer_description(pointer):
     position = pointer["position"]
     label = pointer["label"]
     if position is None:
-        return f"{label} is null."
+        return f"{label} has no target."
     target = position["object"]
-    if position["type"] == "object":
-        return f"{label} points to scene object {target}."
     if position["type"] == "node":
         if position["invisible"]:
             return f"{label} points to an undisplayed node in {target}."
         return f"{label} points to {target} node {position['key']}, value {position['value']!r}."
     if position["end"]:
         return f"{label} is at {target}.end, past the last element (index {position['display_index']})."
-    if pointer["kind"] == "iterator" and position["index"] == pointer["range"]["end"]:
-        return f"{label} is at the end of its range in {target} (index {position['display_index']})."
+    if position.get("invisible"):
+        return f"{label} points to an undisplayed cell in {target} (index {position['display_index']})."
     return f"{label} points to {target} at index {position['display_index']}, value {position['value']!r}."
 
 
@@ -93,13 +92,7 @@ def pointer_html(pointer, *, placed=False, vertical=False):
         parts.append(f'<span class="tb-pointer__marker tb-pointer__marker--{direction}" aria-hidden="true">'
                      f'<span class="tb-pointer__label">{escape(pointer["label"])}</span>'
                      f'<span class="tb-pointer__arrow">{arrow}</span></span>')
-    position = pointer["position"]
-    object_target = position is not None and position["type"] == "object"
-    if object_target:
-        parts.append(f'<span class="tb-pointer__object-link">{escape(pointer["label"])} '
-                     '<span aria-hidden="true">&#8594;</span> '
-                     f'<a href="#{escape(position["target_id"], quote=True)}">{escape(position["label"])}</a></span>')
-    css_class = "tb-pointer__description tb-pointer__description--placed" if placed or object_target else "tb-pointer__description"
+    css_class = "tb-pointer__description tb-pointer__description--placed" if placed else "tb-pointer__description"
     parts.append(f'<span class="{css_class}">{escape(pointer_description(pointer))}</span>')
     if pointer["caption"]:
         parts.append(f'<span class="tb-pointer__caption">{escape(pointer["caption"])}</span>')
@@ -109,7 +102,9 @@ def pointer_html(pointer, *, placed=False, vertical=False):
 
 def visit_tb_pointer_html(self, node):
     # Array tables render their pointer roots in the corresponding positions.
-    if node["position"] is None or node["position"]["type"] != "array":
+    if node["position"] is None or not any(
+            isinstance(item, TbArrayNode) and item["key"] == node["position"]["object"]
+            for item in node.parent.children):
         self.body.append(pointer_html(node) + "\n")
     raise nodes.SkipNode
 

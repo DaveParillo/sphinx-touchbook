@@ -41,7 +41,9 @@ html_theme_options = {
     'logo_width': 40,
     'logo_height': 24,
     'sans_serif_font': 'Open Sans',
+    "doc_headers_font": 'Montserrat',
     'documentation_font_size': '1.125rem',
+    'monospace_font_size': '1.125rem',
 }
 
 tb_code_block_defaults = {

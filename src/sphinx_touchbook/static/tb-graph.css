@@ -10,6 +10,21 @@ tb-graph .tb-graph__diagram {
   background: white;
 }
 
+tb-graph .tb-graph__alignment.align-left > .tb-graph__diagram {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+tb-graph .tb-graph__alignment.align-center > .tb-graph__diagram {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+tb-graph .tb-graph__alignment.align-right > .tb-graph__diagram {
+  margin-left: auto;
+  margin-right: 0;
+}
+
 tb-graph .tb-graph__label,
 tb-graph .tb-graph__caption {
   font-weight: bold;

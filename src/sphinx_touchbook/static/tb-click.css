@@ -91,7 +91,14 @@ tb-click[data-hints-visible="true"] .tb-click__target {
   pointer-events: all;
 }
 
-tb-click[data-hints-visible="true"] .tb-click__diagram .tb-click__target,
+tb-click[data-hints-visible="true"] .tb-click__diagram
+  .tb-click__target:not(.tb-click__target--correct, .tb-click__target--incorrect)
+  :is(ellipse, polygon, path) {
+  stroke: var(--color-brand-primary, #1f6feb);
+  stroke-width: 2px;
+  stroke-dasharray: 4 3;
+}
+
 .tb-click__diagram .tb-click__target:focus-visible {
   outline: 2px dashed var(--color-brand-primary, #1f6feb);
   outline-offset: 2px;

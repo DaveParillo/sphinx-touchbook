@@ -44,7 +44,6 @@ Assessments       - :doc:`tb-blank`
    :hidden:
 
    tb-array
-   tb-stack
    tb-blank
    tb-choice
    tb-click
@@ -60,4 +59,5 @@ Assessments       - :doc:`tb-blank`
    tb-pointer
    tb-reveal
    tb-scene
+   tb-stack
    tb-video

@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from docutils import nodes
 from sphinx.ext.graphviz import GraphvizError, render_dot
 from sphinx.util import logging
+from sphinx.locale import _
 
 from sphinx_touchbook.generators.common import (
     html_additional_targets, html_class_attr, latex_targets,
@@ -165,12 +166,11 @@ def graph_indicators(node, ids):
             continue
         if style["layout"] != "ring":
             lines.append(f'{{rank="same"; {target}; {identifier};}}')
-        for index in range(len(indicators)):
+        # Graphviz 2.43 can lose or reverse arrowheads on same-rank edges
+        # with ports. Let it attach these edges to the node boundaries.
+        for _ in indicators:
             attributes = ['dir="back"', 'arrowtail="vee"', 'arrowhead="none"',
                           'arrowsize="0.6"', 'constraint="false"', 'weight="0"']
-            if style["layout"] != "ring":
-                attributes.extend(['tailport="s"' if horizontal else 'tailport="e"',
-                                   f'headport="i{index}:{"n" if horizontal else "w"}"'])
             lines.append(f'{target} -> {identifier} [{", ".join(attributes)}];')
     return lines
 
@@ -235,6 +235,30 @@ def prose_list(items):
 def graph_description(node):
     content = base_graph_description(node)
     by_key = {item["key"]: item for item in node["nodes"]}
+    visible = [item for item in node["nodes"] if not item["invisible"]]
+    counts = {item["value"]: sum(other["value"] == item["value"] for other in visible)
+              for item in visible}
+    for indicator in node.get("indicators", []):
+        target = indicator["target"]
+        prefix = f'Indicator “{indicator["key"]}”'
+        if target is None:
+            text = f'{prefix} has no target.'
+        elif target == ".end":
+            text = f'{prefix} is at the end boundary, past the last element.'
+        elif node["style"]["layout"] == "array":
+            index = next(i for i, item in enumerate(node["nodes"]) if item["key"] == target)
+            item = by_key[target]
+            position = (f'undisplayed cell {index}' if item["invisible"] else
+                        f'cell {index}, value “{item["value"]}”' if item["value"] else f'unused cell {index}')
+            text = f'{prefix} points to {position}.'
+        else:
+            item = by_key[target]
+            label = ('an undisplayed node' if item["invisible"] else
+                     f'“{item["value"]}”' if item["value"] else 'an unlabeled node')
+            if not item["invisible"] and counts[item["value"]] > 1:
+                label += f' (node {target})'
+            text = f'{prefix} points to {label}.'
+        content += nodes.paragraph(text=text)
     for annotation in node.get("annotations", []):
         labels = [f'“{by_key[key]["value"]}” (node {key})' for key in annotation["targets"]]
         shape = annotation["shape"]
@@ -250,7 +274,7 @@ def base_graph_description(node):
         content += nodes.paragraph(text=description)
         return content
     if not node["nodes"]:
-        content += nodes.paragraph(text="Empty graph.")
+        content += nodes.paragraph(text="Empty array." if node["style"]["layout"] == "array" else "Empty graph.")
         return content
     if node["style"]["layout"] == "array":
         direction = "left to right" if node["style"]["orientation"] == "horizontal" else "top to bottom"
@@ -268,11 +292,6 @@ def base_graph_description(node):
         if highlighted:
             verb = "is" if len(highlighted) == 1 else "are"
             content += nodes.paragraph(text=f'{prose_list(highlighted)} {verb} highlighted.')
-        targets = {item["key"]: (index, item) for index, item in enumerate(node["nodes"])}
-        for indicator in node.get("indicators", []):
-            index, item = targets[indicator["target"]]
-            position = f'cell {index}, value “{item["value"]}”' if item["value"] else f'unused cell {index}'
-            content += nodes.paragraph(text=f'Indicator “{indicator["key"]}” points to {position}.')
         return content
     by_key = {item["key"]: item for item in node["nodes"]}
     visible = [item for item in node["nodes"] if not item["invisible"]]
@@ -343,13 +362,11 @@ def base_graph_description(node):
     if highlighted:
         verb = "is" if len(highlighted) == 1 else "are"
         content += nodes.paragraph(text=f'{prose_list(highlighted)} {verb} highlighted.')
-    for indicator in node.get("indicators", []):
-        content += nodes.paragraph(text=f'Indicator “{indicator["key"]}” points to {labels[indicator["target"]]}.')
     return content
 
 
 def render_graph(translator, node, format, *, return_path=False):
-    if not node["nodes"]:
+    if not node["nodes"] and not (node["style"]["layout"] == "array" and graph_pointer_indicators(node)):
         return None
     if format != "svg" and node.get("click_regions"):
         node = node.copy()
@@ -404,11 +421,16 @@ def visit_tb_graph_html(self, node):
     interactive = bool(node.get("click_regions"))
     filename = render_graph(self, node, "svg", return_path=interactive)
     if filename:
+        if "align" in node:
+            align = node["align"]
+            self.body.append(f'<div align="{align}" class="tb-graph__alignment align-{align}">\n')
         if interactive:
             self.body.append(keyed_graph_svg(node, filename))
         else:
-            alt = escape(node["label"] or node["caption"] or "Graph diagram", quote=True)
+            alt = escape(node.get("alt", node["label"] or node["caption"] or "Graph diagram"), quote=True)
             self.body.append(f'<img class="tb-graph__diagram" src="{escape(str(filename), quote=True)}" alt="{alt}">\n')
+        if "align" in node:
+            self.body.append('</div>\n')
         self.body.append('<details class="tb-graph__description"><summary>Text description</summary>\n')
     graph_description(node).walkabout(self)
     if filename:
@@ -437,8 +459,13 @@ def visit_tb_graph_latex(self, node):
     content = static_content(node)
     filename = render_graph(self, node, "pdf")
     if filename:
-        content += nodes.image(uri=str(filename),
-                               alt=node["label"] or node["caption"] or "Graph diagram")
+        image = nodes.image(uri=str(filename),
+                            alt=node.get("alt", node["label"] or node["caption"] or "Graph diagram"))
+        if "align" in node:
+            image["align"] = node["align"]
+        if "alt" in node and not node["alt"]:
+            image["classes"].append("tb-pdf-artifact")
+        content += image
     content += graph_description(node)
     content.walkabout(self)
     raise nodes.SkipNode
@@ -446,6 +473,8 @@ def visit_tb_graph_latex(self, node):
 
 def visit_tb_graph_text(self, node):
     content = static_content(node)
+    if "alt" in node:
+        content += nodes.paragraph(text=_("[graph: %s]") % node["alt"])
     content += graph_description(node)
     content.walkabout(self)
     raise nodes.SkipNode

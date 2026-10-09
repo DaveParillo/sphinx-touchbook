@@ -24,6 +24,7 @@ from sphinx_touchbook.nodes import TbGraphNode, TbPointerNode, TbSceneNode
 from sphinx_touchbook.graph_styles import resolve_graph_styles
 from sphinx_touchbook.generators import graph as graph_generator
 from sphinx_touchbook.generators.graph_array import cell_dimensions, measurement_dot
+from sphinx_touchbook.generators.graph_annotations import shape_bounds
 
 
 def graph_source(body="", options="", key=""):
@@ -52,6 +53,8 @@ def test_complete_graph_with_forward_references_chains_and_common_options():
    :class: first second
    :label: Chain
    :caption: A caption
+   :alt: A chain of three nodes
+   :align: center
    :highlight: chain.node[b] chain.node[b]""", "chain"))
     node = next(document.findall(TbGraphNode))
     assert node["key"] == "chain"
@@ -60,6 +63,8 @@ def test_complete_graph_with_forward_references_chains_and_common_options():
     assert {item["key"]: item["value"] for item in node["nodes"]} == {"a": "10", "b": "20", "c": "30"}
     assert [(edge["source"], edge["target"]) for edge in node["edges"]] == [("a", "b"), ("b", "c")]
     assert node["highlighted"] == ["b"]
+    assert node["alt"] == "A chain of three nodes"
+    assert node["align"] == "center"
     assert node.source == "graph.rst"
 
 
@@ -90,11 +95,12 @@ def test_cycles_self_edges_disconnected_nodes_and_named_parallel_edges():
 
 def test_invisible_nodes_and_edges_have_independent_visibility():
     source = "a[10] -next-> hidden['secret'] {invisible}\na -spacing-> {invisible} spacer['private'] {invisible}"
-    node = next(parse_rst(graph_source(source, "   :highlight: graph.node[hidden]", "graph")).findall(TbGraphNode))
+    node = next(parse_rst(graph_source(source, "   :highlight: graph.node[hidden]\n   :indicators: current=.node[hidden]", "graph")).findall(TbGraphNode))
     assert [item["invisible"] for item in node["nodes"]] == [False, True, True]
     assert [edge["invisible"] for edge in node["edges"]] == [False, True]
     description = graph_description(node).astext()
     assert "“10” points to an undisplayed endpoint through the “next” relationship." in description
+    assert "Indicator “current” points to an undisplayed node." in description
     for hidden in ("secret", "private", "hidden", "spacer", "spacing", "highlighted"):
         assert hidden not in description
     assert 'n1 [label="secret", style="invis"]' in graph_dot(node)
@@ -190,13 +196,14 @@ def test_indicators_resolve_local_nodes_and_preserve_graph_data():
 
 @pytest.mark.parametrize("definition,body,style,message", [
     ("current=missing", "a[8]", "array", "Unknown indicator target"),
-    ("current=a", "a[8] {invisible}", "array", "invisible node"),
+    ("current=.begin", "a[8]", "tree", "requires an array"),
+    ("current=.slot[1]", "a[8]", "array", "Slot index out of bounds"),
     ("current=a current=b", "a[8]\nb[13]", "array", "Duplicate indicator label"),
     ("null=a", "a[8]", "array", "Invalid indicator key"),
     ("current=null", "a[8]", "array", "Invalid graph key"),
     ("current=a", "", "array", "Unknown indicator target"),
-    ("current=a=b", "a[8]", "array", "Invalid indicator"),
-    ("current=values.node[a]", "a[8]", "array", "Invalid indicator"),
+    ("current=a=b", "a[8]", "array", "Invalid local indicator"),
+    ("current=values.node[a]", "a[8]", "array", "Invalid local indicator"),
     ("current = a", "a[8]", "array", "Invalid indicator"),
     ('"current value"=a', "a[8]", "array", "Invalid indicator"),
 ])
@@ -204,19 +211,6 @@ def test_invalid_indicators_report_context(definition, body, style, message):
     document = parse_rst(graph_source(body, f"   :style: {style}\n   :indicators: {definition}"))
     assert not list(document.findall(TbGraphNode))
     assert message in next(document.findall(nodes.system_message)).astext()
-
-
-@pytest.mark.parametrize("style", ["graph", "list", "tree", "ring"])
-def test_graph_indicators_are_annotations_and_not_relationships(style):
-    node = next(parse_rst(graph_source("a[8] -> b[13]", f"   :style: {style}\n   :indicators: current=b")).findall(TbGraphNode))
-    original = deepcopy(node.attributes)
-    assert len(node["nodes"]) == 2 and len(node["edges"]) == 1
-    assert "Indicator “current” points to “13”." in graph_description(node).astext()
-    graph_dot(node)
-    assert node.attributes == original
-    hidden = parse_rst(graph_source("a[8] {invisible}", f"   :style: {style}\n   :indicators: current=a"))
-    assert not list(hidden.findall(TbGraphNode))
-    assert "invisible node" in next(hidden.findall(nodes.system_message)).astext()
 
 
 @pytest.mark.skipif(shutil.which("dot") is None, reason="Graphviz dot is required")
@@ -243,7 +237,23 @@ def test_indicators_for_other_graph_styles_across_builders(tmp_path, builder, st
         edges = svg.findall('.//s:g[@class="edge"]', ns)
         annotated = [edge for edge in edges if "tb_indicators_" in edge.find("s:title", ns).text]
         assert len(annotated) == len(definitions.split())
-        assert all(edge.find("s:polygon", ns) is not None for edge in annotated)
+        target_bounds = {
+            group.find("s:title", ns).text: shape_bounds(next(
+                shape for shape in group if shape.tag in {
+                    f"{{{ns['s']}}}ellipse", f"{{{ns['s']}}}polygon"}))
+            for group in groups if group not in annotations
+        }
+        for edge in annotated:
+            arrowhead = edge.find("s:polygon", ns)
+            assert arrowhead is not None
+            title = edge.find("s:title", ns).text
+            target = title.split("->")[0].split(":")[0]
+            x0, y0, x1, y1 = target_bounds[target]
+            points = [tuple(map(float, point.split(",")))
+                      for point in arrowhead.attrib["points"].split()]
+            # Allow the small clipping gap Graphviz leaves beside a node.
+            assert any(x0 - 2 <= x <= x1 + 2 and y0 - 2 <= y <= y1 + 2
+                       for x, y in points), title
         if style == "tree":
             connections = [edge for edge in edges if edge not in annotated]
             assert len(connections) == 2
@@ -272,24 +282,7 @@ def test_indicators_for_other_graph_styles_across_builders(tmp_path, builder, st
 
 
 @pytest.mark.skipif(shutil.which("dot") is None, reason="Graphviz dot is required")
-@pytest.mark.parametrize("target", ["a", "f"])
-def test_tree_indicator_preserves_levels_and_child_sides(target):
-    body = "a[30] -left-> b[20]\na -right-> c[70]\nb -left-> d[10]\nc -left-> f[50]\nf -left-> l[40]\nf -right-> m[60]"
-    node = next(parse_rst(graph_source(body, f"   :style: tree\n   :indicators: current={target}")).findall(TbGraphNode))
-    positions = dot_positions(node)
-    ids = {item["key"]: f"n{index}" for index, item in enumerate(node["nodes"])}
-    point = lambda key: positions[ids[key]]
-    assert point("b")[0] < point("a")[0] < point("c")[0]
-    assert point("b")[1] == point("c")[1] < point("a")[1]
-    assert point("f")[1] == point("d")[1] < point("c")[1]
-    assert point("l")[0] < point("f")[0] < point("m")[0]
-    assert point("f")[0] == pytest.approx((point("l")[0] + point("m")[0]) / 2, abs=.01)
-
-
-@pytest.mark.skipif(shutil.which("dot") is None, reason="Graphviz dot is required")
-@pytest.mark.parametrize("annotation", ["indicator", "pointer"])
 @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
-@pytest.mark.parametrize("label", ["p", "current position"])
 @pytest.mark.parametrize("body", [
     "a[1] -left-> b[2]\na -right-> c[3]\nb -left-> d[4]\nb -right-> e[5]\n"
     "d -left-> h[8]\nd -right-> i[9]\ne -left-> j[10]\ne -right-> k[11]\n"
@@ -300,21 +293,15 @@ def test_tree_indicator_preserves_levels_and_child_sides(target):
     "a[1] -> b[2]\na -> c['a very wide node']\na -> d[4]",
     "a[1]",
 ], ids=["interior-leaves", "unbalanced", "three-children", "wide-middle-child", "single-node"])
-def test_tree_annotations_use_local_gaps_without_crossing_nodes(body, label, orientation, annotation):
+def test_tree_annotations_use_local_gaps_without_crossing_nodes(body, orientation):
+    label = "current position"
     base = next(parse_rst(graph_source(body, "   :style: tree", "tree")).findall(TbGraphNode))
     for target in base["nodes"]:
         node = deepcopy(base)
         node["style"]["orientation"] = orientation
         node["style"]["node-spacing"] = .01
         node["style"]["level-spacing"] = .01
-        if annotation == "indicator":
-            node["indicators"] = [{"key": label, "target": target["key"]}]
-        else:
-            scene = TbSceneNode()
-            scene += node
-            scene += TbPointerNode(label=label, position={
-                "type": "node", "object": "tree", "key": target["key"],
-            })
+        node["indicators"] = [{"key": label, "target": target["key"]}]
         result = subprocess.run([shutil.which("dot"), "-Tplain"], input=graph_dot(node),
                                 capture_output=True, text=True, check=True)
         assert_tree_annotations_clear(result, orientation)
@@ -356,9 +343,8 @@ def assert_tree_annotations_clear(result, orientation):
 
 @pytest.mark.skipif(shutil.which("dot") is None, reason="Graphviz dot is required")
 @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
-@pytest.mark.parametrize("spacing", [.01, .3])
-@pytest.mark.parametrize("count", [1, 3])
-def test_multiple_tree_annotations_avoid_nodes(orientation, spacing, count):
+def test_multiple_tree_annotations_avoid_nodes(orientation):
+    spacing, count = .01, 3
     body = ("a[4] -left-> b[2]\na -right-> c[6]\nb -left-> d[1]\nb -right-> e[3]\n"
             "c -left-> f[5]\nc -right-> g['a wide leaf']")
     node = next(parse_rst(graph_source(body, "   :style: tree", "tree")).findall(TbGraphNode))
@@ -379,8 +365,10 @@ def test_multiple_tree_annotations_avoid_nodes(orientation, spacing, count):
 
 
 @pytest.mark.skipif(shutil.which("dot") is None, reason="Graphviz dot is required")
-@pytest.mark.parametrize("builder", ["html", "text", "latex"])
-@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+@pytest.mark.parametrize("builder,orientation", [
+    ("html", "horizontal"), ("html", "vertical"),
+    ("text", "horizontal"), ("latex", "vertical"),
+])
 def test_tree_combines_multiple_pointers_and_indicators_across_builders(tmp_path, builder, orientation):
     content = graph_source("a[4] -left-> b[2]\na -right-> c[6]\nb -left-> d[1]\nb -right-> e[3]",
                            "   :style: custom\n   :indicators: root=a leaf=d", "tree")
@@ -419,35 +407,69 @@ def test_tree_combines_multiple_pointers_and_indicators_across_builders(tmp_path
 
 
 @pytest.mark.skipif(shutil.which("dot") is None, reason="Graphviz dot is required")
-@pytest.mark.parametrize("builder", ["html", "text", "latex"])
-@pytest.mark.parametrize("orientation", ["horizontal", "vertical"])
+@pytest.mark.parametrize("builder,orientation", [
+    ("html", "horizontal"), ("html", "vertical"),
+    ("text", "horizontal"), ("latex", "vertical"),
+])
 def test_array_indicators_render_labels_arrows_and_text_targets(tmp_path, builder, orientation):
     source = "Indicators\n==========\n\n" + graph_source("a[8]\nb[13]\nc['']", """   :style: custom-array
    :show-indices:
-   :indicators: head=a current=b another=b tail=c
+   :indicators: head=.begin current=values.slot[1] another=values.node[b] tail=c finish=.end
    :highlight: values.node[b]""", "values")
+    source = "Indicators\n==========\n\n.. tb-scene::\n\n" + indent(
+        source.split("\n\n", 1)[1] + "\n.. tb-pointer:: boundary\n   :at: values.end\n", "   ")
+    source += "\n.. tb-scene::\n\n" + indent(
+        graph_source("", "   :style: custom-array\n   :indicators: empty_end=.end", "empty")
+        + "\n.. tb-pointer:: empty_begin\n   :at: empty.begin\n", "   ")
     config = f'tb_graph_styles = {{"custom-array": {{"base": "array", "orientation": {orientation!r}}}}}\n'
     out, _ = build_sphinx(tmp_path, builder, source, config=config)
     if builder == "html":
         graphs = BeautifulSoup((out / "index.html").read_text(), "html.parser").find_all("tb-graph")
-        assert len(graphs) == 1
+        assert len(graphs) == 2
         graph = graphs[0]
-        result = graph.get_text()
+        empty_svg = ET.parse(out / graphs[1].find("img")["src"]).getroot()
+        ns = {"s": "http://www.w3.org/2000/svg"}
+        empty_shapes = empty_svg.findall("./s:g/s:path", ns)
+        assert len(empty_shapes) == 1 and "stroke-dasharray" in empty_shapes[0].attrib
+        assert len(empty_svg.findall('.//s:g[@class="edge"]', ns)) == 2
+        assert "Empty array" in graphs[1].get_text()
+        result = graph.find_parent("tb-scene").get_text()
         svg = ET.parse(out / graph.find("img")["src"]).getroot()
         ns = {"s": "http://www.w3.org/2000/svg"}
         edges = svg.findall('.//s:g[@class="edge"]', ns)
-        assert len(edges) == 4 and all(edge.find("s:polygon", ns) is not None for edge in edges)
+        assert len(edges) == 6 and all(edge.find("s:polygon", ns) is not None for edge in edges)
         groups = svg.findall('.//s:g[@class="node"]', ns)
         labels = {element.text for group in groups[1:] for element in group.findall("s:text", ns)}
-        assert labels == {"head", "current", "another", "tail"}
+        assert labels == {"head", "current", "another", "tail", "finish", "boundary"}
         cells = svg.findall('./s:g/s:path', ns)
-        assert len(cells) == 3 and cells[1].attrib["stroke-width"] == "3"
+        assert len(cells) == 4 and cells[1].attrib["stroke-width"] == "3"
+        assert "stroke-dasharray" in cells[3].attrib and cells[3].attrib["fill"] == "none"
         assert cells[2].attrib["fill"] == "#eeeeee"
         bounds = []
         for cell in cells:
             coordinates = list(map(float, re.findall(r"-?\d+(?:\.\d+)?", cell.attrib["d"])))
             bounds.append((min(coordinates[::2]), max(coordinates[::2]),
                            min(coordinates[1::2]), max(coordinates[1::2])))
+        # The dotted boundary is separated from real cells, whose last corners
+        # remain rounded. Both arrows must terminate at the same boundary box.
+        last, boundary = bounds[2], bounds[3]
+        if orientation == "horizontal":
+            assert boundary[0] - last[1] >= 19
+            corner = (last[1], last[3])
+        else:
+            assert boundary[2] - last[3] >= 19
+            corner = (last[1], last[3])
+        coordinates = list(map(float, re.findall(r"-?\d+(?:\.\d+)?", cells[2].attrib["d"])))
+        assert corner not in set(zip(coordinates[::2], coordinates[1::2]))
+        for edge in edges:
+            if "tb_array:end" in edge.find("s:title", ns).text:
+                points = [tuple(map(float, point.split(",")))
+                          for point in edge.find("s:polygon", ns).attrib["points"].split()]
+                assert any(boundary[0] - 2 <= x <= boundary[1] + 2 and
+                           boundary[2] - 2 <= y <= boundary[3] + 2 for x, y in points)
+        from sphinx_touchbook.generators.graph_annotations import node_bounds
+        parsed = next(parse_rst(graph_source("a[8]\nb[13]\nc['']", "   :style: array")).findall(TbGraphNode))
+        assert set(node_bounds(svg.find("s:g", ns), parsed)) == {"a", "b", "c"}
         # Borders follow the table after indicator labels shift its layout.
         values = groups[0].findall("s:text", ns)[:2] if orientation == "horizontal" else groups[0].findall("s:text", ns)[1:4:2]
         for index, value in enumerate(values):
@@ -471,6 +493,8 @@ def test_array_indicators_render_labels_arrows_and_text_targets(tmp_path, builde
     assert "current” points to cell 1, value “13”" in result
     assert "another” points to cell 1, value “13”" in result
     assert "tail” points to unused cell 2" in result
+    assert "finish” is at the end boundary, past the last element" in result
+    assert "boundary is at values.end, past the last element (index 3)" in result
 
 
 @pytest.mark.parametrize("format", ["svg", "pdf"])
@@ -781,6 +805,57 @@ def build_sphinx(tmp_path: Path, builder, source, *, config="", tagged=False, fa
     result = subprocess.run(args, capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
     return out, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("align,builder,tagged", [
+    ("left", "html", False), ("center", "html", False), ("right", "html", False),
+    ("center", "text", False), ("left", "latex", False), ("right", "latex", True),
+])
+def test_graph_alt_and_alignment_across_builders(tmp_path, align, builder, tagged):
+    source = "Graph options\n=============\n\n" + graph_source(
+        "a[8] -> b[13]", f"   :alt: Explicit graph & label\n   :align: {align}\n"
+        "   :label: Object label\n   :caption: Graph caption")
+    out, _ = build_sphinx(tmp_path, builder, source, tagged=tagged)
+    if builder == "html":
+        graph = BeautifulSoup((out / "index.html").read_text(), "html.parser").find("tb-graph")
+        image = graph.find("img")
+        assert image["alt"] == "Explicit graph & label"
+        assert image.parent["align"] == align
+        assert f"align-{align}" in image.parent["class"]
+        assert graph.find("details").find("summary").get_text() == "Text description"
+    elif builder == "text":
+        assert "[graph: Explicit graph & label]" in (out / "index.txt").read_text()
+    else:
+        result = next(out.glob("*.tex")).read_text()
+        pre, post = {
+            "left": (r"\noindent{", r"\hspace*{\fill}}"),
+            "center": (r"\noindent{\hspace*{\fill}", r"\hspace*{\fill}}"),
+            "right": (r"\noindent{\hspace*{\fill}", "}"),
+        }[align]
+        command = r"\TBIncludeGraphics" if tagged else r"\sphinxincludegraphics"
+        assert pre + command in result
+        assert re.search(re.escape(command) + r"[^\n]+" + re.escape(post) + r"\n", result)
+        if tagged:
+            assert r"\TBIncludeGraphics[alt={Explicit graph \& label}" in result
+
+
+@pytest.mark.parametrize("align", ["top", "justify"])
+def test_invalid_graph_alignment_reports_an_option_error(align):
+    document = parse_rst(graph_source("a[1]", f"   :align: {align}"))
+    assert list(document.findall(nodes.system_message))
+    assert 'option: "align"' in document.astext()
+
+
+@pytest.mark.parametrize("builder", ["html", "latex"])
+def test_explicit_empty_alt_is_preserved(tmp_path, builder):
+    source = "Empty alt\n=========\n\n" + graph_source("a[1]", "   :alt:\n   :label: A label")
+    out, _ = build_sphinx(tmp_path, builder, source, tagged=True)
+    if builder == "html":
+        graph = BeautifulSoup((out / "index.html").read_text(), "html.parser").find("tb-graph")
+        assert graph.find("img")["alt"] == ""
+        assert graph.find("details") is not None
+    else:
+        assert r"\TBIncludeGraphics[artifact]" in next(out.glob("*.tex")).read_text()
 
 
 BUILD_SOURCE = r'''

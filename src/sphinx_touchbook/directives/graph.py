@@ -6,9 +6,11 @@ import re
 import math
 
 from docutils.parsers.rst import Directive, directives
+from sphinx.ext.graphviz import align_spec
 
 from sphinx_touchbook.directives.array import KEY, NUMBER, validate_key
 from sphinx_touchbook.directives.common import assign_node_id
+from sphinx_touchbook.directives.positions import resolve_target, graph_indicator_target
 from sphinx_touchbook.nodes import TbGraphNode
 from sphinx_touchbook.graph_styles import resolve_graph_styles
 
@@ -17,7 +19,7 @@ IDENTIFIER = re.compile(KEY)
 EDGE = re.compile(rf"[ \t]+(?:->|-({KEY})->)[ \t]+")
 INVISIBLE = "{invisible}"
 NODE_REFERENCE = re.compile(rf"({KEY})\.node\[({KEY})\]")
-INDICATOR = re.compile(rf"({KEY})=({KEY})")
+INDICATOR = re.compile(rf"({KEY})=(\S+)")
 
 
 OVERLAY_SHAPES = ("ellipse", "circle", "rectangle", "box")
@@ -232,6 +234,8 @@ class TbGraphDirective(Directive):
     optional_arguments = 1
     final_argument_whitespace = False
     option_spec = {
+        "alt": directives.unchanged,
+        "align": align_spec,
         "name": directives.unchanged_required,
         "class": directives.class_option,
         "caption": directives.unchanged_required,
@@ -275,20 +279,31 @@ class TbGraphDirective(Directive):
             indicators = []
             if "indicators" in self.options:
                 indicator_keys = set()
-                invisible = {item["key"] for item in graph_nodes if item["invisible"]}
+                target_graph = TbGraphNode(key=key, nodes=graph_nodes, style=styles[style_name])
                 for definition in self.options["indicators"].split():
                     match = INDICATOR.fullmatch(definition)
                     if match is None:
-                        raise ValueError(f"Invalid indicator {definition!r}; use label=node-key.")
-                    label, target = match.groups()
+                        raise ValueError(f"Invalid indicator {definition!r}; use label=position.")
+                    label, reference = match.groups()
                     validate_key(label, kind="indicator")
-                    validate_key(target, kind="graph")
                     if label in indicator_keys:
                         raise ValueError(f"Duplicate indicator label {label!r}.")
-                    if target not in keys:
-                        raise ValueError(f"Unknown indicator target {target!r}.")
-                    if target in invisible:
-                        raise ValueError(f"Indicator {label!r} cannot point to invisible node {target!r}.")
+                    if reference == "none":
+                        position = None
+                    else:
+                        if IDENTIFIER.fullmatch(reference):
+                            validate_key(reference, kind="graph")
+                            if reference not in keys:
+                                raise ValueError(f"Unknown indicator target {reference!r}.")
+                            local = f"node[{reference}]"
+                        elif reference.startswith("."):
+                            local = reference[1:]
+                        elif key and reference.startswith(key + "."):
+                            local = reference[len(key) + 1:]
+                        else:
+                            raise ValueError(f"Invalid local indicator reference {reference!r}.")
+                        position = resolve_target(reference, target_graph, local)
+                    target = graph_indicator_target(position, target_graph)
                     indicators.append({"key": label, "target": target})
                     indicator_keys.add(label)
         except ValueError as error:
@@ -311,4 +326,7 @@ class TbGraphDirective(Directive):
             "indicators": indicators,
             "annotations": annotations,
         })
+        for option in ("alt", "align"):
+            if option in self.options:
+                node[option] = self.options[option]
         return [node]

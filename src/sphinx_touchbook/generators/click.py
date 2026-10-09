@@ -63,7 +63,7 @@ def keyed_graph_svg(node, filename):
                for key, region in node["click_regions"].items()}
     root.set("class", "tb-graph__diagram tb-click__diagram")
     root.set("role", "group")
-    root.set("aria-label", node["label"] or node["caption"] or "Graph diagram")
+    root.set("aria-label", node.get("alt", node["label"] or node["caption"] or "Graph diagram"))
     for element in root.iter():
         # Graphviz titles expose renderer IDs such as n0, not author content.
         for title in element.findall(f"{{{svg_ns}}}title"):

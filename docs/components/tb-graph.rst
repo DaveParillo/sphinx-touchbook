@@ -32,6 +32,24 @@ An empty body displays an empty graph.
 Options
 -------
 
+**align**
+   ``String``. Optional.
+   Horizontal alignment of the diagram: ``left``, ``center``, or ``right``.
+   Applies to HTML and PDF. This is the
+   `Sphinx Graphviz align option
+   <https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html#directive-option-graphviz-align>`__.
+
+**alt**
+   ``String``. Optional.
+   Alternate text for the diagram, using the
+   `Sphinx Graphviz alt option
+   <https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html#directive-option-graphviz-alt>`__.
+   HTML uses it as the image's alternate text; tagged PDF includes it with the
+   image, and text output includes it before the graph description.
+   If omitted, the alternate text uses ``label``, then ``caption``, then
+   ``Graph diagram``. An explicitly empty value marks the image as decorative.
+   Use ``description`` for a longer explanation of the diagram.
+
 **caption**
    ``String``. Optional.
    Plain-text caption displayed with the graph, only when provided.
@@ -60,14 +78,26 @@ Options
 
 **indicators**
    ``String``. Optional. None by default.
-   Space-separated ``label=node-key`` pairs, such as
+   Space-separated ``label=position`` pairs, such as
    ``head=a current=b tail=c``. Each pair adds a labelled arrow pointing to
    that node or array cell. Every style supports multiple indicators.
    Labels follow the same identifier rules as node keys and must be unique
-   within the directive. Targets must be declared, visible nodes in this graph;
+   within the directive. Targets must be declared nodes in this graph;
    forward declarations and unused cells are allowed. Multiple indicators may
-   point to the same target.
-   An object-key argument is not required.
+   point to the same target. Invisible targets keep their arrow position
+   without exposing their value.
+   A bare target key identifies a node, never the whole diagram.
+   Local typed references are also accepted: ``current=.node[b]`` or, with
+   the object key ``values``, ``current=values.node[b]``.
+   Array styles support ``first=.begin``, ``finish=.end``, and
+   ``current=.slot[1]``. Qualified forms such as ``finish=values.end`` work
+   with an explicit object key. ``begin`` selects the first cell; in an empty
+   array it coincides with ``end``. The end boundary is a dotted empty box
+   beyond a gap after the last real cell, which retains its rounded corners.
+   The box is a position, not an extra cell or node.
+   Use ``current=none`` when there is no target; the text description records
+   this without drawing an arrow. These targets behave like :ref:`tb-pointer`.
+   An object-key argument is not required for local references.
    Pairs may continue on indented option lines. Do not add spaces around ``=``.
 
 **label**
@@ -712,3 +742,59 @@ The smaller padding applies only to that circle.
          parent[13] -left-> child[8]
          parent -right-> other[20]
          other -right-> leaf[24]
+
+Example 12: Alternate text and alignment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Center the diagram and give it a short alternate text. The detailed text
+description remains available separately.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-graph::
+            :alt: A three-node cycle
+            :align: center
+
+            a[8] -> b[13] -> c[21] -> a
+
+   .. tb-tab:: Rendered
+
+      .. tb-graph::
+         :alt: A three-node cycle
+         :align: center
+
+         a[8] -> b[13] -> c[21] -> a
+
+Example 13: Begin and end positions in an array
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``end`` boundary appears separately from the three real cells. The unused
+cell syntax ``c['']`` still describes a real cell and has a different meaning.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-graph::
+            :style: array
+            :indicators: first=.begin finish=.end
+
+            a['a']
+            b['b']
+            c['c']
+
+   .. tb-tab:: Rendered
+
+      .. tb-graph::
+         :style: array
+         :indicators: first=.begin finish=.end
+
+         a['a']
+         b['b']
+         c['c']

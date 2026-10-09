@@ -3,10 +3,10 @@
 tb-pointer
 ==========
 
-The ``tb-pointer`` directive points to any keyed object in a :ref:`tb-scene`,
-or to a position within an array or graph. Its required argument is the
-pointer's object key. Pointers and iterators use the same arrows; iterator kind
-adds movement bounds validation.
+The ``tb-pointer`` directive draws a labelled arrow identifying an element,
+node, or boundary in a :ref:`tb-scene`. Its required argument is the pointer's
+object key. Each scene explicitly declares the target; labels such as
+"current", "cursor", or "iterator" communicate its meaning in the lesson.
 
 Synopsis
 --------
@@ -20,23 +20,23 @@ The general format of the ``tb-pointer`` directive is:
       :optional parameter: value
 
 The pointer body is empty. Place the declaration directly inside a scene.
-Either ``:at:`` or ``:range:`` is required. Targets can be declared later in the
-same scene.
+``:at:`` is required. Targets can be declared later in the same scene.
 
 Options
 -------
 
 **at**
-   ``String``. Required when ``range`` is absent; otherwise optional.
-   Current target: a bare scene object key such as ``values``, ``chain``, or
-   ``current``, or a typed position such as ``values.slot[0]``, ``values.item[first]``,
-   ``values.begin``, ``values.end``, ``chain.node[head]``, or pointer-only
-   ``null``. Slots are zero-based regardless of the array's ``start-index``.
-   A bare key targets the whole object, including another pointer. It does not
-   select an array's first element or a graph node with the same key.
+   ``String``. Required.
+   Explicit target: ``values.slot[0]``, ``values.item[first]``,
+   ``values.begin``, ``values.end``, or ``chain.node[head]``.
+   Slots are zero-based regardless of the array's ``start-index``.
    Item references follow explicitly keyed items to their current positions.
-   ``values.end`` is a boundary, not an element. Without ``at``, the position
-   defaults to the beginning of the range, or null for ``:range: null``.
+   Array-style graphs also support ``slot``, ``begin``, and ``end``; their
+   cells can be identified by ``node`` references.
+   ``begin`` selects the first element. For an empty array, it coincides with
+   ``end``. ``end`` is a boundary past the last element, never an extra element.
+   Use ``none`` for a pointer with no current target. Invisible graph targets
+   retain their arrow position without exposing their value.
 
 **caption**
    ``String``. Optional.
@@ -47,13 +47,6 @@ Options
    Space-separated CSS classes for this pointer.
    See :ref:`common` for details.
 
-**kind**
-   ``String``. Optional. Default: ``pointer``.
-   Either ``pointer`` or ``iterator``. Iterator kind requires an array range
-   and a position within its bounds, including its end boundary. Null ranges
-   and positions are invalid for iterators. Kind remains stable for a pointer
-   key across stack scenes.
-
 **label**
    ``String``. Optional. Default: the object key.
    Plain-text label beside the arrow.
@@ -63,51 +56,39 @@ Options
    Sphinx reference target for this particular pointer occurrence.
    See :ref:`common` for details.
 
-**range**
-   ``String``. Required for iterators; optional for pointers.
-   An array key, a pair of ordered array bounds, or pointer-only ``null``.
-   ``values`` means ``values.begin, values.end``. An explicit interval, such
-   as ``values.slot[1], values.end``, is half-open; its end is also a valid
-   iterator position. Bounds must belong to the same array. Empty ranges are
-   valid. Item and graph-node references cannot be range bounds.
-   For pointer kind, the range supplies a default position without restricting
-   an explicit ``at``. A null range needs no target object.
-
 Accessibility behavior
 ----------------------
 
 HTML places array pointer labels and arrows above horizontal arrays or beside
-vertical arrays. An end pointer marks a separate boundary position, and an
-empty array retains its end-position description. Pointers to graph nodes have
-labelled arrows in their diagrams and text descriptions beside them. Tree
-styles support multiple pointers and indicators, including shared targets.
+vertical arrays. An end pointer marks a separate boundary position.
+Array-style graphs draw the end boundary as a dotted empty box separated from
+real cells by a gap. The last real cell retains its rounded corners.
+Pointers to graph nodes use the same arrows as local graph indicators.
+Tree styles support multiple pointers and indicators, including shared targets.
 Labels sharing a target are grouped, each with its own arrow. Tree pointers
 use a gap between the target's children, or a position below a leaf, so their
-arrows do not cross other tree nodes. Whole-object pointers
-show a labelled arrow and a document link to the target object. They can also
-target pointers, including themselves; the target is the object itself and is
-not dereferenced. Document ``name`` values remain separate from object keys.
-Arrows toward invisible graph nodes retain
-an undisplayed target without revealing its value.
+arrows do not cross other tree nodes. Document ``name`` values remain separate
+from object keys.
 
 Pointer descriptions identify the target, its current value, and its displayed
 array index when applicable. Visual arrow symbols are hidden from assistive
-technology; the equivalent text description remains available. Pointer
-positions are determined separately in each scene, including omitted ``at``
-defaults.
+technology; equivalent text descriptions remain available.
+Use :ref:`tb-array` options ``range`` and ``range-label`` to mark a region
+independently of a pointer. A scene or activity defines each pointer position;
+pointers do not enforce traversal rules or evaluate expressions.
 
 Fallback behavior
 -----------------
 
 HTML without JavaScript retains pointer arrows and descriptions. Text and PDF
 include the pointer's position as prose; graph diagrams also include the arrow.
-A null pointer is described as null. No pointer is dereferenced or evaluated.
+A pointer with ``:at: none`` is described as having no target.
 
 Examples
 --------
 
 Example 1: Point to a keyed item
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tb-group::
 
@@ -139,8 +120,8 @@ Example 1: Point to a keyed item
             second = 13
             third = 21
 
-Example 2: An iterator at the end
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example 2: Mark the end boundary
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tb-group::
 
@@ -156,8 +137,6 @@ Example 2: An iterator at the end
                3 5 7
 
             .. tb-pointer:: current
-               :kind: iterator
-               :range: values
                :at: values.end
 
    .. tb-tab:: Rendered
@@ -170,14 +149,12 @@ Example 2: An iterator at the end
             3 5 7
 
          .. tb-pointer:: current
-            :kind: iterator
-            :range: values
             :at: values.end
 
 For a complete traversal example, see :ref:`tb-stack`.
 
 Example 3: Point to a graph node
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``network.node[b]`` draws a labelled arrow pointing directly to node ``b``,
 whose value is ``13``. This serves the same purpose as an array pointer:
@@ -212,46 +189,8 @@ horizontally and places the pointer below its target node.
 
             a[8] -> b[13] -> c[21]
 
-Example 4: Point to a whole object or another pointer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The bare key ``network`` selects the complete graph. The bare key ``current``
-selects the pointer object itself. These targets show links to the objects.
-
-.. tb-group::
-
-   .. tb-tab:: Source
-
-      .. code-block:: rst
-
-         .. tb-scene::
-
-            .. tb-pointer:: address
-               :at: current
-
-            .. tb-pointer:: current
-               :at: network
-
-            .. tb-graph:: network
-
-               a[8] -> b[13] -> c[21]
-
-   .. tb-tab:: Rendered
-
-      .. tb-scene::
-
-         .. tb-pointer:: address
-            :at: current
-
-         .. tb-pointer:: current
-            :at: network
-
-         .. tb-graph:: network
-
-            a[8] -> b[13] -> c[21]
-
-Example 5: Track multiple tree positions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example 4: Track multiple tree positions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Pointers and local indicators can share a tree. Here ``head`` and ``previous``
 both point to the root, while ``current`` points to its left child. Each label
@@ -296,3 +235,48 @@ has its own arrow below its target.
 
          .. tb-pointer:: current
             :at: tree.node[child]
+
+Example 5: An array-style graph with begin and end
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first pointer selects a real cell. The second selects the dotted boundary
+box beyond the last cell. Local ``tb-graph`` indicators accept the same
+positions, such as ``:indicators: first=.begin finish=.end``.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-scene::
+
+            .. tb-graph:: values
+               :style: array
+
+               a['a']
+               b['b']
+               c['c']
+
+            .. tb-pointer:: first
+               :at: values.begin
+
+            .. tb-pointer:: finish
+               :at: values.end
+
+   .. tb-tab:: Rendered
+
+      .. tb-scene::
+
+         .. tb-graph:: values
+            :style: array
+
+            a['a']
+            b['b']
+            c['c']
+
+         .. tb-pointer:: first
+            :at: values.begin
+
+         .. tb-pointer:: finish
+            :at: values.end

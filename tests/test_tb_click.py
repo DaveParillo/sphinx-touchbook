@@ -377,13 +377,18 @@ def test_array_question_html_has_native_keyed_controls(tmp_path, orientation):
 
 @pytest.mark.parametrize("style", ["graph", "list", "tree", "ring", "array"])
 def test_graph_question_html_has_inline_keyed_controls(tmp_path, style):
-    outdir = build_sphinx(tmp_path, "html", keyed_question(graph_source(style)))
+    source = graph_source(style).replace(":style:", ':alt: A "graph" & <nodes>\n   :align: right\n   :style:')
+    if style == "array":
+        source = source.replace(":indicators: current=b", ":indicators: current=b finish=.end")
+    outdir = build_sphinx(tmp_path, "html", keyed_question(source))
     soup = BeautifulSoup((outdir / "index.html").read_text(), "html.parser")
     assert len(soup.find_all("tb-click")) == len(soup.find_all("tb-graph")) == 1
     graph = soup.find("tb-graph", id="keyed-graph")
     assert "source-graph" in graph["class"]
     svg = graph.find("svg")
     assert svg is not None and svg["role"] == "group"
+    assert svg["aria-label"] == 'A "graph" & <nodes>'
+    assert svg.parent["align"] == "right"
     targets = svg.select(".tb-click__target")
     assert {target["data-key"]: target["data-correct"] for target in targets} == {"a": "false", "b": "true"}
     for target in targets:
