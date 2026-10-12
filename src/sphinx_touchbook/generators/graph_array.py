@@ -56,6 +56,28 @@ def rounded_box(x, y, width, height, radii):
     return str(len(points)) + " " + " ".join(f"{px:g} {py:g}" for px, py in points)
 
 
+def cell_radii(size, index, count, *, vertical=False):
+    """Round outer corners only, with four rounded corners for a single cell."""
+    width, height = size
+    radius = min(6, width / 4, height / 4)
+    first, last = index == 0, index == count - 1
+    if vertical:
+        return (radius if first else 0, radius if first else 0,
+                radius if last else 0, radius if last else 0)
+    return (radius if first else 0, radius if last else 0,
+            radius if last else 0, radius if first else 0)
+
+
+def cell_drawing(x, y, size, radii, fill, highlighted=False):
+    """Shared xdot fill and outline for standalone and embedded array cells."""
+    pen = "setlinewidth(3)" if highlighted else "setlinewidth(1)"
+    drawing = [f'c 5 -black S {len(pen)} -{pen}']
+    if fill:
+        drawing.append(f'C {len(fill)} -{fill}')
+    drawing.append(("b " if fill else "B ") + rounded_box(x, y, *size, radii))
+    return drawing
+
+
 def array_origin(plain):
     """Find the array table's lower-left corner after automatic indicator layout."""
     for line in plain.splitlines():
@@ -94,24 +116,15 @@ def array_dot(node, size, origin=(0, 0)):
         highlighted = item["key"] in node["highlighted"]
         if highlighted:
             fill = style.get("highlight-fill") or fill
-        pen = "setlinewidth(3)" if highlighted else "setlinewidth(1)"
-        drawing.append(f'c 5 -black S {len(pen)} -{pen}')
-        if fill:
-            drawing.append(f'C {len(fill)} -{fill}')
-        radius = min(6, width / 4, height / 4)
-        first, last = index == 0, index == count - 1
         if vertical:
             x = width if node["show_indices"] else 0
             y = (count - index - 1) * height + extra_height
-            radii = (radius if first else 0, radius if first else 0,
-                     radius if last else 0, radius if last else 0)
         else:
             x = index * width
             y = index_height if node["show_indices"] else 0
-            radii = (radius if first else 0, radius if last else 0,
-                     radius if last else 0, radius if first else 0)
-        drawing.append(("b " if fill else "B ") + rounded_box(
-            x + origin[0], y + origin[1], width, height, radii))
+        drawing.extend(cell_drawing(
+            x + origin[0], y + origin[1], size,
+            cell_radii(size, index, count, vertical=vertical), fill, highlighted))
     if vertical:
         rows = [f'<TR>{indices[index] if node["show_indices"] else ""}{value}</TR>'
                 for index, value in enumerate(values)]

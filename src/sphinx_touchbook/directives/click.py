@@ -26,6 +26,8 @@ from sphinx_touchbook.nodes import (
     TbGraphNode,
 )
 
+from sphinx_touchbook.graph_content import concrete_targets
+
 TEXT_SELECTOR_RE = re.compile(r"^(?P<text>.*)#(?P<ordinal>[1-9]\d*)$")
 RANGE_SELECTOR_RE = re.compile(
     r"^(?P<line>[1-9]\d*):(?P<start>[1-9]\d*)-(?P<end>[1-9]\d*)$"
@@ -253,7 +255,8 @@ class TbClickDirective(Directive):
                 raise SelectorError("tb-click array sources require explicitly keyed items.")
             keys = {item["key"] for item in source_block["elements"]}
         elif isinstance(source_block, TbGraphNode):
-            keys = {item["key"] for item in source_block["nodes"] if not item["invisible"]}
+            keys = {key for key, item in concrete_targets(source_block["nodes"]).items()
+                    if not item["invisible"]}
         source = "" if keyed else source_block.astext()
         regions = []
         for index, region_node in enumerate(region_nodes):

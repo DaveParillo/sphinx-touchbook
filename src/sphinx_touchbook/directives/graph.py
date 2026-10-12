@@ -8,17 +8,21 @@ import math
 from docutils.parsers.rst import Directive, directives
 from sphinx.ext.graphviz import align_spec
 
-from sphinx_touchbook.directives.array import KEY, NUMBER, validate_key
+from sphinx_touchbook.directives.array import KEY, INDEX, NUMBER, validate_key
 from sphinx_touchbook.directives.common import assign_node_id
 from sphinx_touchbook.directives.positions import resolve_target, graph_indicator_target
 from sphinx_touchbook.nodes import TbGraphNode
 from sphinx_touchbook.graph_styles import resolve_graph_styles
+from sphinx_touchbook.graph_content import (
+    parse_content, concrete_targets, cell_key, scalar_text, graph_statements,
+)
 
 
 IDENTIFIER = re.compile(KEY)
 EDGE = re.compile(rf"[ \t]+(?:->|-({KEY})->)[ \t]+")
 INVISIBLE = "{invisible}"
-NODE_REFERENCE = re.compile(rf"({KEY})\.node\[({KEY})\]")
+NODE_REFERENCE = re.compile(rf"({KEY})\.node\[({KEY})\](?:\.slot\[({INDEX})\])?")
+LOCAL_NODE_REFERENCE = re.compile(rf"\.node\[({KEY})\](?:\.slot\[({INDEX})\])?")
 INDICATOR = re.compile(rf"({KEY})=(\S+)")
 
 
@@ -48,7 +52,7 @@ def parse_overlays(options, graph_key, graph_nodes):
         if any(option in options for option in ("overlay-shape", "overlay-layer", "overlay-padding")):
             raise ValueError(":overlay-shape:, :overlay-layer:, and :overlay-padding: require :overlay:.")
         return []
-    by_key = {item["key"]: item for item in graph_nodes}
+    by_key = concrete_targets(graph_nodes)
     converters = {":overlay-shape:": overlay_shape,
                   ":overlay-layer:": overlay_layer,
                   ":overlay-padding:": overlay_padding}
@@ -80,7 +84,9 @@ def parse_overlays(options, graph_key, graph_nodes):
                 if match := NODE_REFERENCE.fullmatch(token):
                     if match[1] != graph_key:
                         raise ValueError(f"Invalid local overlay reference {token!r}.")
-                    target = match[2]
+                    target = cell_key(match[2], int(match[3])) if match[3] else match[2]
+                elif match := LOCAL_NODE_REFERENCE.fullmatch(token):
+                    target = cell_key(match[1], int(match[2])) if match[2] else match[1]
                 else:
                     if not IDENTIFIER.fullmatch(token):
                         raise ValueError(f"Invalid overlay target {token!r}.")
@@ -160,15 +166,23 @@ class GraphParser:
     def term(self, source, position):
         key, position = self.key(source, position)
         self.references.append((key, self.line))
-        declared = position < len(source) and source[position] == "["
+        declared = position < len(source) and source[position] in "[{"
+        content = None
         if declared:
-            position += 1
-            position += len(source[position:]) - len(source[position:].lstrip(" \t"))
-            value, position = self.value(source, position)
-            position += len(source[position:]) - len(source[position:].lstrip(" \t"))
-            if position == len(source) or source[position] != "]":
-                self.fail("Expected ']' after the node label.")
-            position += 1
+            if source[position] == "{":
+                try:
+                    content, position = parse_content(source, position)
+                except ValueError as error:
+                    self.fail(str(error))
+                value = "[" + ", ".join(scalar_text(value) for value in content["values"]) + "]"
+            else:
+                position += 1
+                position += len(source[position:]) - len(source[position:].lstrip(" \t"))
+                value, position = self.value(source, position)
+                position += len(source[position:]) - len(source[position:].lstrip(" \t"))
+                if position == len(source) or source[position] != "]":
+                    self.fail("Expected ']' after the node label.")
+                position += 1
             modifier = re.match(r"[ \t]+\{invisible\}", source[position:])
             invisible = modifier is not None
             if modifier:
@@ -176,6 +190,8 @@ class GraphParser:
             if key in self.declarations:
                 self.fail(f"Duplicate node declaration {key!r}.")
             self.declarations[key] = {"key": key, "value": value, "invisible": invisible}
+            if content is not None:
+                self.declarations[key]["content"] = content
         return key, position, declared
 
     def statement(self, source):
@@ -220,7 +236,7 @@ class GraphParser:
             self.fail("A standalone node requires a value declaration.")
 
     def parse(self, content):
-        for self.line, source in enumerate(content, start=1):
+        for self.line, source in graph_statements(content):
             self.statement(source)
         for key, line in self.references:
             if key not in self.declarations:
@@ -263,8 +279,11 @@ class TbGraphDirective(Directive):
             if style_name not in styles:
                 raise ValueError(f"Unknown graph style {style_name!r}; choose from {', '.join(styles)}.")
             graph_nodes, edges = GraphParser().parse(self.content)
+            if any("content" in item for item in graph_nodes) and styles[style_name]["layout"] not in ("tree", "list"):
+                raise ValueError("Structured array nodes require a tree or list style.")
             highlighted = set()
             keys = {item["key"] for item in graph_nodes}
+            targets = concrete_targets(graph_nodes)
             annotations = parse_overlays(self.options, key, graph_nodes)
             if "highlight" in self.options:
                 if key is None:
@@ -273,9 +292,10 @@ class TbGraphDirective(Directive):
                     match = NODE_REFERENCE.fullmatch(reference)
                     if match is None or match[1] != key:
                         raise ValueError(f"Invalid local graph highlight reference {reference!r}.")
-                    if match[2] not in keys:
-                        raise ValueError(f"Unknown graph node in {reference!r}.")
-                    highlighted.add(match[2])
+                    target = cell_key(match[2], int(match[3])) if match[3] else match[2]
+                    if target not in targets:
+                        raise ValueError(f"Unknown graph node or array cell in {reference!r}; array nodes require .slot[index].")
+                    highlighted.add(target)
             indicators = []
             if "indicators" in self.options:
                 indicator_keys = set()

@@ -33,6 +33,8 @@ Options
    Item references follow explicitly keyed items to their current positions.
    Array-style graphs also support ``slot``, ``begin``, and ``end``; their
    cells can be identified by ``node`` references.
+   Tree/list nodes with array content use ``tree.node[root].slot[0]``.
+   The containing array cannot be a pointer target; select a concrete cell.
    ``begin`` selects the first element. For an empty array, it coincides with
    ``end``. ``end`` is a boundary past the last element, never an extra element.
    Use ``none`` for a pointer with no current target. Invisible graph targets

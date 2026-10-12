@@ -4,12 +4,28 @@ import re
 
 from sphinx_touchbook.directives.array import KEY, INDEX
 from sphinx_touchbook.nodes import TbArrayNode, TbGraphNode
+from sphinx_touchbook.graph_content import scalar_text, cell_key
 
+
+CELL_POSITION = re.compile(rf"node\[({KEY})\]\.slot\[({INDEX})\]")
 
 POSITION = re.compile(rf"(?:(slot)\[({INDEX})\]|(item|node)\[({KEY})\]|(begin|end))")
 
 
 def resolve_target(reference, target, position):
+    if cell := CELL_POSITION.fullmatch(position):
+        if not isinstance(target, TbGraphNode):
+            raise ValueError(f"Cell reference {reference!r} requires a graph.")
+        item = next((item for item in target["nodes"] if item["key"] == cell[1]), None)
+        if item is None or "content" not in item:
+            raise ValueError(f"Cell reference {reference!r} requires an array-content node.")
+        index = int(cell[2])
+        values = item["content"]["values"]
+        if index >= len(values):
+            raise ValueError(f"Cell index out of bounds in {reference!r}.")
+        return {"type": "cell", "object": target["key"], "key": cell[1],
+                "index": index, "value": "" if item["invisible"] else scalar_text(values[index]),
+                "invisible": item["invisible"], "reference": reference}
     match = POSITION.fullmatch(position)
     if match is None:
         raise ValueError(f"Invalid position reference {reference!r}.")
@@ -22,6 +38,8 @@ def resolve_target(reference, target, position):
         item = next((item for item in target["nodes"] if item["key"] == item_key), None)
         if item is None:
             raise ValueError(f"Unknown graph node in {reference!r}.")
+        if "content" in item:
+            raise ValueError(f"Array node reference {reference!r} requires .slot[index]; select a concrete cell.")
         return {"type": "node", "object": target["key"], "key": item_key,
                 "value": "" if item["invisible"] else item["value"],
                 "invisible": item["invisible"], "reference": reference}
@@ -53,6 +71,8 @@ def graph_indicator_target(position, graph):
     """Use node keys for real cells and a distinct token for the end boundary."""
     if position is None:
         return None
+    if position["type"] == "cell":
+        return cell_key(position["key"], position["index"])
     if position["type"] == "node":
         return position["key"]
     return ".end" if position["end"] else graph["nodes"][position["index"]]["key"]

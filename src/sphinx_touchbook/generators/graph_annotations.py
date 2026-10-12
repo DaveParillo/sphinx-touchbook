@@ -13,6 +13,7 @@ from tempfile import NamedTemporaryFile
 import xml.etree.ElementTree as ET
 
 from sphinx.ext.graphviz import GraphvizError
+from sphinx_touchbook.graph_content import cell_key
 
 
 SVG = "http://www.w3.org/2000/svg"
@@ -72,8 +73,37 @@ def node_bounds(graph, node):
                   if shape.tag in (tag("ellipse"), tag("polygon"), tag("path"))]
         if shapes:
             rendered[title.text] = union(shapes)
-    return {item["key"]: rendered[f"n{index}"]
-            for index, item in enumerate(node["nodes"]) if not item["invisible"]}
+    # Rounded structured cells use the same background paths as array styles.
+    # The native table remains responsible for labels and connection ports.
+    borders = graph.findall(tag("path"))
+    rounded = bool(borders)
+    expected = sum(max(1, len(item["content"]["values"])) for item in node["nodes"]
+                   if "content" in item and not item["invisible"])
+    if rounded and len(borders) != expected:
+        raise ValueError("Graphviz did not return structured array cell borders.")
+    background = iter(borders)
+    bounds = {}
+    for index, item in enumerate(node["nodes"]):
+        if item["invisible"]:
+            continue
+        if "content" not in item:
+            bounds[item["key"]] = rendered[f"n{index}"]
+            continue
+        if rounded:
+            borders = [next(background) for _ in range(max(1, len(item["content"]["values"])))]
+            for cell, border in enumerate(borders[:len(item["content"]["values"])]):
+                bounds[cell_key(item["key"], cell)] = shape_bounds(border)
+            continue
+        group = next(group for group in graph.findall(f"{tag('g')}[@class='node']")
+                     if group.find(tag("title")).text == f"n{index}")
+        borders = [border for border in group.iter(tag("polygon"))
+                   if border.get("stroke") != "none"]
+        values = item["content"]["values"]
+        if values and len(borders) != len(values):
+            raise ValueError("Graphviz did not return structured array cell borders.")
+        for cell, border in enumerate(borders[:len(values)]):
+            bounds[cell_key(item["key"], cell)] = shape_bounds(border)
+    return bounds
 
 
 def ellipse_geometry(bounds, padding):

@@ -115,6 +115,9 @@ Sphinx configuration options
 Accessibility behavior
 ----------------------
 
+For tree/list graph nodes with array content, selectors name individual cells,
+such as ``root.slot[0]``. Container keys cannot be selected.
+
 HTML renders text regions and array items as native buttons. Graph nodes are
 focusable controls in the diagram; press Enter or Space to select a focused
 node. Accessible labels identify keyed targets by their keys and values.

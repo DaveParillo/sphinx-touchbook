@@ -21,6 +21,11 @@ from sphinx_touchbook.generators.graph_array import (
     array_dot, array_origin, cell_dimensions, measurement_dot,
 )
 from sphinx_touchbook.generators.graph_annotations import annotated_asset
+from sphinx_touchbook.graph_content import concrete_targets, target_owner, target_label
+from sphinx_touchbook.generators.graph_content import (
+    measurement_graph, table_label, target_endpoint, target_port,
+    content_positions, content_drawing,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +113,7 @@ def tree_edges(node, ids, style, edges):
                 lines.append(edge_dot(by_target[target], ids, style,
                                       weight=100 if target == anchor else 1))
             elif target == annotations.get(parent):
-                lines.extend(tree_annotation_edges(ids[parent], target, style, len(grouped[parent])))
+                lines.extend(tree_annotation_edges(target, node, grouped[parent], ids))
             else:
                 weight = 100 if target == anchor else 1
                 lines.append(f'{ids[parent]} -> {target} [style="invis", weight="{weight}"];')
@@ -119,23 +124,25 @@ def tree_edges(node, ids, style, edges):
         if target not in outgoing or target not in eligible:
             # Leaves have no child row to reuse. A weighted edge keeps the
             # label just below the target, clear of its siblings on either side.
-            lines.extend(tree_annotation_edges(ids[target], annotation, style, len(grouped[target])))
+            lines.extend(tree_annotation_edges(annotation, node, grouped[target], ids))
     return lines
 
 
-def tree_annotation_edges(target, annotation, style, count):
+def tree_annotation_edges(annotation, node, indicators, ids):
+    style = node["style"]
     horizontal = style["orientation"] == "horizontal"
-    return [f'{target} -> {annotation} [dir="back", arrowtail="vee", arrowhead="none", '
+    return [f'{target_endpoint(indicator["target"], ids, node)} -> {annotation} '
+            f'[dir="back", arrowtail="vee", arrowhead="none", '
             f'arrowsize="0.6", weight="100", '
-            f'tailport="{"e" if horizontal else "s"}", '
+            f'tailport="{target_port(indicator["target"], "e" if horizontal else "s", node)}", '
             f'headport="i{index}:{"w" if horizontal else "n"}"];'
-            for index in range(count)]
+            for index, indicator in enumerate(indicators)]
 
 
 def grouped_indicators(node):
     grouped = {}
     for indicator in graph_pointer_indicators(node):
-        grouped.setdefault(indicator["target"], []).append(indicator)
+        grouped.setdefault(target_owner(indicator["target"]), []).append(indicator)
     return grouped
 
 
@@ -168,14 +175,16 @@ def graph_indicators(node, ids):
             lines.append(f'{{rank="same"; {target}; {identifier};}}')
         # Graphviz 2.43 can lose or reverse arrowheads on same-rank edges
         # with ports. Let it attach these edges to the node boundaries.
-        for _ in indicators:
+        for indicator in indicators:
+            endpoint = target_endpoint(indicator["target"], ids, node)
             attributes = ['dir="back"', 'arrowtail="vee"', 'arrowhead="none"',
                           'arrowsize="0.6"', 'constraint="false"', 'weight="0"']
-            lines.append(f'{target} -> {identifier} [{", ".join(attributes)}];')
+            lines.append(f'{endpoint} -> {identifier} [{", ".join(attributes)}];')
     return lines
 
 
-def graph_dot(node, *, array_size=None, array_position=(0, 0)):
+def graph_dot(node, *, array_size=None, array_position=(0, 0),
+              structured_positions=None):
     """Map semantic keys to internal IDs; all attributes are generated here."""
     if node["style"]["layout"] == "array":
         if array_size is None:
@@ -202,8 +211,18 @@ def graph_dot(node, *, array_size=None, array_position=(0, 0)):
     if style["layout"] == "ring":
         spacing = max(style["node-spacing"], .6) if graph_pointer_indicators(node) else style["node-spacing"]
         lines.append(f'graph [mindist="{spacing}"];')
+    if structured_positions is not None:
+        drawing = content_drawing(node, array_size, structured_positions)
+        lines.append('graph [_background=' + dot_string(drawing) + '];')
+    mixed = any("content" in item for item in node["nodes"])
     for item in node["nodes"]:
-        attributes = ["label=" + dot_string(item["value"])]
+        attributes = (table_label(item, node, array_size or (32, 32),
+                                  background=structured_positions is not None)
+                      if "content" in item else ["label=" + dot_string(item["value"])])
+        if mixed and "content" not in item:
+            width, height = array_size or (32, 32)
+            attributes.extend([f'width="{width / 72:g}"', f'height="{height / 72:g}"',
+                               'margin="0.02"'])
         if region := node.get("click_regions", {}).get(item["key"]):
             attributes.append(f'URL="#tb-click-region-{region["index"]}"')
         if item["invisible"]:
@@ -234,7 +253,7 @@ def prose_list(items):
 
 def graph_description(node):
     content = base_graph_description(node)
-    by_key = {item["key"]: item for item in node["nodes"]}
+    by_key = concrete_targets(node["nodes"])
     visible = [item for item in node["nodes"] if not item["invisible"]]
     counts = {item["value"]: sum(other["value"] == item["value"] for other in visible)
               for item in visible}
@@ -251,6 +270,11 @@ def graph_description(node):
             position = (f'undisplayed cell {index}' if item["invisible"] else
                         f'cell {index}, value “{item["value"]}”' if item["value"] else f'unused cell {index}')
             text = f'{prefix} points to {position}.'
+        elif ".slot[" in target:
+            item = by_key[target]
+            label = (f'an undisplayed cell (node {item["key"]}, cell {item["index"]})'
+                     if item["invisible"] else target_label(target, node["nodes"]))
+            text = f'{prefix} points to {label}.'
         else:
             item = by_key[target]
             label = ('an undisplayed node' if item["invisible"] else
@@ -260,7 +284,7 @@ def graph_description(node):
             text = f'{prefix} points to {label}.'
         content += nodes.paragraph(text=text)
     for annotation in node.get("annotations", []):
-        labels = [f'“{by_key[key]["value"]}” (node {key})' for key in annotation["targets"]]
+        labels = [target_label(key, node["nodes"]) for key in annotation["targets"]]
         shape = annotation["shape"]
         article = "An" if shape == "ellipse" else "A"
         content += nodes.paragraph(text=f'{article} {shape} surrounds {prose_list(labels)}.')
@@ -304,7 +328,14 @@ def base_graph_description(node):
     for item in visible:
         counts[item["value"]] = counts.get(item["value"], 0) + 1
     for item in visible:
-        label = f'“{item["value"]}”' if item["value"] else "an unlabeled node"
+        if "content" in item:
+            values = [f'“{value["value"]}”' if value["value"] else "an unused cell"
+                      for value in concrete_targets([item]).values()]
+            label = f'array node {item["key"]} with {len(values)} cells'
+            if values:
+                label += ' [' + ', '.join(values) + ']'
+        else:
+            label = f'“{item["value"]}”' if item["value"] else "an unlabeled node"
         if counts[item["value"]] > 1:
             label += f' (node {item["key"]})'
         labels[item["key"]] = label
@@ -359,6 +390,8 @@ def base_graph_description(node):
             verb = "is a leaf" if len(leaves) == 1 else "are leaves"
             content += nodes.paragraph(text=f'{prose_list(leaves)} {verb}.')
     highlighted = [labels[item["key"]] for item in visible if item["key"] in node["highlighted"]]
+    highlighted.extend(target_label(key, node["nodes"]) for key in node["highlighted"]
+                       if ".slot[" in key and not concrete_targets(node["nodes"])[key]["invisible"])
     if highlighted:
         verb = "is" if len(highlighted) == 1 else "are"
         content += nodes.paragraph(text=f'{prose_list(highlighted)} {verb} highlighted.')
@@ -377,7 +410,9 @@ def render_graph(translator, node, format, *, return_path=False):
             options["graphviz_dot"] = "circo"
         array_size = None
         array_position = (0, 0)
-        if node["style"]["layout"] == "array":
+        structured_positions = None
+        structured = any("content" in item for item in node["nodes"])
+        if node["style"]["layout"] == "array" or structured:
             # Measurements contain source labels, including invisible values.
             # Cache them with doctrees, outside the published image directory.
             builder = translator.builder
@@ -387,19 +422,25 @@ def render_graph(translator, node, format, *, return_path=False):
             cache_builder.outdir = builder.doctreedir
             cache_builder.imagedir = "tb-graph-measure"
             cached = SimpleNamespace(builder=cache_builder)
-            _, measured = render_dot(cached, measurement_dot(node), options,
+            measurements = measurement_graph(node) if structured else measurement_dot(node)
+            _, measured = render_dot(cached, measurements, options,
                                      "plain", prefix="tb-graph-measure")
             if measured is None:
                 return None
             array_size = cell_dimensions(Path(measured).read_text(encoding="utf-8"))
-            if graph_pointer_indicators(node):
+            if structured or graph_pointer_indicators(node):
                 _, layout = render_dot(cached, graph_dot(node, array_size=array_size),
                                        options, "plain", prefix="tb-graph-measure")
                 if layout is None:
                     return None
-                array_position = array_origin(Path(layout).read_text(encoding="utf-8"))
+                plain = Path(layout).read_text(encoding="utf-8")
+                if structured:
+                    structured_positions = content_positions(plain)
+                else:
+                    array_position = array_origin(plain)
         filename, output_path = render_dot(
-            translator, graph_dot(node, array_size=array_size, array_position=array_position),
+            translator, graph_dot(node, array_size=array_size, array_position=array_position,
+                                  structured_positions=structured_positions),
             options,
             "svg" if node.get("annotations") else format, prefix="tb-graph")
         if output_path is not None and node.get("annotations"):
@@ -438,9 +479,9 @@ def visit_tb_graph_html(self, node):
     elif interactive:
         # Keep the question usable when Graphviz cannot produce an image.
         self.body.append('<ul class="tb-click__graph-targets">')
-        for item in node["nodes"]:
-            if item["key"] in node["click_regions"]:
-                self.body.append('<li>' + keyed_target_html(node, item["key"], item["value"]) + '</li>')
+        for key, item in concrete_targets(node["nodes"]).items():
+            if key in node["click_regions"]:
+                self.body.append('<li>' + keyed_target_html(node, key, item["value"]) + '</li>')
         self.body.append('</ul>\n')
     self.body.append('</tb-graph>\n')
     raise nodes.SkipNode

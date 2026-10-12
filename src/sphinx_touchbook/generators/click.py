@@ -16,6 +16,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 from sphinx.writers.text import TextTranslator
 
+from sphinx_touchbook.graph_content import concrete_targets
 from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.nodes import (
     TbClickNode,
@@ -58,7 +59,7 @@ def keyed_graph_svg(node, filename):
     root = ElementTree.parse(filename).getroot()
     svg_ns = "http://www.w3.org/2000/svg"
     href = "{http://www.w3.org/1999/xlink}href"
-    items = {item["key"]: item for item in node["nodes"]}
+    items = concrete_targets(node["nodes"])
     regions = {f"tb-click-region-{region['index']}": key
                for key, region in node["click_regions"].items()}
     root.set("class", "tb-graph__diagram tb-click__diagram")

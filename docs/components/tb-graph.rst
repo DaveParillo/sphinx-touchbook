@@ -35,15 +35,11 @@ Options
 **align**
    ``String``. Optional.
    Horizontal alignment of the diagram: ``left``, ``center``, or ``right``.
-   Applies to HTML and PDF. This is the
-   `Sphinx Graphviz align option
-   <https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html#directive-option-graphviz-align>`__.
+   Applies to HTML and PDF.
 
 **alt**
    ``String``. Optional.
-   Alternate text for the diagram, using the
-   `Sphinx Graphviz alt option
-   <https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html#directive-option-graphviz-alt>`__.
+   Alternate text for the diagram.
    HTML uses it as the image's alternate text; tagged PDF includes it with the
    image, and text output includes it before the graph description.
    If omitted, the alternate text uses ``label``, then ``caption``, then
@@ -75,6 +71,8 @@ Options
    ``tree.node[root] tree.node[child]``. Requires an explicit object key,
    here ``tree``. All references must resolve to declared nodes. Highlighted
    nodes have thicker borders. Highlighting an invisible node does not show it.
+   For array content in tree/list nodes, select individual cells with
+   ``tree.node[root].slot[0]``; the containing array is not a highlight target.
 
 **indicators**
    ``String``. Optional. None by default.
@@ -97,6 +95,9 @@ Options
    The box is a position, not an extra cell or node.
    Use ``current=none`` when there is no target; the text description records
    this without drawing an arrow. These targets behave like :ref:`tb-pointer`.
+   Tree/list nodes with array content use ``current=.node[root].slot[0]``
+   or ``current=tree.node[root].slot[0]``. Select a concrete cell; a bare key
+   or ``.node[root]`` cannot target the containing array.
    An object-key argument is not required for local references.
    Pairs may continue on indented option lines. Do not add spaces around ``=``.
 
@@ -120,6 +121,8 @@ Options
    Qualified local references, such as ``tree.node[parent]``, also work when
    the graph has that object key. Repeated targets count once within a group.
    Every graph style supports overlays, including array value cells.
+   For array content in tree/list nodes, use ``.node[root].slot[0]`` or
+   ``tree.node[root].slot[0]``. Container keys cannot be overlay targets.
    Overlays do not change node placement and can encompass other objects
    between their targets. See `Overlay groups`_ for multiple overlays and
    individual settings.
@@ -148,7 +151,8 @@ Options
    ``Flag``. Optional. Disabled by default.
    Show zero-based indices alongside values in the ``array`` style or a style
    based on it. Indices follow node declaration order, including invisible
-   cells. This flag has no effect on other styles.
+   cells. In tree/list nodes with array content, each array has its own
+   zero-based index row. Scalar nodes in other styles have no indices.
 
 **style**
    ``String``. Optional. Defaults to ``graph``.
@@ -208,7 +212,7 @@ the configured built-in base. Unknown style names and settings are errors.
        quoted value. Defaults to light grey (``#eeeeee``) for ``array``.
        ``None`` leaves unused cells unfilled. ``highlight-fill`` takes
        precedence when an unused cell is highlighted. Other styles ignore
-       this setting.
+       this setting, except array content in tree/list nodes.
    * - ``font``
      - Font family name; defaults to ``sans-serif``.
    * - ``font-size``
@@ -320,7 +324,8 @@ Use ``->`` for a directed edge or ``-key->`` for a named relationship:
 Spaces or tabs are required on both sides of each edge operator. Do not put
 whitespace inside the operator or between a node key and its opening bracket.
 Blank lines and ``#`` comments outside strings are ignored. Each nonempty
-line is one complete declaration or edge chain. Semicolons are unsupported.
+line is one complete declaration or edge chain. JSON objects may continue
+across physical lines. Semicolons are unsupported.
 
 Declare every node exactly once in the graph. Bare references can precede or
 follow that declaration. Repeating a value declaration is an error, even
@@ -331,6 +336,45 @@ Named relationships are unique per source node: one node cannot have two
 Parallel edges between the same ordered pair require distinct names; do not
 mix an unnamed edge with named parallel edges. Duplicate edges are errors.
 Cycles, self-edges, disconnected nodes, and empty graphs are allowed.
+
+Array content in tree and list nodes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tree and list styles, including styles based on them, can display an array
+inside each node. Keep the graph flat: declare the content directly after
+its node key as a JSON object, without square brackets around the object:
+
+.. code-block:: text
+
+   root{"type": "array", "values": [54, 26, 93, 17]}
+   root -left-> left{"type": "array", "values": [54, 26]}
+   root -right-> right{"type": "array", "values": [93, 17]}
+
+The object requires exactly ``type`` and ``values``. The supported type is
+``"array"``. Values can be numbers, strings, or a mixture of both. Use strict
+JSON: strings and field names use double quotes. JSON string escapes such as
+``\n`` and ``\\`` are supported. Arrays of objects, nested arrays, booleans,
+null values, non-finite numbers, and additional fields are errors.
+An empty ``values`` array displays an empty array with no selectable cells.
+JSON objects can span multiple lines. Scalar ``key[value]`` declarations
+remain valid alongside array content.
+
+Each array displays its cells in a row. All array cells within one graph have
+uniform dimensions, measured to fit array values and scalar node labels.
+Scalar nodes use the same minimum width and height; longer labels can grow.
+First and last cells have rounded outer corners; interior joins remain
+straight. A one-cell array has four rounded corners. Node keys identify arrays
+in graph relationships; cells have zero-based positions within each array.
+The tree/list style still controls relationships, spacing, fonts, and fills.
+An array uses rectangular cells regardless of the scalar node shape.
+``:show-indices:`` adds a separate index row to each array.
+
+Annotations select concrete cells with ``graph.node[root].slot[0]``.
+Highlights require the graph key. Indicators and overlays also accept the
+local form ``.node[root].slot[0]``. A reference to the entire array node is
+not an annotation target. Scene pointers use the same qualified cell
+references. Scalars retain their existing ``graph.node[key]`` references.
+Each graph has one diagram and one text description covering all its nodes.
 
 Invisible components
 --------------------
@@ -508,6 +552,7 @@ Example 3: Forward references and cycles
 
          .. tb-graph::
             :label: A cycle and a disconnected node
+            :indicators: start=a current=b
 
             a['first'] -> b -> c['third'] -> a
             b['second']
@@ -798,3 +843,65 @@ cell syntax ``c['']`` still describes a real cell and has a different meaning.
          a['a']
          b['b']
          c['c']
+
+Example 14: Arrays in a merge tree
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-graph:: merge
+            :style: tree
+            :show-indices:
+            :highlight: merge.node[left].slot[1]
+            :indicators: current=.node[left].slot[1]
+            :overlay: .node[left].slot[0] .node[left].slot[1]
+
+            root{"type": "array", "values": [54, 26, 93, 17]}
+            left{"type": "array", "values": [54, 26]}
+            right{"type": "array", "values": [93, 17]}
+            root -left-> left
+            root -right-> right
+
+   .. tb-tab:: Rendered
+
+      .. tb-graph:: merge
+         :style: tree
+         :show-indices:
+         :highlight: merge.node[left].slot[1]
+         :indicators: current=.node[left].slot[1]
+         :overlay: .node[left].slot[0] .node[left].slot[1]
+
+         root{"type": "array", "values": [54, 26, 93, 17]}
+         left{"type": "array", "values": [54, 26]}
+         right{"type": "array", "values": [93, 17]}
+         root -left-> left
+         root -right-> right
+
+Example 15: Arrays in a linked list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-graph:: blocks
+            :style: list
+            :indicators: current=.node[first].slot[1]
+
+            first{"type": "array", "values": ["a", 2]} -> second
+            second{"type": "array", "values": ["b", 3]} -> tail[4]
+
+   .. tb-tab:: Rendered
+
+      .. tb-graph:: blocks
+         :style: list
+         :indicators: current=.node[first].slot[1]
+
+         first{"type": "array", "values": ["a", 2]} -> second
+         second{"type": "array", "values": ["b", 3]} -> tail[4]

@@ -57,12 +57,31 @@ tb_code_compiler_explorer_defaults = {
     'java': {'language': 'java', 'compiler': 'java1702'},
 }
 
+# tb_graph_styles = {
+#     "list": {"fill": "#e0f2fe", "font-size": 14},
+#     "plain-list": {"base": "list", "shape": "ellipse","fill": None},
+#     "tree": {
+#         "fill": "#dcfce7", "highlight-fill": "#fde68a",
+#         "level-spacing": 0.4,
+#     },
+# }
+
 tb_graph_styles = {
-    "list": {"fill": "#e0f2fe", "font-size": 14},
-    "plain-list": {"base": "list", "shape": "ellipse","fill": None},
+    "list": {
+        "fill": "#dcfce7", "highlight-fill": "#fde68a",
+        "font-size": 14,
+    },
+    "array": {
+        "fill": "#dcfce7", "highlight-fill": "#fde68a",
+        "font-size": 14,
+    },
+    "plain-list": {"base": "list", "fill": None},
+    "vertical-array": {"base": "array", "orientation": "vertical"},
     "tree": {
         "fill": "#dcfce7", "highlight-fill": "#fde68a",
         "level-spacing": 0.4,
+        "font-size": 14,
     },
     "print-tree": {"base": "tree", "arrows": "vee"},
 }
+

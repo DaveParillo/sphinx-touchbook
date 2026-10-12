@@ -70,6 +70,10 @@ def pointer_description(pointer):
     if position is None:
         return f"{label} has no target."
     target = position["object"]
+    if position["type"] == "cell":
+        if position["invisible"]:
+            return f"{label} points to an undisplayed cell in {target} node {position['key']} (index {position['index']})."
+        return f"{label} points to {target} node {position['key']}, cell {position['index']}, value {position['value']!r}."
     if position["type"] == "node":
         if position["invisible"]:
             return f"{label} points to an undisplayed node in {target}."
