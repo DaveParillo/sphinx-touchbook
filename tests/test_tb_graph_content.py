@@ -90,24 +90,43 @@ def test_pointers_reject_container_targets_and_invalid_cells(position):
 
 
 @pytest.mark.parametrize("style", ["tree", "list"])
-def test_native_table_rendering_cell_bounds_and_overlay_geometry(style):
+@pytest.mark.parametrize("fill_stroke", ["none", "transparent"])
+def test_native_table_rendering_cell_bounds_and_overlay_geometry(style, fill_stroke):
     node = graph(options="   :show-indices:\n"
                  "   :highlight: g.node[root].slot[1]\n"
                  "   :indicators: first=.node[root].slot[0] last=.node[root].slot[2]\n"
                  "   :overlay: .node[root].slot[1]\n   :overlay-shape: rectangle", style=style)
     dot = graph_dot(node, array_size=(40, 32))
-    assert 'n0:i0 -> tb_indicators_n0' in dot
-    assert 'n0:i2 -> tb_indicators_n0' in dot
+    if style == "tree":
+        assert 'n0:i0 -> tb_indicators_n0' in dot
+        assert 'n0:i2 -> tb_indicators_n0' in dot
+    else:
+        indicator_edges = [line for line in dot.splitlines()
+                           if line.startswith('n0 -> tb_indicators_n0')]
+        assert len(indicator_edges) == 2
+        assert 'tailport="i0"' in indicator_edges[0]
+        assert 'tailport="i2"' in indicator_edges[1]
     svg = subprocess.run(["dot", "-Tsvg"], input=dot, text=True,
                          capture_output=True, check=True)
     assert not svg.stderr
     root = ET.fromstring(svg.stdout)
     group = root.find(f"{tag('g')}[@class='graph']")
+    indicator_edges = [edge for edge in group.findall(f"{tag('g')}[@class='edge']")
+                       if 'tb_indicators_n0' in edge.find(tag("title")).text]
+    assert len(indicator_edges) == 2
+    assert all(len(edge.findall(tag("polygon"))) == 1 for edge in indicator_edges)
+    # Exercise both Graphviz spellings regardless of the installed version.
+    fills = [polygon for polygon in group.iter(tag("polygon"))
+             if polygon.get("stroke") in ("none", "transparent")]
+    assert len(fills) == 3  # two filled root cells and the filled leaf cell
+    for polygon in fills:
+        polygon.set("stroke", fill_stroke)
+    svg_source = ET.tostring(root, encoding="unicode")
     bounds = node_bounds(group, node)
     assert "root" not in bounds
     assert set(bounds) == {"root.slot[0]", "root.slot[1]", "root.slot[2]", "left.slot[0]", "right"}
     assert bounds["root.slot[0]"][2] <= bounds["root.slot[1]"][2]
-    composed = ET.fromstring(compose_svg(svg.stdout, node))
+    composed = ET.fromstring(compose_svg(svg_source, node))
     overlay = next(element for element in composed.iter() if element.get("data-targets"))
     assert overlay.get("data-targets") == "root.slot[1]"
     assert float(overlay.get("width")) < bounds["root.slot[2]"][2] - bounds["root.slot[0]"][0]

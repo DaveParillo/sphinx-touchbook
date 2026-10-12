@@ -173,12 +173,15 @@ def graph_indicators(node, ids):
             continue
         if style["layout"] != "ring":
             lines.append(f'{{rank="same"; {target}; {identifier};}}')
-        # Graphviz 2.43 can lose or reverse arrowheads on same-rank edges
-        # with ports. Let it attach these edges to the node boundaries.
         for indicator in indicators:
             endpoint = target_endpoint(indicator["target"], ids, node)
             attributes = ['dir="back"', 'arrowtail="vee"', 'arrowhead="none"',
                           'arrowsize="0.6"', 'constraint="false"', 'weight="0"']
+            # Graphviz 2.43 needs cell tailports before arrow attributes to
+            # preserve arrowheads on same-rank edges; endpoint ports also fail.
+            if ":" in endpoint:
+                endpoint, port = endpoint.split(":", 1)
+                attributes.insert(0, f'tailport="{port}"')
             lines.append(f'{endpoint} -> {identifier} [{", ".join(attributes)}];')
     return lines
 

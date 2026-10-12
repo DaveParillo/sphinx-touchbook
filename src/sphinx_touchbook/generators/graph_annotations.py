@@ -96,8 +96,10 @@ def node_bounds(graph, node):
             continue
         group = next(group for group in graph.findall(f"{tag('g')}[@class='node']")
                      if group.find(tag("title")).text == f"n{index}")
+        # Graphviz 2.x uses "transparent" for fill-only polygons; newer
+        # versions use "none". Neither polygon represents a cell border.
         borders = [border for border in group.iter(tag("polygon"))
-                   if border.get("stroke") != "none"]
+                   if border.get("stroke") not in ("none", "transparent")]
         values = item["content"]["values"]
         if values and len(borders) != len(values):
             raise ValueError("Graphviz did not return structured array cell borders.")
