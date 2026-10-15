@@ -2,6 +2,7 @@ from io import StringIO
 from textwrap import indent
 from pathlib import Path
 import json
+import re
 import subprocess
 import sys
 
@@ -143,10 +144,12 @@ def test_stack_validation(source, message):
         assert message in document.astext()
 
 
-def build_sphinx(tmp_path, builder, source):
+def build_sphinx(tmp_path, builder, source, *, tagged=False):
     srcdir, outdir = tmp_path/'src', tmp_path/builder
     srcdir.mkdir()
-    (srcdir/'conf.py').write_text('extensions=["sphinx_touchbook"]\nhtml_theme="alabaster"\n')
+    (srcdir/'conf.py').write_text(
+        'extensions=["sphinx_touchbook"]\nhtml_theme="alabaster"\n'
+        f'tb_pdf_tagging={tagged!r}\n')
     (srcdir/'index.rst').write_text('Test\n====\n\n' + source)
     result = subprocess.run([sys.executable, '-m', 'sphinx', '-E', '-W', '-b', builder, str(srcdir), str(outdir)],
                             capture_output=True, text=True)
@@ -221,6 +224,39 @@ def test_static_builders_keep_all_scenes_code_and_pointer_positions(tmp_path, bu
     assert 'current points to values at index 1' in output
     assert 'values.end' in output
     assert 'data-action' not in output and 'application/json' not in output
+
+
+@pytest.mark.parametrize('tagged', [False, True])
+def test_latex_captions_have_paragraph_breaks(tmp_path, tagged):
+    source = (
+        'Prose before the stack.\n\n'
+        + stack(scene('First scene prose.', '   :caption: Start & inspect\n'),
+                scene('Second scene prose.', '   :caption: Finish\n'))
+        + '\nProse after the stack.\n\n'
+        + '.. tb-stack::\n\n'
+          '   .. tb-scene::\n\n'
+          '      Uncaptioned stack prose.\n\n'
+        + scene('Standalone scene prose.', '   :caption: Independent\n')
+        + '\nProse after the standalone scene.\n'
+    )
+    out = build_sphinx(tmp_path, 'latex', source, tagged=tagged)
+    output = next(out.glob('*.tex')).read_text()
+    blocks = [
+        'Prose before the stack.', 'Manual walkthrough',
+        r'\sphinxstylestrong{Scene 1: Start \& inspect}', 'First scene prose.',
+        r'\sphinxstylestrong{Scene 2: Finish}', 'Second scene prose.',
+        'Prose after the stack.', r'\sphinxstylestrong{Scene 1}',
+        'Uncaptioned stack prose.', r'\sphinxstylestrong{Scene: Independent}',
+        'Standalone scene prose.', 'Prose after the standalone scene.',
+    ]
+    position = 0
+    for index, block in enumerate(blocks):
+        start = output.index(block, position)
+        if index:
+            separator = output[position:start]
+            assert re.search(r'\n\s*\n|\\par\b', separator), (
+                f'Missing paragraph break before {block!r}: {separator!r}')
+        position = start + len(block)
 
 
 @pytest.mark.parametrize('style', ['graph', 'list', 'tree', 'array', 'ring'])

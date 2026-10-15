@@ -174,18 +174,23 @@ def depart_tb_scene_html(self, node):
 
 
 def visit_tb_stack_latex(self, node):
+    # Targets interrupt the blank lines Sphinx uses to separate paragraphs.
+    self.body.append('\n\\par\n')
     latex_targets(self, node)
     if node["caption"]:
         content = nodes.container()
         content += nodes.paragraph(text=node["caption"])
         content.walkabout(self)
+        self.body.append('\\par\n')
 
 
 def visit_tb_scene_latex(self, node):
+    self.body.append('\n\\par\n')
     latex_targets(self, node)
     content = nodes.container()
     content += nodes.paragraph('', '', nodes.strong(text=scene_heading(node)))
     content.walkabout(self)
+    self.body.append('\\par\n')
 
 
 def visit_tb_stack_text(self, node):
