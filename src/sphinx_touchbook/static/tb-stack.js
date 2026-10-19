@@ -21,13 +21,15 @@ class TbStack extends HTMLElement {
     const actions = ["first", "previous", "next", "last"];
     this.status = controls.querySelector(".tb-stack__status");
     this.caption = controls.querySelector(".tb-stack__scene-caption");
-    if (!this.status || !this.caption || actions.some((action) => !buttons.some((button) => button.dataset.action === action))) return;
+    if (!this.status || !this.caption?.id || actions.some((action) => !buttons.some((button) => button.dataset.action === action))) return;
 
     this.scenes = scenes;
     this.config = config;
     this.buttons = buttons;
     this.index = 0;
+    this.setAttribute("aria-roledescription", "carousel");
     scenes.forEach((scene) => {
+      scene.setAttribute("aria-roledescription", "slide");
       const heading = scene.querySelector(":scope > .tb-scene__caption");
       if (heading) heading.hidden = true;
     });
@@ -78,6 +80,18 @@ class TbStack extends HTMLElement {
     const caption = this.config.scenes[this.index].caption;
     this.caption.textContent = caption;
     this.caption.hidden = !caption;
+    this.scenes.forEach((scene, number) => {
+      const sceneCaption = this.config.scenes[number].caption;
+      if (number === this.index && sceneCaption) {
+        scene.setAttribute("aria-labelledby", this.caption.id);
+        scene.removeAttribute("aria-label");
+      } else {
+        // Inactive scenes keep their own names instead of following the
+        // shared visible caption as navigation changes it.
+        scene.removeAttribute("aria-labelledby");
+        scene.setAttribute("aria-label", sceneCaption || `${number + 1} of ${this.scenes.length}`);
+      }
+    });
     this.status.textContent = `Scene ${this.index + 1} of ${this.scenes.length}`;
     if (caption) {
       // Keep the caption in the navigation announcement as well as its own

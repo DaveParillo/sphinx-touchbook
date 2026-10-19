@@ -211,6 +211,38 @@ def test_empty_array_and_unplaced_pointer_html_preserve_single_roots(tmp_path):
     assert 'current has no target' in soup.find_all('tb-pointer')[1].get_text()
 
 
+@pytest.mark.parametrize('caption', ['', 'Inspect <values> & "labels"'])
+def test_html_names_stack_and_scene_groups_without_interactive_descriptions(tmp_path, caption):
+    options = f'   :caption: {caption}\n' if caption else ''
+    source = stack(scene('Scene content.', options))
+    source = source.replace('   :caption: Manual walkthrough\n', options)
+    source += '\n' + scene('Standalone content.', options)
+    out = build_sphinx(tmp_path, 'html', source)
+    soup = BeautifulSoup((out/'index.html').read_text(), 'html.parser')
+    root = soup.find('tb-stack')
+    assert root['role'] == 'group'
+    assert not root.has_attr('aria-roledescription')
+    if caption:
+        label = soup.find(id=root['aria-labelledby'])
+        assert label.get_text() == caption
+        assert label['class'] == ['tb-stack__caption']
+        assert not root.has_attr('aria-label')
+    else:
+        assert root['aria-label'] == 'Scene walkthrough'
+        assert not root.has_attr('aria-labelledby')
+    for number, item in enumerate(soup.find_all('tb-scene')):
+        assert item['role'] == 'group'
+        assert not item.has_attr('aria-roledescription')
+        heading = item.find(id=item['aria-labelledby'])
+        expected = 'Scene 1' if number == 0 else 'Scene'
+        assert heading.get_text() == expected + (f': {caption}' if caption else '')
+        assert not heading.has_attr('hidden')
+    current_caption = root.select_one('.tb-stack__scene-caption')
+    assert current_caption['id'] and current_caption.has_attr('hidden')
+    ids = [item['id'] for item in soup.select('[id]')]
+    assert len(ids) == len(set(ids))
+
+
 @pytest.mark.parametrize('builder', ['text', 'latex'])
 def test_static_builders_keep_all_scenes_code_and_pointer_positions(tmp_path, builder):
     source = stack(scene('.. code-block:: python\n\n   message = "Hello" + "world"'),

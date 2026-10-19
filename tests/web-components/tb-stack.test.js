@@ -14,6 +14,8 @@ beforeEach(() => {
 function createStack({ count = 3, id = "example", config = undefined } = {}) {
   const element = document.createElement("tb-stack");
   element.id = id;
+  element.setAttribute("role", "group");
+  element.setAttribute("aria-label", "Scene walkthrough");
   const scenes = Array.from({ length: count }, (_, index) => ({
     id: `${id}-scene-${index}`, caption: `Step ${index + 1}`, objects: []
   }));
@@ -21,7 +23,7 @@ function createStack({ count = 3, id = "example", config = undefined } = {}) {
     ["previous", "Previous scene", "chevron-left"], ["next", "Next scene", "chevron-right"],
     ["last", "Last scene", "chevron-double-right"]];
   element.innerHTML = `<div class="tb-stack__controls" hidden>
-    <p class="tb-stack__scene-caption" hidden></p>
+    <p id="${id}-scene-caption" class="tb-stack__scene-caption" hidden></p>
     <div class="tb-stack__navigation">
     ${controls.map(([action, label, icon]) => `<button type="button" data-action="${action}"
       aria-label="${label}" title="${label}"><svg class="bi bi-${icon}" aria-hidden="true" focusable="false"></svg></button>`).join("")}
@@ -29,7 +31,7 @@ function createStack({ count = 3, id = "example", config = undefined } = {}) {
     </div>
   </div>
   <div class="tb-stack__scenes">${scenes.map((scene, index) =>
-    `<tb-scene id="${scene.id}"><p class="tb-scene__caption">Scene ${index + 1}: ${scene.caption}</p><tb-array id="${id}-array-${index}">
+    `<tb-scene id="${scene.id}" role="group" aria-labelledby="${scene.id}-caption"><p id="${scene.id}-caption" class="tb-scene__caption">Scene ${index + 1}: ${scene.caption}</p><tb-array id="${id}-array-${index}">
     <p>Complete array ${index}</p></tb-array><tb-pointer id="${id}-pointer-${index}">Pointer ${index}</tb-pointer></tb-scene>`
   ).join("")}</div>
   <script type="application/json">${config === undefined ? JSON.stringify({ version: 1, scenes }) : config}</script>`;
@@ -47,6 +49,66 @@ function visibleScenes(element) { return Array.from(element.querySelectorAll("tb
 
 
 describe("tb-stack manual navigation", () => {
+  it("names the carousel and its slides, following the visible caption on navigation", () => {
+    const element = createStack();
+    const heading = document.createElement("p");
+    heading.id = "example-caption";
+    heading.className = "tb-stack__caption";
+    heading.textContent = 'Inspect <values> & "labels"';
+    element.prepend(heading);
+    element.setAttribute("aria-labelledby", heading.id);
+    element.removeAttribute("aria-label");
+    document.body.append(element);
+    const scenes = Array.from(element.querySelectorAll("tb-scene"));
+    const caption = element.querySelector(".tb-stack__scene-caption");
+    const expectCurrentName = (index) => {
+      expect(scenes[index].getAttribute("aria-labelledby")).toBe(caption.id);
+      expect(document.getElementById(caption.id).textContent).toBe(`Step ${index + 1}`);
+      expect(caption.hidden).toBe(false);
+      expect(scenes[index].hasAttribute("aria-label")).toBe(false);
+      scenes.forEach((scene, number) => {
+        expect(scene.getAttribute("role")).toBe("group");
+        expect(scene.getAttribute("aria-roledescription")).toBe("slide");
+        if (number !== index) {
+          expect(scene.hidden).toBe(true);
+          expect(scene.hasAttribute("aria-labelledby")).toBe(false);
+          expect(scene.getAttribute("aria-label")).toBe(`Step ${number + 1}`);
+        }
+      });
+    };
+    expect(element.getAttribute("role")).toBe("group");
+    expect(element.getAttribute("aria-roledescription")).toBe("carousel");
+    expect(document.getElementById(element.getAttribute("aria-labelledby"))).toBe(heading);
+    expectCurrentName(0);
+    click(button(element, "next"));
+    expectCurrentName(1);
+    click(button(element, "first"));
+    expectCurrentName(0);
+  });
+
+  it("names uncaptioned slides by position and count without stale label references", () => {
+    const element = createStack();
+    const script = element.querySelector('script[type="application/json"]');
+    const config = JSON.parse(script.textContent);
+    config.scenes[0].caption = "";
+    config.scenes[2].caption = "";
+    script.textContent = JSON.stringify(config);
+    document.body.append(element);
+    const scenes = element.querySelectorAll("tb-scene");
+    expect(element.getAttribute("aria-label")).toBe("Scene walkthrough");
+    expect(scenes[0].getAttribute("aria-label")).toBe("1 of 3");
+    expect(scenes[0].hasAttribute("aria-labelledby")).toBe(false);
+    expect(scenes[2].getAttribute("aria-label")).toBe("3 of 3");
+    click(button(element, "next"));
+    expect(scenes[1].getAttribute("aria-labelledby")).toBe("example-scene-caption");
+    click(button(element, "last"));
+    expect(scenes[1].getAttribute("aria-label")).toBe("Step 2");
+    expect(scenes[1].hasAttribute("aria-labelledby")).toBe(false);
+    expect(scenes[2].getAttribute("aria-label")).toBe("3 of 3");
+    expect(scenes[2].hasAttribute("aria-labelledby")).toBe(false);
+    expect(element.querySelector(".tb-stack__scene-caption").hidden).toBe(true);
+  });
+
   it("shows the first complete scene and enables only forward navigation", () => {
     const element = appendStack();
     expect(customElements.get("tb-stack")).toBeTypeOf("function");
@@ -110,7 +172,8 @@ describe("tb-stack manual navigation", () => {
     click(button(element, "first"));
     expect(visibleScenes(element)).toEqual([original[0]]);
     expect(element.querySelectorAll("tb-array")).toHaveLength(4);
-    expect(new Set(Array.from(element.querySelectorAll("[id]")).map((item) => item.id)).size).toBe(12);
+    const ids = Array.from(element.querySelectorAll("[id]")).map((item) => item.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("keeps keyboard focus on an available control at an endpoint", () => {
@@ -131,6 +194,8 @@ describe("tb-stack manual navigation", () => {
     expect(visibleScenes(element)).toHaveLength(1);
     element.querySelectorAll("button").forEach((control) => expect(control.disabled).toBe(true));
     expect(element.querySelector(".tb-stack__status").textContent).toBe("Scene 1 of 1: Step 1");
+    expect(element.getAttribute("aria-roledescription")).toBe("carousel");
+    expect(visibleScenes(element)[0].getAttribute("aria-roledescription")).toBe("slide");
   });
 
   it.each(["not JSON", "null", '{"version":2,"scenes":[]}', '{"version":1,"scenes":[]}'])(
@@ -138,6 +203,11 @@ describe("tb-stack manual navigation", () => {
       const element = appendStack({ config });
       expect(visibleScenes(element)).toHaveLength(3);
       expect(element.dataset.enhanced).toBeUndefined();
+      expect(element.hasAttribute("aria-roledescription")).toBe(false);
+      element.querySelectorAll("tb-scene").forEach((scene) => {
+        expect(scene.hasAttribute("aria-roledescription")).toBe(false);
+        expect(document.getElementById(scene.getAttribute("aria-labelledby")).hidden).toBe(false);
+      });
       expect(element.querySelector(".tb-stack__controls").hidden).toBe(true);
       expect(Array.from(element.querySelectorAll(".tb-scene__caption")).every((heading) => !heading.hidden)).toBe(true);
     });
@@ -153,12 +223,27 @@ describe("tb-stack manual navigation", () => {
     expect(visibleScenes(missing)).toHaveLength(3);
   });
 
+  it("retains named static groups when the shared caption has no reference target", () => {
+    const element = createStack();
+    element.querySelector(".tb-stack__scene-caption").removeAttribute("id");
+    document.body.append(element);
+    expect(element.dataset.enhanced).toBeUndefined();
+    expect(element.hasAttribute("aria-roledescription")).toBe(false);
+    expect(visibleScenes(element)).toHaveLength(3);
+    element.querySelectorAll("tb-scene").forEach((scene) => {
+      expect(scene.hasAttribute("aria-roledescription")).toBe(false);
+      expect(document.getElementById(scene.getAttribute("aria-labelledby")).hidden).toBe(false);
+    });
+  });
+
   it("keeps stacks independent even when semantic objects have the same names", () => {
     const first = appendStack();
     const second = appendStack({ id: "second" });
     click(button(first, "last"));
     expect(first.dataset.scene).toBe("3");
     expect(second.dataset.scene).toBe("1");
+    expect(visibleScenes(first)[0].getAttribute("aria-labelledby")).toBe("example-scene-caption");
+    expect(visibleScenes(second)[0].getAttribute("aria-labelledby")).toBe("second-scene-caption");
   });
 });
 
@@ -216,6 +301,8 @@ describe("tb-stack document targets and lifecycle", () => {
     expect(show).toHaveBeenCalledTimes(1);
     expect(element.dataset.scene).toBe("3");
     expect(element.querySelectorAll(".tb-stack__controls")).toHaveLength(1);
+    expect(element.getAttribute("aria-roledescription")).toBe("carousel");
+    expect(visibleScenes(element)[0].getAttribute("aria-labelledby")).toBe("example-scene-caption");
     window.history.replaceState({}, "", "#example-pointer-0");
     window.dispatchEvent(new HashChangeEvent("hashchange"));
     expect(element.dataset.scene).toBe("1");

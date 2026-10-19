@@ -62,12 +62,22 @@ Options
 Accessibility behavior
 ----------------------
 
+Interactive stacks follow the
+`ARIA carousel pattern <https://www.w3.org/WAI/ARIA/apg/patterns/carousel/>`_.
+Each stack is a named group described as a carousel. Its caption provides
+the accessible name; without a caption, the name is "Scene walkthrough".
+Use a descriptive caption to distinguish stacks on the same page.
+Each scene is a named group described as a slide, using its caption or its
+position and total count, such as "2 of 5", as its accessible name.
+Static HTML uses named groups without carousel or slide descriptions.
+
 Navigation uses native buttons with Bootstrap chevron icons, accessible labels,
 and hover tooltips for first, previous, next, and last scene. Buttons are
 disabled at the corresponding endpoints. Keyboard users can
 Tab to the controls and activate them with Enter or Space. The scene count and
 caption are announced after navigation; the status is not a focus target.
-The current scene's caption appears once, above the navigation buttons.
+The current scene's caption appears once beside the navigation controls,
+or below them in narrow layouts. The scene count appears below the buttons.
 If navigation disables the focused button, focus moves to an available previous
 or next button.
 

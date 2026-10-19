@@ -30,8 +30,9 @@ Options
 
 **caption**
    ``String``. Optional.
-   Plain-text explanation of this scene. Stacks include it in the scene
-   heading above the navigation buttons and scene count.
+   Plain-text explanation of this scene. Stacks show it beside the navigation
+   controls, or below them in narrow layouts. It also names the scene for
+   assistive technology.
 
 **class**
    ``String`` or ``List``. Optional.
@@ -55,6 +56,9 @@ container. Separate static scenes may reuse the same object keys.
 Accessibility behavior
 ----------------------
 
+A standalone scene is a group named by its scene heading. In an interactive
+stack, it is described as a slide and named by its caption, or by its position
+and total count when no caption is provided.
 A scene retains the accessibility of its prose, code, arrays, and graphs.
 Pointer descriptions identify target positions as text as well as visual
 arrows. When a scene is part of a stack, inactive scenes are hidden until

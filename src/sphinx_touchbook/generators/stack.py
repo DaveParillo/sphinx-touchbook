@@ -131,12 +131,14 @@ def visit_tb_pointer_text(self, node):
 
 
 def visit_tb_stack_html(self, node):
-    self.body.append(f'<tb-stack id="{escape(node["ids"][0], quote=True)}"{html_class_attr(node)}>\n')
+    stack_id = escape(node["ids"][0], quote=True)
+    label = f'aria-labelledby="{stack_id}-caption"' if node["caption"] else 'aria-label="Scene walkthrough"'
+    self.body.append(f'<tb-stack id="{stack_id}"{html_class_attr(node)} role="group" {label}>\n')
     self.body.append(html_additional_targets(node))
     if node["caption"]:
-        self.body.append(f'<p class="tb-stack__caption">{escape(node["caption"])}</p>\n')
+        self.body.append(f'<p id="{stack_id}-caption" class="tb-stack__caption">{escape(node["caption"])}</p>\n')
     self.body.append('<div class="tb-stack__controls" hidden>\n')
-    self.body.append('<p class="tb-stack__scene-caption" hidden></p>\n')
+    self.body.append(f'<p id="{stack_id}-scene-caption" class="tb-stack__scene-caption" hidden></p>\n')
     self.body.append('<div class="tb-stack__navigation">\n')
     for action, icon, label, paths in NAVIGATION_ICONS:
         self.body.append(f'<button type="button" data-action="{action}" aria-label="{label}" title="{label}">'
@@ -164,9 +166,11 @@ def scene_heading(node):
 
 
 def visit_tb_scene_html(self, node):
-    self.body.append(f'<tb-scene id="{escape(node["ids"][0], quote=True)}"{html_class_attr(node)}>\n')
+    scene_id = escape(node["ids"][0], quote=True)
+    self.body.append(f'<tb-scene id="{scene_id}"{html_class_attr(node)} '
+                     f'role="group" aria-labelledby="{scene_id}-caption">\n')
     self.body.append(html_additional_targets(node))
-    self.body.append(f'<p class="tb-scene__caption">{escape(scene_heading(node))}</p>\n')
+    self.body.append(f'<p id="{scene_id}-caption" class="tb-scene__caption">{escape(scene_heading(node))}</p>\n')
 
 
 def depart_tb_scene_html(self, node):
