@@ -17,6 +17,12 @@ Most Touchbook controls follow standard browser behavior:
 * ``Space`` activates buttons, checkboxes, radio buttons, and similar controls.
 * Arrow keys may move within composite widgets, such as tab groups.
 
+You may need to enable accessibility or Keyboard navigation options in your
+browser or operating system.
+For example, see 
+`Apple's keybaord navigation guidance <https://support.apple.com/guide/safari/keyboard-shortcuts-and-gestures-cpsh003/mac>`__
+and `Chrome accessibility <https://support.google.com/chrome/answer/157179?hl=en&co=GENIE.Platform%3DDesktop>`__ help topics.
+
 Tab Groups
 ----------
 

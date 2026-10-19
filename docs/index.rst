@@ -9,5 +9,3 @@ Sphinx Touchbook Author Guide
    components/index
    accessibility
 
-
-Download the `PDF version <_downloads/sphinxtouchbookauthorguide.pdf>`__.

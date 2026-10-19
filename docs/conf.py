@@ -35,6 +35,10 @@ html_theme_options = {
             'text': 'on GitHub',
             'link': 'https://github.com/DaveParillo/sphinx-touchbook',
         },
+        {
+            "text": "as PDF",
+            "link": "https://daveparillo.github.io/sphinx-touchbook/_downloads/sphinxtouchbookauthorguide.pdf",
+        },
     ],
     'logo': 'touchbook-logo.svg',
     'logo_alt': '',
