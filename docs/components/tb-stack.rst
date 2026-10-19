@@ -76,8 +76,18 @@ and hover tooltips for first, previous, next, and last scene. Buttons are
 disabled at the corresponding endpoints. Keyboard users can
 Tab to the controls and activate them with Enter or Space. The scene count and
 caption are announced after navigation; the status is not a focus target.
-The current scene's caption appears once beside the navigation controls,
+The current scene's full caption appears beside the navigation controls,
 or below them in narrow layouts. The scene count appears below the buttons.
+For stacks with multiple scenes, the count is a native dropdown labelled
+"Choose scene". Each option includes its scene number, total count, and caption.
+Captions in the dropdown are limited to 24 characters, including an ellipsis
+when shortened. The dropdown stays within the width of the navigation buttons;
+the browser may clip its displayed text further to fit. Full captions remain
+available as accessible option names, tooltips, and the current scene caption.
+Choosing an option displays that scene immediately and keeps focus on the
+dropdown. Buttons and document links keep the selected option synchronized.
+Single-scene stacks show the count as text.
+
 If navigation disables the focused button, focus moves to an available previous
 or next button.
 

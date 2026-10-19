@@ -196,6 +196,11 @@ def test_html_places_pointer_roots_once_and_emits_complete_safe_config(tmp_path,
     assert controls.find_next_sibling('div')['class'] == ['tb-stack__scenes']
     assert controls.select_one('.tb-stack__scene-caption').find_next_sibling('div')['class'] == ['tb-stack__navigation']
     assert all(button.parent['class'] == ['tb-stack__navigation'] for button in buttons)
+    selector = controls.select_one('select.tb-stack__selector')
+    assert selector.has_attr('hidden') and selector['aria-label'] == 'Choose scene'
+    assert selector.parent['class'] == ['tb-stack__navigation']
+    assert not selector.has_attr('role')
+    assert selector.find_next_sibling()['class'] == ['tb-stack__status']
     assert controls.select_one('.tb-stack__status')['role'] == 'status'
     assert all(not item.select_one('.tb-scene__caption').has_attr('hidden') for item in scenes)
     assert (out/'_static'/'tb-stack.js').exists()

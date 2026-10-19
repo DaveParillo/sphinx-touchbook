@@ -15,7 +15,7 @@ tb-scene {
 }
 
 tb-scene[hidden], .tb-stack__controls[hidden], .tb-scene__caption[hidden],
-.tb-stack__scene-caption[hidden] {
+.tb-stack__scene-caption[hidden], .tb-stack__selector[hidden] {
   display: none;
 }
 
@@ -65,7 +65,8 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
   min-width: 0;
   max-width: 100%;
   display: grid;
-  grid-template-columns: repeat(4, auto);
+  /* Fixed tracks keep long option labels from widening the button row. */
+  grid-template-columns: repeat(4, 2.75rem);
   justify-content: end;
   align-items: center;
   gap: .25rem .5rem;
@@ -94,7 +95,8 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
   cursor: default;
 }
 
-.tb-stack__controls button:focus-visible {
+.tb-stack__controls button:focus-visible,
+.tb-stack__selector:focus-visible {
   outline: 2px solid var(--color-brand-primary, #1f6feb);
   outline-offset: 2px;
 }
@@ -104,6 +106,20 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
   justify-self: end;
   margin: 0;
   padding: 0;
+  white-space: nowrap;
+}
+
+.tb-stack__selector {
+  grid-column: 1 / -1;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 1lh;
+  padding: 0 .25rem;
+  font: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -146,7 +162,8 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
   line-height: 1;
 }
 
-.tb-pointer__description--placed, .tb-stack__status-caption {
+.tb-pointer__description--placed, .tb-stack__status-caption,
+.tb-stack__selector:not([hidden]) + .tb-stack__status {
   position: absolute;
   width: 1px;
   height: 1px;

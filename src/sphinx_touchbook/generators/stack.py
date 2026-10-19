@@ -147,6 +147,7 @@ def visit_tb_stack_html(self, node):
                          'aria-hidden="true" focusable="false">')
         self.body.extend(f'<path fill-rule="evenodd" d="{path}"/>' for path in paths)
         self.body.append('</svg></button>\n')
+    self.body.append('<select class="tb-stack__selector" aria-label="Choose scene" hidden></select>\n')
     self.body.append('<p class="tb-stack__status" role="status" aria-live="polite" aria-atomic="true"></p>\n')
     self.body.append('</div>\n</div>\n')
     self.body.append('<div class="tb-stack__scenes">\n')

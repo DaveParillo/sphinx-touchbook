@@ -21,12 +21,34 @@ class TbStack extends HTMLElement {
     const actions = ["first", "previous", "next", "last"];
     this.status = controls.querySelector(".tb-stack__status");
     this.caption = controls.querySelector(".tb-stack__scene-caption");
-    if (!this.status || !this.caption?.id || actions.some((action) => !buttons.some((button) => button.dataset.action === action))) return;
+    this.selector = controls.querySelector("select.tb-stack__selector");
+    if (!this.status || !this.caption?.id || !this.selector ||
+        actions.some((action) => !buttons.some((button) => button.dataset.action === action))) return;
 
     this.scenes = scenes;
     this.config = config;
     this.buttons = buttons;
     this.index = 0;
+    this.selector.replaceChildren(...config.scenes.map((scene, index) => {
+      const option = document.createElement("option");
+      const caption = scene.caption.replace(/\s+/g, " ").trim();
+      const characters = Array.from(caption);
+      const shortCaption = characters.length > 24
+        ? `${characters.slice(0, 23).join("")}…` : caption;
+      const position = `${index + 1} of ${scenes.length}`;
+      option.value = String(index);
+      option.textContent = position + (shortCaption ? `: ${shortCaption}` : "");
+      option.setAttribute("aria-label", position + (caption ? `: ${caption}` : ""));
+      option.title = option.getAttribute("aria-label");
+      return option;
+    }));
+    this.selector.hidden = scenes.length === 1;
+    this.selector.addEventListener("change", () => {
+      if (this.selector.selectedIndex >= 0) {
+        // The native select announces the chosen option itself.
+        this.showScene(this.selector.selectedIndex, { announce: false });
+      }
+    });
     this.setAttribute("aria-roledescription", "carousel");
     scenes.forEach((scene) => {
       scene.setAttribute("aria-roledescription", "slide");
@@ -65,9 +87,11 @@ class TbStack extends HTMLElement {
     document.addEventListener("click", this.onDocumentClick);
   }
 
-  showScene(index) {
+  showScene(index, { announce = true } = {}) {
     if (!Number.isInteger(index)) return;
     this.index = Math.max(0, Math.min(index, this.scenes.length - 1));
+    this.selector.value = String(this.index);
+    this.selector.title = this.selector.selectedOptions[0].title;
     this.scenes.forEach((scene, number) => { scene.hidden = number !== this.index; });
     this.buttons.forEach((button) => {
       button.disabled = ["first", "previous"].includes(button.dataset.action)
@@ -92,10 +116,10 @@ class TbStack extends HTMLElement {
         scene.setAttribute("aria-label", sceneCaption || `${number + 1} of ${this.scenes.length}`);
       }
     });
-    this.status.textContent = `Scene ${this.index + 1} of ${this.scenes.length}`;
-    if (caption) {
-      // Keep the caption in the navigation announcement as well as its own
-      // visible line, without repeating it beside the scene count.
+    this.status.textContent = announce ? `Scene ${this.index + 1} of ${this.scenes.length}` : "";
+    if (caption && announce) {
+      // Include the full caption in announcements without changing the
+      // compact selector or single-scene count.
       const description = document.createElement("span");
       description.className = "tb-stack__status-caption";
       description.textContent = `: ${caption}`;

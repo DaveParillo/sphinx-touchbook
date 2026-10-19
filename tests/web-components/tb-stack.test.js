@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { click, keydown, loadComponentScript } from "./helpers.js";
+import { change, click, keydown, loadComponentScript } from "./helpers.js";
 
 beforeAll(async () => {
   await loadComponentScript("tb-stack.js");
@@ -11,13 +11,13 @@ beforeEach(() => {
   window.history.replaceState({}, "", window.location.pathname);
 });
 
-function createStack({ count = 3, id = "example", config = undefined } = {}) {
+function createStack({ count = 3, id = "example", config = undefined, captions = [] } = {}) {
   const element = document.createElement("tb-stack");
   element.id = id;
   element.setAttribute("role", "group");
   element.setAttribute("aria-label", "Scene walkthrough");
   const scenes = Array.from({ length: count }, (_, index) => ({
-    id: `${id}-scene-${index}`, caption: `Step ${index + 1}`, objects: []
+    id: `${id}-scene-${index}`, caption: captions[index] ?? `Step ${index + 1}`, objects: []
   }));
   const controls = [["first", "First scene", "chevron-double-left"],
     ["previous", "Previous scene", "chevron-left"], ["next", "Next scene", "chevron-right"],
@@ -27,14 +27,18 @@ function createStack({ count = 3, id = "example", config = undefined } = {}) {
     <div class="tb-stack__navigation">
     ${controls.map(([action, label, icon]) => `<button type="button" data-action="${action}"
       aria-label="${label}" title="${label}"><svg class="bi bi-${icon}" aria-hidden="true" focusable="false"></svg></button>`).join("")}
+    <select class="tb-stack__selector" aria-label="Choose scene" hidden></select>
     <p class="tb-stack__status" role="status" aria-live="polite" aria-atomic="true"></p>
     </div>
   </div>
   <div class="tb-stack__scenes">${scenes.map((scene, index) =>
-    `<tb-scene id="${scene.id}" role="group" aria-labelledby="${scene.id}-caption"><p id="${scene.id}-caption" class="tb-scene__caption">Scene ${index + 1}: ${scene.caption}</p><tb-array id="${id}-array-${index}">
+    `<tb-scene id="${scene.id}" role="group" aria-labelledby="${scene.id}-caption"><p id="${scene.id}-caption" class="tb-scene__caption"></p><tb-array id="${id}-array-${index}">
     <p>Complete array ${index}</p></tb-array><tb-pointer id="${id}-pointer-${index}">Pointer ${index}</tb-pointer></tb-scene>`
   ).join("")}</div>
   <script type="application/json">${config === undefined ? JSON.stringify({ version: 1, scenes }) : config}</script>`;
+  element.querySelectorAll(".tb-scene__caption").forEach((heading, index) => {
+    heading.textContent = `Scene ${index + 1}: ${scenes[index].caption}`;
+  });
   return element;
 }
 
@@ -49,6 +53,64 @@ function visibleScenes(element) { return Array.from(element.querySelectorAll("tb
 
 
 describe("tb-stack manual navigation", () => {
+  it("provides a native scene selector with concise captions and full accessible names", () => {
+    const captions = ["A".repeat(24), "B".repeat(25), "🦉".repeat(25),
+      '<img src=x onerror="alert(1)">', "", "  Words\n   with   spacing  "];
+    const element = appendStack({ count: captions.length, captions });
+    const select = element.querySelector("select");
+    expect(select.getAttribute("aria-label")).toBe("Choose scene");
+    expect(select.hasAttribute("role")).toBe(false);
+    expect(select.tabIndex).toBe(0);
+    expect(select.hidden).toBe(false);
+    expect(select.value).toBe("0");
+    expect(select.options).toHaveLength(6);
+    expect(select.options[0].textContent).toBe(`1 of 6: ${"A".repeat(24)}`);
+    expect(select.options[1].textContent).toBe(`2 of 6: ${"B".repeat(23)}…`);
+    expect(select.options[2].textContent).toBe(`3 of 6: ${"🦉".repeat(23)}…`);
+    expect(select.options[3].getAttribute("aria-label")).toBe(`4 of 6: ${captions[3]}`);
+    expect(select.options[3].childElementCount).toBe(0);
+    expect(select.options[4].textContent).toBe("5 of 6");
+    expect(select.options[5].textContent).toBe("6 of 6: Words with spacing");
+    expect(select.options[1].getAttribute("aria-label")).toBe(`2 of 6: ${captions[1]}`);
+    expect(select.options[1].title).toBe(`2 of 6: ${captions[1]}`);
+    expect(select.title).toBe(`1 of 6: ${captions[0]}`);
+  });
+
+  it("jumps directly to any selected scene while keeping focus and avoiding duplicate announcements", () => {
+    const element = appendStack({ count: 8 });
+    const original = Array.from(element.querySelectorAll("tb-scene"));
+    const select = element.querySelector("select");
+    select.focus();
+    select.value = "4";
+    change(select);
+    expect(visibleScenes(element)).toEqual([original[4]]);
+    expect(element.dataset.scene).toBe("5");
+    expect(element.querySelector(".tb-stack__scene-caption").textContent).toBe("Step 5");
+    expect(button(element, "previous").disabled).toBe(false);
+    expect(button(element, "next").disabled).toBe(false);
+    expect(document.activeElement).toBe(select);
+    expect(select.title).toBe("5 of 8: Step 5");
+    expect(element.querySelector(".tb-stack__status").textContent).toBe("");
+    select.value = "7";
+    change(select);
+    expect(visibleScenes(element)).toEqual([original[7]]);
+    expect(button(element, "next").disabled).toBe(true);
+    expect(button(element, "last").disabled).toBe(true);
+    expect(document.activeElement).toBe(select);
+    click(button(element, "first"));
+    expect(select.value).toBe("0");
+    expect(element.querySelector(".tb-stack__status").textContent).toBe("Scene 1 of 8: Step 1");
+  });
+
+  it("ignores a selector change with no selected option", () => {
+    const element = appendStack();
+    click(button(element, "next"));
+    const select = element.querySelector("select");
+    select.selectedIndex = -1;
+    change(select);
+    expect(element.dataset.scene).toBe("2");
+  });
+
   it("names the carousel and its slides, following the visible caption on navigation", () => {
     const element = createStack();
     const heading = document.createElement("p");
@@ -133,6 +195,7 @@ describe("tb-stack manual navigation", () => {
     click(button(element, "next").querySelector("svg"));
     expect(controls.nextElementSibling).toBe(scenes);
     expect(controls.querySelector(".tb-stack__status").textContent).toBe("Scene 2 of 3: Step 2");
+    expect(controls.querySelector("select").value).toBe("1");
     const caption = controls.querySelector(".tb-stack__scene-caption");
     const navigation = controls.querySelector(".tb-stack__navigation");
     expect(caption.textContent).toBe("Step 2");
@@ -192,6 +255,7 @@ describe("tb-stack manual navigation", () => {
   it("handles a single scene with all navigation disabled", () => {
     const element = appendStack({ count: 1 });
     expect(visibleScenes(element)).toHaveLength(1);
+    expect(element.querySelector("select").hidden).toBe(true);
     element.querySelectorAll("button").forEach((control) => expect(control.disabled).toBe(true));
     expect(element.querySelector(".tb-stack__status").textContent).toBe("Scene 1 of 1: Step 1");
     expect(element.getAttribute("aria-roledescription")).toBe("carousel");
@@ -209,6 +273,8 @@ describe("tb-stack manual navigation", () => {
         expect(document.getElementById(scene.getAttribute("aria-labelledby")).hidden).toBe(false);
       });
       expect(element.querySelector(".tb-stack__controls").hidden).toBe(true);
+      expect(element.querySelector("select").hidden).toBe(true);
+      expect(element.querySelector("select").options).toHaveLength(0);
       expect(Array.from(element.querySelectorAll(".tb-scene__caption")).every((heading) => !heading.hidden)).toBe(true);
     });
 
@@ -221,6 +287,14 @@ describe("tb-stack manual navigation", () => {
     missing.querySelector(".tb-stack__controls").remove();
     document.body.append(missing);
     expect(visibleScenes(missing)).toHaveLength(3);
+  });
+
+  it("retains static scenes if the native selector is missing", () => {
+    const element = createStack();
+    element.querySelector("select").remove();
+    document.body.append(element);
+    expect(visibleScenes(element)).toHaveLength(3);
+    expect(element.dataset.enhanced).toBeUndefined();
   });
 
   it("retains named static groups when the shared caption has no reference target", () => {
@@ -261,6 +335,8 @@ describe("tb-stack document targets and lifecycle", () => {
     expect(visibleScenes(first)[0].id).toBe("example-scene-0");
     expect(visibleScenes(second)[0].id).toBe("second-scene-2");
     expect(second.querySelector(".tb-stack__status").textContent).toBe("Scene 3 of 3: Step 3");
+    expect(second.querySelector("select").value).toBe("2");
+    expect(first.querySelector("select").value).toBe("0");
     expect(button(second, "next").disabled).toBe(true);
     expect(button(second, "previous").disabled).toBe(false);
   });
@@ -269,6 +345,7 @@ describe("tb-stack document targets and lifecycle", () => {
     window.history.replaceState({}, "", "#example-pointer-2");
     const element = appendStack();
     expect(visibleScenes(element)[0].id).toBe("example-scene-2");
+    expect(element.querySelector("select").value).toBe("2");
   });
 
   it("reveals inactive scene content on hash changes and repeated same-hash links", () => {
@@ -276,6 +353,7 @@ describe("tb-stack document targets and lifecycle", () => {
     window.history.replaceState({}, "", "#example-array-2");
     window.dispatchEvent(new HashChangeEvent("hashchange"));
     expect(element.dataset.scene).toBe("3");
+    expect(element.querySelector("select").value).toBe("2");
     click(button(element, "first"));
     const link = document.createElement("a");
     link.href = "#example-array-2";
@@ -303,6 +381,13 @@ describe("tb-stack document targets and lifecycle", () => {
     expect(element.querySelectorAll(".tb-stack__controls")).toHaveLength(1);
     expect(element.getAttribute("aria-roledescription")).toBe("carousel");
     expect(visibleScenes(element)[0].getAttribute("aria-labelledby")).toBe("example-scene-caption");
+    const select = element.querySelector("select");
+    expect(element.querySelectorAll("select")).toHaveLength(1);
+    expect(select.options).toHaveLength(3);
+    select.value = "1";
+    change(select);
+    expect(show).toHaveBeenCalledTimes(2);
+    expect(element.dataset.scene).toBe("2");
     window.history.replaceState({}, "", "#example-pointer-0");
     window.dispatchEvent(new HashChangeEvent("hashchange"));
     expect(element.dataset.scene).toBe("1");
