@@ -1,12 +1,14 @@
 name: Publish Author Guide
 
 on:
-  push:
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -17,11 +19,19 @@ concurrency:
 jobs:
   build:
     name: Build author guide
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.event == 'push' ||
+       github.event.workflow_run.event == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -29,19 +39,19 @@ jobs:
           python-version: "3.13"
           cache: pip
 
-      - name: Install tox
-        run: python -m pip install tox
-
       - name: Install graph rendering tools
         run: sudo apt-get update && sudo apt-get install -y graphviz librsvg2-bin
 
-      - name: Build HTML author guide
-        run: |
-          python -m tox -e py3.13-sphinx9.1-docs-html
-          mkdir -p build
-          cp -R .tox/py3.13-sphinx9.1-docs-html/tmp/authorguide-html build/authorguide
-          echo "Disable Jekyll processing"
-          touch build/authorguide/.nojekyll
+      - name: Download tested HTML author guide
+        uses: actions/download-artifact@v8
+        with:
+          name: author-guide-html
+          path: build/authorguide
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Disable Jekyll processing
+        run: touch build/authorguide/.nojekyll
 
       - name: Build PDF author guide
         run: |
