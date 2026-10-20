@@ -728,6 +728,9 @@ class TbCode extends HTMLElement {
     if (TbCode.languagesByEndpoint.has(this.config.languagesEndpoint)) {
       return TbCode.languagesByEndpoint.get(this.config.languagesEndpoint);
     }
+    if (TbCode.languagePreloadsByEndpoint.has(this.config.languagesEndpoint)) {
+      return TbCode.languagePreloadsByEndpoint.get(this.config.languagesEndpoint);
+    }
     return this.loadSupportedLanguages(2500);
   }
 

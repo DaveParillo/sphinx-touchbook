@@ -704,6 +704,52 @@ describe("tb-code Web Component", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it.each([true, false])("reuses an unresolved language preload when Run is pressed (supported=%s)", async (supported) => {
+    let resolveLanguages;
+    const languagesResponse = new Promise((resolve) => {
+      resolveLanguages = resolve;
+    });
+    const fetchMock = vi.fn((url) => url.endsWith("/languages")
+      ? languagesResponse
+      : Promise.resolve({
+        ok: true,
+        json: async () => ({ outcome: 15, stdout: "one\n" }),
+      }));
+    globalThis.fetch = fetchMock;
+
+    const element = appendCode({ validateLanguage: true });
+    const run = runButton(element);
+    const status = element.querySelector(".tb-code__status");
+    click(run);
+    await flushPromises();
+
+    const requestsWhilePreloading = fetchMock.mock.calls.length;
+    const statusWhilePreloading = status.textContent;
+    const disabledWhilePreloading = run.disabled;
+    resolveLanguages({
+      ok: true,
+      json: async () => supported ? [["python3", "3.12"]] : [["ruby", "3.3"]],
+    });
+    await flushPromises();
+
+    expect(requestsWhilePreloading).toBe(1);
+    expect(statusWhilePreloading).toBe("Checking language support...");
+    expect(disabledWhilePreloading).toBe(true);
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/languages"))).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(supported ? 2 : 1);
+    if (supported) {
+      expect(fetchMock.mock.calls[1][0]).toBe("https://example.test/runs/");
+      expect(fetchMock.mock.calls[1][1].method).toBe("POST");
+      expect(element.querySelector(".tb-code__output").textContent).toBe("one\n");
+      expect(status.textContent).toBe("Run complete.");
+    } else {
+      expect(element.querySelector(".tb-code__output").textContent)
+        .toContain("does not currently report support for python3");
+      expect(status.textContent).toBe("Run failed.");
+    }
+    expect(run.disabled).toBe(false);
+  });
+
   it("preloads languages and reports unsupported service languages", async () => {
     const fetchMock = vi.fn(async (url) => ({
       ok: true,
