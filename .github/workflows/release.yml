@@ -1,29 +1,44 @@
-name: Release
+name: CI and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
-  id-token: write
-
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  checks:
-    name: Run shared checks
+  tests:
+    name: Tests
     uses: ./.github/workflows/tests.yml
+
+  publish:
+    name: Publish author guide
+    needs: tests
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/publish-authorguide.yml
     permissions:
       contents: read
+      pages: write
+      id-token: write
 
   release:
     name: Publish package and release
-    needs: checks
+    needs: [tests, publish]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
 
     environment:
       name: pypi
@@ -40,24 +55,16 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: python -m pip install ".[publish,docs]" "Sphinx>=9.1,<9.2"
+        run: python -m pip install ".[publish]"
 
-      - name: Install graph rendering tools
-        run: sudo apt-get update && sudo apt-get install -y graphviz librsvg2-bin
+      - name: Download author guide from this pipeline
+        uses: actions/download-artifact@v8
+        with:
+          name: author-guide
+          path: build/authorguide
 
-      - name: Build PDF author guide
-        run: |
-          python -m sphinx -M latex docs build/latexpdf \
-            -D tb_pdf_tagging=1 --fail-on-warning
-          docker run --rm \
-            -v "$PWD:/docs" \
-            -w /docs/build/latexpdf/latex \
-            texlive/texlive:latest \
-            make all-pdf
-          test -s build/latexpdf/latex/sphinxtouchbookauthorguide.pdf
-          mkdir -p build/release-assets
-          cp build/latexpdf/latex/sphinxtouchbookauthorguide.pdf \
-            build/release-assets/
+      - name: Verify release PDF
+        run: test -s build/authorguide/_downloads/sphinxtouchbookauthorguide.pdf
 
       - name: Build package
         run: python -m build
@@ -74,6 +81,6 @@ jobs:
         run: >
           gh release create "$GITHUB_REF_NAME"
           dist/*
-          build/release-assets/*.pdf
+          build/authorguide/_downloads/sphinxtouchbookauthorguide.pdf
           --title "$GITHUB_REF_NAME"
           --generate-notes

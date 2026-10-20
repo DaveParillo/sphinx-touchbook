@@ -1,10 +1,6 @@
 name: Tests
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
   workflow_call:
 
@@ -39,19 +35,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y graphviz librsvg2-bin
 
       - name: Run tox
-        run: python -m tox
-
-      - name: Upload tested HTML author guide
-        if: >-
-          github.ref == 'refs/heads/main' &&
-          (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-        uses: actions/upload-artifact@v7
-        with:
-          name: author-guide-html
-          path: .tox/py3.13-sphinx9.1-docs-html/tmp/authorguide-html
-          include-hidden-files: true
-          if-no-files-found: error
-          overwrite: true
+        run: python -m tox run-parallel -f tests --parallel auto --parallel-no-spinner
 
   web-components:
     name: Web Components

@@ -1,37 +1,19 @@
 name: Publish Author Guide
 
 on:
-  workflow_run:
-    workflows: [Tests]
-    types: [completed]
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
-  actions: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   build:
-    name: Build author guide
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_repository.full_name == github.repository &&
-      (github.event.workflow_run.event == 'push' ||
-       github.event.workflow_run.event == 'workflow_dispatch')
+    name: Build HTML and PDF
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -42,20 +24,14 @@ jobs:
       - name: Install graph rendering tools
         run: sudo apt-get update && sudo apt-get install -y graphviz librsvg2-bin
 
-      - name: Download tested HTML author guide
-        uses: actions/download-artifact@v8
-        with:
-          name: author-guide-html
-          path: build/authorguide
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
+      - name: Install author guide dependencies
+        run: python -m pip install ".[docs]" "Sphinx>=9.1,<9.2"
 
-      - name: Disable Jekyll processing
-        run: touch build/authorguide/.nojekyll
+      - name: Build HTML author guide
+        run: python -m sphinx -E -b html docs build/authorguide --fail-on-warning
 
       - name: Build PDF author guide
         run: |
-          python -m pip install ".[docs]" "Sphinx>=9.1,<9.2"
           python -m sphinx -M latex docs build/latexpdf \
             -D tb_pdf_tagging=1 --fail-on-warning
           docker run --rm \
@@ -69,19 +45,24 @@ jobs:
             build/authorguide/_downloads/
 
       - name: Verify Pages artifact root
-        run: test -f build/authorguide/index.html
+        run: |
+          test -s build/authorguide/index.html
+          test -s build/authorguide/_downloads/sphinxtouchbookauthorguide.pdf
+          touch build/authorguide/.nojekyll
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v6
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+      - name: Upload HTML and PDF author guide
+        uses: actions/upload-artifact@v7
         with:
+          name: author-guide
           path: build/authorguide
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
 
   deploy:
     name: Deploy author guide
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     permissions:
@@ -92,7 +73,25 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+
     steps:
+      - name: Download HTML and PDF author guide
+        uses: actions/download-artifact@v8
+        with:
+          name: author-guide
+          path: build/authorguide
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/authorguide
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
