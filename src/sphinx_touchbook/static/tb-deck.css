@@ -1,8 +1,8 @@
-tb-stack, tb-scene, tb-pointer {
+tb-deck, tb-card, tb-pointer {
   display: block;
 }
 
-tb-stack {
+tb-deck {
   container-type: inline-size;
   margin-block: 1rem;
   border: 1px solid var(--color-background-border, #aaa);
@@ -10,20 +10,20 @@ tb-stack {
   padding: 1rem;
 }
 
-tb-scene {
+tb-card {
   margin-block: 1rem;
 }
 
-tb-scene[hidden], .tb-stack__controls[hidden], .tb-scene__caption[hidden],
-.tb-stack__scene-caption[hidden], .tb-stack__selector[hidden] {
+tb-card[hidden], .tb-deck__controls[hidden], .tb-card__caption[hidden],
+.tb-deck__card-caption[hidden], .tb-deck__selector[hidden] {
   display: none;
 }
 
-.tb-stack__caption, .tb-scene__caption {
+.tb-deck__caption, .tb-card__caption {
   font-weight: bold;
 }
 
-tb-stack[data-enhanced="true"] {
+tb-deck[data-enhanced="true"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 1rem;
@@ -31,35 +31,35 @@ tb-stack[data-enhanced="true"] {
   align-items: start;
 }
 
-tb-stack[data-enhanced="true"] > .tb-stack__caption {
+tb-deck[data-enhanced="true"] > .tb-deck__caption {
   grid-area: 1 / 1;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-.tb-stack__controls {
+.tb-deck__controls {
   display: contents;
 }
 
-.tb-stack__scene-caption {
+.tb-deck__card-caption {
   grid-area: 2 / 1;
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-tb-stack[data-enhanced="true"] > .tb-stack__scenes {
+tb-deck[data-enhanced="true"] > .tb-deck__cards {
   grid-area: 3 / 1 / auto / -1;
   min-width: 0;
   margin-top: .25rem;
   border-top: 1px solid var(--color-background-border, #aaa);
 }
 
-tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
+tb-deck[data-enhanced="true"] > .tb-deck__cards > tb-card {
   margin-block: .5rem 0;
 }
 
-.tb-stack__navigation {
+.tb-deck__navigation {
   grid-area: 1 / 2 / 3 / 3;
   justify-self: end;
   min-width: 0;
@@ -72,7 +72,7 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
   gap: .25rem .5rem;
 }
 
-.tb-stack__controls button {
+.tb-deck__controls button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -86,22 +86,22 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
   font: inherit;
 }
 
-.tb-stack__controls button svg {
+.tb-deck__controls button svg {
   width: 1em;
   height: 1em;
 }
 
-.tb-stack__controls button:disabled {
+.tb-deck__controls button:disabled {
   cursor: default;
 }
 
-.tb-stack__controls button:focus-visible,
-.tb-stack__selector:focus-visible {
+.tb-deck__controls button:focus-visible,
+.tb-deck__selector:focus-visible {
   outline: 2px solid var(--color-brand-primary, #1f6feb);
   outline-offset: 2px;
 }
 
-.tb-stack__status {
+.tb-deck__status {
   grid-column: 1 / -1;
   justify-self: end;
   margin: 0;
@@ -109,7 +109,7 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
   white-space: nowrap;
 }
 
-.tb-stack__selector {
+.tb-deck__selector {
   grid-column: 1 / -1;
   box-sizing: border-box;
   min-width: 0;
@@ -125,19 +125,19 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
 
 /* Give captions the full width when there is little room beside navigation. */
 @container (max-width: 32rem) {
-  .tb-stack__navigation {
+  .tb-deck__navigation {
     grid-area: 1 / 1 / 2 / -1;
   }
 
-  tb-stack[data-enhanced="true"] > .tb-stack__caption {
+  tb-deck[data-enhanced="true"] > .tb-deck__caption {
     grid-area: 2 / 1 / 3 / -1;
   }
 
-  .tb-stack__scene-caption {
+  .tb-deck__card-caption {
     grid-area: 3 / 1 / 4 / -1;
   }
 
-  tb-stack[data-enhanced="true"] > .tb-stack__scenes {
+  tb-deck[data-enhanced="true"] > .tb-deck__cards {
     grid-row: 4;
   }
 }
@@ -162,8 +162,8 @@ tb-stack[data-enhanced="true"] > .tb-stack__scenes > tb-scene {
   line-height: 1;
 }
 
-.tb-pointer__description--placed, .tb-stack__status-caption,
-.tb-stack__selector:not([hidden]) + .tb-stack__status {
+.tb-pointer__description--placed, .tb-deck__status-caption,
+.tb-deck__selector:not([hidden]) + .tb-deck__status {
   position: absolute;
   width: 1px;
   height: 1px;

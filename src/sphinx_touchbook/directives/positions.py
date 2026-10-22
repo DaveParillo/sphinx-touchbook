@@ -1,4 +1,4 @@
-"""Resolve explicit visual positions shared by scene pointers and indicators."""
+"""Resolve explicit visual positions shared by card pointers and indicators."""
 
 import re
 

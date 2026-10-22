@@ -13,19 +13,19 @@ from docutils.parsers.rst import Parser, directives
 from docutils.utils import new_document
 import pytest
 
-from sphinx_touchbook.directives.stack import (
-    TbStackDirective, TbSceneDirective, TbPointerDirective,
+from sphinx_touchbook.directives.deck import (
+    TbDeckDirective, TbCardDirective, TbPointerDirective,
 )
 from sphinx_touchbook.directives.array import TbArrayDirective
 from sphinx_touchbook.directives.graph import TbGraphDirective
-from sphinx_touchbook.nodes import TbStackNode, TbSceneNode, TbPointerNode, TbArrayNode, TbGraphNode
+from sphinx_touchbook.nodes import TbDeckNode, TbCardNode, TbPointerNode, TbArrayNode, TbGraphNode
 
 
 def parse_rst(source):
     settings = get_default_settings(Parser)
     settings.warning_stream = StringIO()
-    document = new_document('stack.rst', settings)
-    registered = {'tb-stack': TbStackDirective, 'tb-scene': TbSceneDirective,
+    document = new_document('deck.rst', settings)
+    registered = {'tb-deck': TbDeckDirective, 'tb-card': TbCardDirective,
                   'tb-pointer': TbPointerDirective, 'tb-array': TbArrayDirective, 'tb-graph': TbGraphDirective}
     previous = {name: directives._directives.get(name) for name in registered}
     for name, directive in registered.items():
@@ -41,13 +41,13 @@ def parse_rst(source):
     return document
 
 
-def scene(content='', options=''):
-    return '.. tb-scene::\n' + options + '\n' + '\n'.join('   ' + line for line in content.splitlines()) + '\n'
+def card(content='', options=''):
+    return '.. tb-card::\n' + options + '\n' + '\n'.join('   ' + line for line in content.splitlines()) + '\n'
 
 
-def stack(*scenes):
-    return '.. tb-stack::\n   :name: example\n   :class: first second\n   :caption: Manual walkthrough\n\n' + '\n'.join(
-        '\n'.join('   ' + line for line in item.splitlines()) for item in scenes) + '\n'
+def deck(*cards):
+    return '.. tb-deck::\n   :name: example\n   :class: first second\n   :caption: Manual walkthrough\n\n' + '\n'.join(
+        '\n'.join('   ' + line for line in item.splitlines()) for item in cards) + '\n'
 
 
 def pointer(at=None, key='current', extra=''):
@@ -66,11 +66,11 @@ def valid_document(source):
     return document
 
 
-def test_complete_scenes_explicit_positions_forward_references_and_common_options():
-    source = stack(scene(pointer('values.begin') + '\n' + ARRAY),
-                       scene(ARRAY + '\n' + pointer('values.slot[2]')),
-                       scene(pointer('values.begin') + '\n' + ARRAY))
-    node = next(valid_document(source).findall(TbStackNode))
+def test_complete_cards_explicit_positions_forward_references_and_common_options():
+    source = deck(card(pointer('values.begin') + '\n' + ARRAY),
+                       card(ARRAY + '\n' + pointer('values.slot[2]')),
+                       card(pointer('values.begin') + '\n' + ARRAY))
+    node = next(valid_document(source).findall(TbDeckNode))
     assert node['ids'] == ['example'] and node['classes'] == ['first', 'second']
     assert [child['number'] for child in node.children] == [1, 2, 3]
     pointers = list(node.findall(TbPointerNode))
@@ -82,21 +82,21 @@ def test_complete_scenes_explicit_positions_forward_references_and_common_option
     ('values.begin', 0), ('values.slot[1]', 1), ('values.end', 3), ('none', None),
 ])
 def test_explicit_pointer_positions(at, index):
-    node = next(valid_document(scene(ARRAY + '\n' + pointer(at))).findall(TbPointerNode))
+    node = next(valid_document(card(ARRAY + '\n' + pointer(at))).findall(TbPointerNode))
     assert (node['position']['index'] if node['position'] else None) == index
 
 
 def test_item_references_follow_reordered_keys_and_empty_arrays_adopt_mode():
-    result = valid_document(stack(scene(KEYED_ARRAY + '\n' + pointer('values.item[b]')),
-        scene('.. tb-array:: values\n\n   b = 4\n   a = 2\n\n' + pointer('values.item[b]')),
-        scene('.. tb-array:: values\n\n' + pointer('values.end'))))
+    result = valid_document(deck(card(KEYED_ARRAY + '\n' + pointer('values.item[b]')),
+        card('.. tb-array:: values\n\n   b = 4\n   a = 2\n\n' + pointer('values.item[b]')),
+        card('.. tb-array:: values\n\n' + pointer('values.end'))))
     assert [node['position']['index'] for node in result.findall(TbPointerNode)] == [1, 0, 0]
     assert [node['mode'] for node in result.findall(TbArrayNode)] == ['keyed', 'keyed', 'keyed']
     assert list(result.findall(TbPointerNode))[-1]['position']['end']
 
 
 def test_unplaced_pointer_needs_no_target_and_does_not_inherit_objects():
-    result = valid_document(stack(scene(pointer('none')), scene(ARRAY + '\n' + pointer('values.begin'))))
+    result = valid_document(deck(card(pointer('none')), card(ARRAY + '\n' + pointer('values.begin'))))
     pointers = list(result.findall(TbPointerNode))
     assert pointers[0]['position'] is None and pointers[1]['position']['index'] == 0
     assert len(list(result.children[0].children[0].findall(TbArrayNode))) == 0
@@ -110,32 +110,32 @@ def test_unplaced_pointer_needs_no_target_and_does_not_inherit_objects():
     (pointer('values.node[a]') + '\n' + ARRAY, 'requires a graph'),
     (pointer('graph.slot[0]') + '\n' + GRAPH, 'requires an array'),
     (pointer('graph.node[missing]') + '\n' + GRAPH, 'Unknown graph node'),
-    (pointer('missing.begin') + '\n' + ARRAY, 'Unknown scene object'),
+    (pointer('missing.begin') + '\n' + ARRAY, 'Unknown card object'),
     (pointer(), 'requires :at:'),
     (pointer('values') + '\n' + ARRAY, 'Invalid position reference'),
     ('.. tb-array::\n\n   1 2', 'require an object key'),
-    (ARRAY + '\n' + ARRAY, 'Duplicate scene object key'),
-    (ARRAY + '\n' + pointer('values.begin', key='values'), 'Duplicate scene object key'),
+    (ARRAY + '\n' + ARRAY, 'Duplicate card object key'),
+    (ARRAY + '\n' + pointer('values.begin', key='values'), 'Duplicate card object key'),
     ('.. container::\n\n   ' + ARRAY.replace('\n', '\n   '), 'immediate children'),
-    (scene(), 'nested scenes'),
-    (stack(scene()), 'nested scenes or stacks'),
+    (card(), 'nested cards'),
+    (deck(card()), 'nested cards or decks'),
 ])
-def test_invalid_scene_references_and_structure(content, message):
-    document = parse_rst(scene(content))
+def test_invalid_card_references_and_structure(content, message):
+    document = parse_rst(card(content))
     assert list(document.findall(nodes.system_message))
     assert message in document.astext()
 
 
 @pytest.mark.parametrize('source,message', [
-    ('.. tb-stack::', 'one or more immediate tb-scene'),
-    (stack(scene()) + '\n', None),
-    ('.. tb-stack::\n\n   Not a scene.', 'no other content'),
-    (pointer('none'), 'tb-scene parent'),
-    (stack(scene(ARRAY), scene('.. tb-graph:: values\n\n   a[1]')), 'changes type'),
-    (stack(scene(ARRAY), scene(KEYED_ARRAY)), 'mixes keyed and unkeyed'),
-    (stack(scene(ARRAY), scene(pointer('values.begin'))), 'Unknown scene object'),
+    ('.. tb-deck::', 'one or more immediate tb-card'),
+    (deck(card()) + '\n', None),
+    ('.. tb-deck::\n\n   Not a card.', 'no other content'),
+    (pointer('none'), 'tb-card parent'),
+    (deck(card(ARRAY), card('.. tb-graph:: values\n\n   a[1]')), 'changes type'),
+    (deck(card(ARRAY), card(KEYED_ARRAY)), 'mixes keyed and unkeyed'),
+    (deck(card(ARRAY), card(pointer('values.begin'))), 'Unknown card object'),
 ])
-def test_stack_validation(source, message):
+def test_deck_validation(source, message):
     document = parse_rst(source)
     if message is None:
         assert not list(document.findall(nodes.system_message))
@@ -159,16 +159,16 @@ def build_sphinx(tmp_path, builder, source, *, tagged=False):
 
 @pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
 def test_html_places_pointer_roots_once_and_emits_complete_safe_config(tmp_path, orientation):
-    source = stack(scene(ARRAY.replace('values\n', f'values\n   :orientation: {orientation}\n') + '\n'
+    source = deck(card(ARRAY.replace('values\n', f'values\n   :orientation: {orientation}\n') + '\n'
                 + pointer('values.slot[1]', extra='   :name: current-start\n   :class: mark\n')),
-                scene(ARRAY + '\n' + pointer('values.end')),
-                scene('.. code-block:: text\n\n   </script><script>unsafe & literal</script>'))
+                card(ARRAY + '\n' + pointer('values.end')),
+                card('.. code-block:: text\n\n   </script><script>unsafe & literal</script>'))
     out = build_sphinx(tmp_path, 'html', source)
     soup = BeautifulSoup((out/'index.html').read_text(), 'html.parser')
-    root = soup.find('tb-stack', id='example')
-    assert len(soup.find_all('tb-stack')) == 1
-    scenes = root.find_all('tb-scene')
-    assert len(scenes) == 3 and all(not item.has_attr('hidden') for item in scenes)
+    root = soup.find('tb-deck', id='example')
+    assert len(soup.find_all('tb-deck')) == 1
+    cards = root.find_all('tb-card')
+    assert len(cards) == 3 and all(not item.has_attr('hidden') for item in cards)
     assert len(root.find_all('tb-array')) == len(root.find_all('tb-pointer')) == 2
     pointer_element = root.find('tb-pointer', id='current-start')
     assert 'mark' in pointer_element['class'] and pointer_element.find_parent('tb-array') is not None
@@ -178,12 +178,12 @@ def test_html_places_pointer_roots_once_and_emits_complete_safe_config(tmp_path,
     script = root.find('script', type='application/json', recursive=False)
     data = json.loads(script.string)
     assert data['version'] == 1
-    assert data['scenes'][0]['objects'][1]['position']['index'] == 1
-    assert data['scenes'][1]['objects'][1]['position']['end']
+    assert data['cards'][0]['objects'][1]['position']['index'] == 1
+    assert data['cards'][1]['objects'][1]['position']['end']
     assert len(soup.find_all('script', string=lambda value: value and 'unsafe & literal' in value)) == 0
-    buttons = root.select('.tb-stack__controls button')
+    buttons = root.select('.tb-deck__controls button')
     assert [button['data-action'] for button in buttons] == ['first', 'previous', 'next', 'last']
-    assert [button['aria-label'] for button in buttons] == ['First scene', 'Previous scene', 'Next scene', 'Last scene']
+    assert [button['aria-label'] for button in buttons] == ['First card', 'Previous card', 'Next card', 'Last card']
     assert all(button['title'] == button['aria-label'] for button in buttons)
     assert [button.svg['class'] for button in buttons] == [
         ['bi', 'bi-chevron-double-left'], ['bi', 'bi-chevron-left'],
@@ -191,24 +191,24 @@ def test_html_places_pointer_roots_once_and_emits_complete_safe_config(tmp_path,
     ]
     assert all(button.svg['aria-hidden'] == 'true' and button.svg['focusable'] == 'false'
                and button.svg.find('path') for button in buttons)
-    controls = root.select_one('.tb-stack__controls')
+    controls = root.select_one('.tb-deck__controls')
     assert controls.has_attr('hidden')
-    assert controls.find_next_sibling('div')['class'] == ['tb-stack__scenes']
-    assert controls.select_one('.tb-stack__scene-caption').find_next_sibling('div')['class'] == ['tb-stack__navigation']
-    assert all(button.parent['class'] == ['tb-stack__navigation'] for button in buttons)
-    selector = controls.select_one('select.tb-stack__selector')
-    assert selector.has_attr('hidden') and selector['aria-label'] == 'Choose scene'
-    assert selector.parent['class'] == ['tb-stack__navigation']
+    assert controls.find_next_sibling('div')['class'] == ['tb-deck__cards']
+    assert controls.select_one('.tb-deck__card-caption').find_next_sibling('div')['class'] == ['tb-deck__navigation']
+    assert all(button.parent['class'] == ['tb-deck__navigation'] for button in buttons)
+    selector = controls.select_one('select.tb-deck__selector')
+    assert selector.has_attr('hidden') and selector['aria-label'] == 'Choose card'
+    assert selector.parent['class'] == ['tb-deck__navigation']
     assert not selector.has_attr('role')
-    assert selector.find_next_sibling()['class'] == ['tb-stack__status']
-    assert controls.select_one('.tb-stack__status')['role'] == 'status'
-    assert all(not item.select_one('.tb-scene__caption').has_attr('hidden') for item in scenes)
-    assert (out/'_static'/'tb-stack.js').exists()
+    assert selector.find_next_sibling()['class'] == ['tb-deck__status']
+    assert controls.select_one('.tb-deck__status')['role'] == 'status'
+    assert all(not item.select_one('.tb-card__caption').has_attr('hidden') for item in cards)
+    assert (out/'_static'/'tb-deck.js').exists()
 
 
 def test_empty_array_and_unplaced_pointer_html_preserve_single_roots(tmp_path):
-    source = stack(scene('.. tb-array:: values\n\n' + pointer('values.begin')),
-                       scene(pointer('none')))
+    source = deck(card('.. tb-array:: values\n\n' + pointer('values.begin')),
+                       card(pointer('none')))
     out = build_sphinx(tmp_path, 'html', source)
     soup = BeautifulSoup((out/'index.html').read_text(), 'html.parser')
     assert len(soup.find_all('tb-pointer')) == 2
@@ -217,46 +217,46 @@ def test_empty_array_and_unplaced_pointer_html_preserve_single_roots(tmp_path):
 
 
 @pytest.mark.parametrize('caption', ['', 'Inspect <values> & "labels"'])
-def test_html_names_stack_and_scene_groups_without_interactive_descriptions(tmp_path, caption):
+def test_html_names_deck_and_card_groups_without_interactive_descriptions(tmp_path, caption):
     options = f'   :caption: {caption}\n' if caption else ''
-    source = stack(scene('Scene content.', options))
+    source = deck(card('Card content.', options))
     source = source.replace('   :caption: Manual walkthrough\n', options)
-    source += '\n' + scene('Standalone content.', options)
+    source += '\n' + card('Standalone content.', options)
     out = build_sphinx(tmp_path, 'html', source)
     soup = BeautifulSoup((out/'index.html').read_text(), 'html.parser')
-    root = soup.find('tb-stack')
+    root = soup.find('tb-deck')
     assert root['role'] == 'group'
     assert not root.has_attr('aria-roledescription')
     if caption:
         label = soup.find(id=root['aria-labelledby'])
         assert label.get_text() == caption
-        assert label['class'] == ['tb-stack__caption']
+        assert label['class'] == ['tb-deck__caption']
         assert not root.has_attr('aria-label')
     else:
-        assert root['aria-label'] == 'Scene walkthrough'
+        assert root['aria-label'] == 'Card walkthrough'
         assert not root.has_attr('aria-labelledby')
-    for number, item in enumerate(soup.find_all('tb-scene')):
+    for number, item in enumerate(soup.find_all('tb-card')):
         assert item['role'] == 'group'
         assert not item.has_attr('aria-roledescription')
         heading = item.find(id=item['aria-labelledby'])
-        expected = 'Scene 1' if number == 0 else 'Scene'
+        expected = 'Card 1' if number == 0 else 'Card'
         assert heading.get_text() == expected + (f': {caption}' if caption else '')
         assert not heading.has_attr('hidden')
-    current_caption = root.select_one('.tb-stack__scene-caption')
+    current_caption = root.select_one('.tb-deck__card-caption')
     assert current_caption['id'] and current_caption.has_attr('hidden')
     ids = [item['id'] for item in soup.select('[id]')]
     assert len(ids) == len(set(ids))
 
 
 @pytest.mark.parametrize('builder', ['text', 'latex'])
-def test_static_builders_keep_all_scenes_code_and_pointer_positions(tmp_path, builder):
-    source = stack(scene('.. code-block:: python\n\n   message = "Hello" + "world"'),
-                       scene(ARRAY + '\n' + pointer('values.slot[1]')),
-                       scene(ARRAY + '\n' + pointer('values.end')))
+def test_static_builders_keep_all_cards_code_and_pointer_positions(tmp_path, builder):
+    source = deck(card('.. code-block:: python\n\n   message = "Hello" + "world"'),
+                       card(ARRAY + '\n' + pointer('values.slot[1]')),
+                       card(ARRAY + '\n' + pointer('values.end')))
     out = build_sphinx(tmp_path, builder, source)
     file = out/'index.txt' if builder == 'text' else next(out.glob('*.tex'))
     output = file.read_text()
-    assert all(f'Scene {number}' in output for number in (1, 2, 3))
+    assert all(f'Card {number}' in output for number in (1, 2, 3))
     assert 'message' in output and 'Hello' in output and 'world' in output
     assert 'current points to values at index 1' in output
     assert 'values.end' in output
@@ -266,25 +266,25 @@ def test_static_builders_keep_all_scenes_code_and_pointer_positions(tmp_path, bu
 @pytest.mark.parametrize('tagged', [False, True])
 def test_latex_captions_have_paragraph_breaks(tmp_path, tagged):
     source = (
-        'Prose before the stack.\n\n'
-        + stack(scene('First scene prose.', '   :caption: Start & inspect\n'),
-                scene('Second scene prose.', '   :caption: Finish\n'))
-        + '\nProse after the stack.\n\n'
-        + '.. tb-stack::\n\n'
-          '   .. tb-scene::\n\n'
-          '      Uncaptioned stack prose.\n\n'
-        + scene('Standalone scene prose.', '   :caption: Independent\n')
-        + '\nProse after the standalone scene.\n'
+        'Prose before the deck.\n\n'
+        + deck(card('First card prose.', '   :caption: Start & inspect\n'),
+                card('Second card prose.', '   :caption: Finish\n'))
+        + '\nProse after the deck.\n\n'
+        + '.. tb-deck::\n\n'
+          '   .. tb-card::\n\n'
+          '      Uncaptioned deck prose.\n\n'
+        + card('Standalone card prose.', '   :caption: Independent\n')
+        + '\nProse after the standalone card.\n'
     )
     out = build_sphinx(tmp_path, 'latex', source, tagged=tagged)
     output = next(out.glob('*.tex')).read_text()
     blocks = [
-        'Prose before the stack.', 'Manual walkthrough',
-        r'\sphinxstylestrong{Scene 1: Start \& inspect}', 'First scene prose.',
-        r'\sphinxstylestrong{Scene 2: Finish}', 'Second scene prose.',
-        'Prose after the stack.', r'\sphinxstylestrong{Scene 1}',
-        'Uncaptioned stack prose.', r'\sphinxstylestrong{Scene: Independent}',
-        'Standalone scene prose.', 'Prose after the standalone scene.',
+        'Prose before the deck.', 'Manual walkthrough',
+        r'\sphinxstylestrong{Card 1: Start \& inspect}', 'First card prose.',
+        r'\sphinxstylestrong{Card 2: Finish}', 'Second card prose.',
+        'Prose after the deck.', r'\sphinxstylestrong{Card 1}',
+        'Uncaptioned deck prose.', r'\sphinxstylestrong{Card: Independent}',
+        'Standalone card prose.', 'Prose after the standalone card.',
     ]
     position = 0
     for index, block in enumerate(blocks):
@@ -299,24 +299,24 @@ def test_latex_captions_have_paragraph_breaks(tmp_path, tagged):
 @pytest.mark.parametrize('style', ['graph', 'list', 'tree', 'array', 'ring'])
 @pytest.mark.parametrize('builder', ['html', 'latex'])
 def test_graph_pointer_uses_existing_layout_and_keeps_semantic_description(tmp_path, style, builder):
-    source = scene(GRAPH.replace('graph\n', f'graph\n   :style: {style}\n') + '\n'
+    source = card(GRAPH.replace('graph\n', f'graph\n   :style: {style}\n') + '\n'
                    + pointer('graph.node[b]', extra='   :label: Here\n'))
     out = build_sphinx(tmp_path, builder, source)
     if builder == 'html':
         soup = BeautifulSoup((out/'index.html').read_text(), 'html.parser')
-        assert len(soup.find_all('tb-scene')) == len(soup.find_all('tb-pointer')) == 1
+        assert len(soup.find_all('tb-card')) == len(soup.find_all('tb-pointer')) == 1
         assert 'graph node b' in soup.find('tb-pointer').get_text()
         svg = next((out/'_images').glob('tb-graph*.svg')).read_text()
         assert '>Here<' in svg
-        assert '99' not in soup.find('tb-scene').get_text()
+        assert '99' not in soup.find('tb-card').get_text()
     else:
         output = next(out.glob('*.tex')).read_text()
         assert 'Here points to graph node b' in output
         assert list(out.glob('tb-graph*.pdf'))
 
 
-def test_tree_scene_accepts_multiple_pointers_and_local_indicators():
-    document = valid_document(scene(GRAPH.replace('graph\n', 'graph\n   :style: tree\n   :indicators: head=a current=b\n') + '\n'
+def test_tree_card_accepts_multiple_pointers_and_local_indicators():
+    document = valid_document(card(GRAPH.replace('graph\n', 'graph\n   :style: tree\n   :indicators: head=a current=b\n') + '\n'
                                     + pointer('graph.node[a]', key='one') + '\n' + pointer('graph.node[b]', key='two')))
     assert len(list(document.findall(TbPointerNode))) == 2
     graph = next(document.findall(TbGraphNode))
@@ -331,10 +331,10 @@ def test_graph_positions_and_local_indicators_resolve_the_same_targets():
                    "   :indicators: first=.begin finish=values.end unplaced=none\n\n"
                    + indent(body, "   ") + "\n\n" + pointer('values.begin', key='first')
                    + "\n" + pointer('values.end', key='finish') + "\n" + pointer('none'))
-        document = valid_document(scene(content))
+        document = valid_document(card(content))
         graph = next(document.findall(TbGraphNode))
         pointers = list(document.findall(TbPointerNode))
-        from sphinx_touchbook.generators.stack import graph_pointer_indicators
+        from sphinx_touchbook.generators.deck import graph_pointer_indicators
         markers = graph_pointer_indicators(graph)
         assert markers[:2] == markers[2:]
         assert pointers[0]['position']['index'] == 0

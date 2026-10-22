@@ -1,4 +1,4 @@
-class TbStack extends HTMLElement {
+class TbDeck extends HTMLElement {
   connectedCallback() {
     if (this.dataset.enhanced === "true") {
       this.attachNavigation();
@@ -6,60 +6,60 @@ class TbStack extends HTMLElement {
       return;
     }
     const script = this.querySelector(':scope > script[type="application/json"]');
-    const controls = this.querySelector(":scope > .tb-stack__controls");
-    const scenes = Array.from(this.querySelectorAll(":scope > .tb-stack__scenes > tb-scene"));
+    const controls = this.querySelector(":scope > .tb-deck__controls");
+    const cards = Array.from(this.querySelectorAll(":scope > .tb-deck__cards > tb-card"));
     let config;
     try {
       config = JSON.parse(script?.textContent || "");
     } catch {
       return;
     }
-    if (!config || config.version !== 1 || !Array.isArray(config.scenes) || !scenes.length ||
-        config.scenes.length !== scenes.length || !controls ||
-        !config.scenes.every((scene, index) => scene.id === scenes[index].id)) return;
+    if (!config || config.version !== 1 || !Array.isArray(config.cards) || !cards.length ||
+        config.cards.length !== cards.length || !controls ||
+        !config.cards.every((card, index) => card.id === cards[index].id)) return;
     const buttons = Array.from(controls.querySelectorAll("button[data-action]"));
     const actions = ["first", "previous", "next", "last"];
-    this.status = controls.querySelector(".tb-stack__status");
-    this.caption = controls.querySelector(".tb-stack__scene-caption");
-    this.selector = controls.querySelector("select.tb-stack__selector");
+    this.status = controls.querySelector(".tb-deck__status");
+    this.caption = controls.querySelector(".tb-deck__card-caption");
+    this.selector = controls.querySelector("select.tb-deck__selector");
     if (!this.status || !this.caption?.id || !this.selector ||
         actions.some((action) => !buttons.some((button) => button.dataset.action === action))) return;
 
-    this.scenes = scenes;
+    this.cards = cards;
     this.config = config;
     this.buttons = buttons;
     this.index = 0;
-    this.selector.replaceChildren(...config.scenes.map((scene, index) => {
+    this.selector.replaceChildren(...config.cards.map((card, index) => {
       const option = document.createElement("option");
-      const caption = scene.caption.replace(/\s+/g, " ").trim();
+      const caption = card.caption.replace(/\s+/g, " ").trim();
       const characters = Array.from(caption);
       const shortCaption = characters.length > 24
         ? `${characters.slice(0, 23).join("")}…` : caption;
-      const position = `${index + 1} of ${scenes.length}`;
+      const position = `${index + 1} of ${cards.length}`;
       option.value = String(index);
       option.textContent = position + (shortCaption ? `: ${shortCaption}` : "");
       option.setAttribute("aria-label", position + (caption ? `: ${caption}` : ""));
       option.title = option.getAttribute("aria-label");
       return option;
     }));
-    this.selector.hidden = scenes.length === 1;
+    this.selector.hidden = cards.length === 1;
     this.selector.addEventListener("change", () => {
       if (this.selector.selectedIndex >= 0) {
         // The native select announces the chosen option itself.
-        this.showScene(this.selector.selectedIndex, { announce: false });
+        this.showCard(this.selector.selectedIndex, { announce: false });
       }
     });
     this.setAttribute("aria-roledescription", "carousel");
-    scenes.forEach((scene) => {
-      scene.setAttribute("aria-roledescription", "slide");
-      const heading = scene.querySelector(":scope > .tb-scene__caption");
+    cards.forEach((card) => {
+      card.setAttribute("aria-roledescription", "slide");
+      const heading = card.querySelector(":scope > .tb-card__caption");
       if (heading) heading.hidden = true;
     });
     buttons.forEach((button) => {
       button.addEventListener("click", () => {
         const destination = { first: 0, previous: this.index - 1,
-          next: this.index + 1, last: scenes.length - 1 }[button.dataset.action];
-        this.showScene(destination);
+          next: this.index + 1, last: cards.length - 1 }[button.dataset.action];
+        this.showCard(destination);
       });
     });
     this.onHashChange = () => this.revealHashTarget();
@@ -72,7 +72,7 @@ class TbStack extends HTMLElement {
     };
     this.attachNavigation();
     this.dataset.enhanced = "true";
-    this.showScene(0);
+    this.showCard(0);
     this.revealHashTarget(window.location.hash, false);
     controls.hidden = false;
   }
@@ -87,45 +87,45 @@ class TbStack extends HTMLElement {
     document.addEventListener("click", this.onDocumentClick);
   }
 
-  showScene(index, { announce = true } = {}) {
+  showCard(index, { announce = true } = {}) {
     if (!Number.isInteger(index)) return;
-    this.index = Math.max(0, Math.min(index, this.scenes.length - 1));
+    this.index = Math.max(0, Math.min(index, this.cards.length - 1));
     this.selector.value = String(this.index);
     this.selector.title = this.selector.selectedOptions[0].title;
-    this.scenes.forEach((scene, number) => { scene.hidden = number !== this.index; });
+    this.cards.forEach((card, number) => { card.hidden = number !== this.index; });
     this.buttons.forEach((button) => {
       button.disabled = ["first", "previous"].includes(button.dataset.action)
-        ? this.index === 0 : this.index === this.scenes.length - 1;
+        ? this.index === 0 : this.index === this.cards.length - 1;
     });
     if (this.buttons.includes(document.activeElement) && document.activeElement.disabled) {
       const action = this.index === 0 ? "next" : "previous";
       this.buttons.find((button) => button.dataset.action === action && !button.disabled)?.focus();
     }
-    const caption = this.config.scenes[this.index].caption;
+    const caption = this.config.cards[this.index].caption;
     this.caption.textContent = caption;
     this.caption.hidden = !caption;
-    this.scenes.forEach((scene, number) => {
-      const sceneCaption = this.config.scenes[number].caption;
-      if (number === this.index && sceneCaption) {
-        scene.setAttribute("aria-labelledby", this.caption.id);
-        scene.removeAttribute("aria-label");
+    this.cards.forEach((card, number) => {
+      const cardCaption = this.config.cards[number].caption;
+      if (number === this.index && cardCaption) {
+        card.setAttribute("aria-labelledby", this.caption.id);
+        card.removeAttribute("aria-label");
       } else {
-        // Inactive scenes keep their own names instead of following the
+        // Inactive cards keep their own names instead of following the
         // shared visible caption as navigation changes it.
-        scene.removeAttribute("aria-labelledby");
-        scene.setAttribute("aria-label", sceneCaption || `${number + 1} of ${this.scenes.length}`);
+        card.removeAttribute("aria-labelledby");
+        card.setAttribute("aria-label", cardCaption || `${number + 1} of ${this.cards.length}`);
       }
     });
-    this.status.textContent = announce ? `Scene ${this.index + 1} of ${this.scenes.length}` : "";
+    this.status.textContent = announce ? `Card ${this.index + 1} of ${this.cards.length}` : "";
     if (caption && announce) {
       // Include the full caption in announcements without changing the
-      // compact selector or single-scene count.
+      // compact selector or single-card count.
       const description = document.createElement("span");
-      description.className = "tb-stack__status-caption";
+      description.className = "tb-deck__status-caption";
       description.textContent = `: ${caption}`;
       this.status.append(description);
     }
-    this.dataset.scene = String(this.index + 1);
+    this.dataset.card = String(this.index + 1);
   }
 
   revealHashTarget(hash = window.location.hash, scroll = true) {
@@ -133,12 +133,12 @@ class TbStack extends HTMLElement {
     try { id = decodeURIComponent(hash.replace(/^#/, "")); } catch { return; }
     if (!id) return;
     const target = document.getElementById(id);
-    const scene = target?.closest("tb-scene");
-    const index = this.scenes.indexOf(scene);
+    const card = target?.closest("tb-card");
+    const index = this.cards.indexOf(card);
     if (index < 0) return;
-    this.showScene(index);
+    this.showCard(index);
     if (scroll) target.scrollIntoView?.({ block: "nearest" });
   }
 }
 
-if (!customElements.get("tb-stack")) customElements.define("tb-stack", TbStack);
+if (!customElements.get("tb-deck")) customElements.define("tb-deck", TbDeck);

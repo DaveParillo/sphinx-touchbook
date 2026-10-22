@@ -1,4 +1,4 @@
-"""Render complete scenes and navigation configuration for every builder."""
+"""Render complete cards and navigation configuration for every builder."""
 
 from html import escape
 import json
@@ -7,23 +7,23 @@ from docutils import nodes
 
 from sphinx_touchbook.generators.common import html_additional_targets, html_class_attr, latex_targets
 from sphinx_touchbook.directives.positions import graph_indicator_target
-from sphinx_touchbook.nodes import TbArrayNode, TbGraphNode, TbPointerNode, TbSceneNode, is_scene_object
+from sphinx_touchbook.nodes import TbArrayNode, TbGraphNode, TbPointerNode, TbCardNode, is_card_object
 
 
 # Bootstrap Icons (MIT); license in static/bootstrap-icons-LICENSE.txt.
 # https://icons.getbootstrap.com/icons/chevron-double-left/ and related chevrons.
 NAVIGATION_ICONS = (
-    ("first", "chevron-double-left", "First scene", (
+    ("first", "chevron-double-left", "First card", (
         "M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0",
         "M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0",
     )),
-    ("previous", "chevron-left", "Previous scene", (
+    ("previous", "chevron-left", "Previous card", (
         "M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0",
     )),
-    ("next", "chevron-right", "Next scene", (
+    ("next", "chevron-right", "Next card", (
         "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708",
     )),
-    ("last", "chevron-double-right", "Last scene", (
+    ("last", "chevron-double-right", "Last card", (
         "M3.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L9.293 8 3.646 2.354a.5.5 0 0 1 0-.708",
         "M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708",
     )),
@@ -31,7 +31,7 @@ NAVIGATION_ICONS = (
 
 
 def pointers_for(node, *, position_type=None):
-    if not isinstance(node.parent, TbSceneNode):
+    if not isinstance(node.parent, TbCardNode):
         return []
     return [item for item in node.parent.children if isinstance(item, TbPointerNode)
             and item["position"] is not None and item["position"]["object"] == node["key"]
@@ -45,7 +45,7 @@ def graph_pointer_indicators(node):
     ]
 
 
-def scene_model(scene):
+def card_model(card):
     fields = {
         TbArrayNode: ("elements", "mode", "highlighted", "range", "range_label",
                       "label", "orientation", "start_index", "show_keys"),
@@ -54,14 +54,14 @@ def scene_model(scene):
         TbPointerNode: ("label", "position", "at"),
     }
     objects = []
-    for item in scene.children:
-        if not is_scene_object(item):
+    for item in card.children:
+        if not is_card_object(item):
             continue
         objects.append({"type": {TbArrayNode: "array", TbGraphNode: "graph", TbPointerNode: "pointer"}.get(type(item), "object"),
                         "key": item["key"], "dom_id": item["ids"][0],
                         "caption": item.get("caption", ""), "classes": item["classes"],
                         **{key: item[key] for key in fields.get(type(item), ())}})
-    return {"id": scene["ids"][0], "caption": scene["caption"], "objects": objects}
+    return {"id": card["ids"][0], "caption": card["caption"], "objects": objects}
 
 
 def pointer_description(pointer):
@@ -130,16 +130,16 @@ def visit_tb_pointer_text(self, node):
     raise nodes.SkipNode
 
 
-def visit_tb_stack_html(self, node):
-    stack_id = escape(node["ids"][0], quote=True)
-    label = f'aria-labelledby="{stack_id}-caption"' if node["caption"] else 'aria-label="Scene walkthrough"'
-    self.body.append(f'<tb-stack id="{stack_id}"{html_class_attr(node)} role="group" {label}>\n')
+def visit_tb_deck_html(self, node):
+    deck_id = escape(node["ids"][0], quote=True)
+    label = f'aria-labelledby="{deck_id}-caption"' if node["caption"] else 'aria-label="Card walkthrough"'
+    self.body.append(f'<tb-deck id="{deck_id}"{html_class_attr(node)} role="group" {label}>\n')
     self.body.append(html_additional_targets(node))
     if node["caption"]:
-        self.body.append(f'<p id="{stack_id}-caption" class="tb-stack__caption">{escape(node["caption"])}</p>\n')
-    self.body.append('<div class="tb-stack__controls" hidden>\n')
-    self.body.append(f'<p id="{stack_id}-scene-caption" class="tb-stack__scene-caption" hidden></p>\n')
-    self.body.append('<div class="tb-stack__navigation">\n')
+        self.body.append(f'<p id="{deck_id}-caption" class="tb-deck__caption">{escape(node["caption"])}</p>\n')
+    self.body.append('<div class="tb-deck__controls" hidden>\n')
+    self.body.append(f'<p id="{deck_id}-card-caption" class="tb-deck__card-caption" hidden></p>\n')
+    self.body.append('<div class="tb-deck__navigation">\n')
     for action, icon, label, paths in NAVIGATION_ICONS:
         self.body.append(f'<button type="button" data-action="{action}" aria-label="{label}" title="{label}">'
                          f'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" '
@@ -147,38 +147,38 @@ def visit_tb_stack_html(self, node):
                          'aria-hidden="true" focusable="false">')
         self.body.extend(f'<path fill-rule="evenodd" d="{path}"/>' for path in paths)
         self.body.append('</svg></button>\n')
-    self.body.append('<select class="tb-stack__selector" aria-label="Choose scene" hidden></select>\n')
-    self.body.append('<p class="tb-stack__status" role="status" aria-live="polite" aria-atomic="true"></p>\n')
+    self.body.append('<select class="tb-deck__selector" aria-label="Choose card" hidden></select>\n')
+    self.body.append('<p class="tb-deck__status" role="status" aria-live="polite" aria-atomic="true"></p>\n')
     self.body.append('</div>\n</div>\n')
-    self.body.append('<div class="tb-stack__scenes">\n')
+    self.body.append('<div class="tb-deck__cards">\n')
 
 
-def depart_tb_stack_html(self, node):
+def depart_tb_deck_html(self, node):
     self.body.append('</div>\n')
-    config = {"version": 1, "scenes": [scene_model(scene) for scene in node.children]}
+    config = {"version": 1, "cards": [card_model(card) for card in node.children]}
     encoded = json.dumps(config, ensure_ascii=False).replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
     self.body.append(f'<script type="application/json">{encoded}</script>\n')
-    self.body.append('</tb-stack>\n')
+    self.body.append('</tb-deck>\n')
 
 
-def scene_heading(node):
-    heading = f"Scene {node['number']}" if "number" in node else "Scene"
+def card_heading(node):
+    heading = f"Card {node['number']}" if "number" in node else "Card"
     return f"{heading}: {node['caption']}" if node["caption"] else heading
 
 
-def visit_tb_scene_html(self, node):
-    scene_id = escape(node["ids"][0], quote=True)
-    self.body.append(f'<tb-scene id="{scene_id}"{html_class_attr(node)} '
-                     f'role="group" aria-labelledby="{scene_id}-caption">\n')
+def visit_tb_card_html(self, node):
+    card_id = escape(node["ids"][0], quote=True)
+    self.body.append(f'<tb-card id="{card_id}"{html_class_attr(node)} '
+                     f'role="group" aria-labelledby="{card_id}-caption">\n')
     self.body.append(html_additional_targets(node))
-    self.body.append(f'<p id="{scene_id}-caption" class="tb-scene__caption">{escape(scene_heading(node))}</p>\n')
+    self.body.append(f'<p id="{card_id}-caption" class="tb-card__caption">{escape(card_heading(node))}</p>\n')
 
 
-def depart_tb_scene_html(self, node):
-    self.body.append('</tb-scene>\n')
+def depart_tb_card_html(self, node):
+    self.body.append('</tb-card>\n')
 
 
-def visit_tb_stack_latex(self, node):
+def visit_tb_deck_latex(self, node):
     # Targets interrupt the blank lines Sphinx uses to separate paragraphs.
     self.body.append('\n\\par\n')
     latex_targets(self, node)
@@ -189,22 +189,22 @@ def visit_tb_stack_latex(self, node):
         self.body.append('\\par\n')
 
 
-def visit_tb_scene_latex(self, node):
+def visit_tb_card_latex(self, node):
     self.body.append('\n\\par\n')
     latex_targets(self, node)
     content = nodes.container()
-    content += nodes.paragraph('', '', nodes.strong(text=scene_heading(node)))
+    content += nodes.paragraph('', '', nodes.strong(text=card_heading(node)))
     content.walkabout(self)
     self.body.append('\\par\n')
 
 
-def visit_tb_stack_text(self, node):
+def visit_tb_deck_text(self, node):
     if node["caption"]:
         self.add_text(node["caption"] + "\n")
 
 
-def visit_tb_scene_text(self, node):
-    self.add_text("\n" + scene_heading(node) + "\n")
+def visit_tb_card_text(self, node):
+    self.add_text("\n" + card_heading(node) + "\n")
 
 
 def depart_static(self, node):

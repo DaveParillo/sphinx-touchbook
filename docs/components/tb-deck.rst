@@ -1,111 +1,109 @@
-.. _tb-stack:
+.. _tb-deck:
 
-tb-stack
-========
+tb-deck
+=======
 
-The ``tb-stack`` directive groups :ref:`scenes <tb-scene>` in an ordered
+The ``tb-deck`` directive groups :ref:`cards <tb-card>` in an ordered
 collection. Readers advance using basic navigation buttons for the first,
-previous, next, and last scene.
-
-Declare every object and value present in each scene, including unchanged
-content. An omitted object is absent from that scene. Navigation can move
-backward or jump directly to the first or last scene without replaying steps.
+previous, next, and last card.
+A selection dropdown list allows selecting an arbitrary card from the
+sequence.
 
 Synopsis
 --------
 
-The general format of the ``tb-stack`` directive is:
+The general format of the ``tb-deck`` directive is:
 
 .. code-block:: rst
 
-   .. tb-stack::
+   .. tb-deck::
       :optional parameter: value
 
-      .. tb-scene::
+      .. tb-card::
          :optional parameter: value
 
-         + --- Complete scene content ---
+         + --- Complete card content ---
          |
          | prose, code, keyed arrays or graphs, and pointers
          |
          + ------------------------------
 
-      .. tb-scene::
+      .. tb-card::
 
-         + --- Next complete scene ---
+         + --- Next complete card ---
          |
-         | declare all content for this scene
+         | declare all content for this card
          |
          + ---------------------------
 
-The stack body contains one or more immediate ``tb-scene`` directives and
-no other content. Scenes may be empty. Scenes and stacks cannot be nested
-inside a scene, including through other containers.
+The deck body contains one or more immediate ``tb-card`` directives and
+no other content. Cards may be empty. Cards and decks cannot be nested
+inside a card, including through other containers.
 
 Options
 -------
 
 **caption**
    ``String``. Optional.
-   Plain-text caption displayed above the stack.
+   Plain-text caption displayed above the deck.
 
 **class**
    ``String`` or ``List``. Optional.
-   Space-separated CSS classes for this stack.
+   Space-separated CSS classes for this deck.
    See :ref:`common` for details.
 
 **name**
    ``String``. Optional.
-   Sphinx reference target for this stack.
+   Sphinx reference target for this deck.
    See :ref:`common` for details.
 
 Accessibility behavior
 ----------------------
 
-Interactive stacks follow the
+Interactive decks follow the
 `ARIA carousel pattern <https://www.w3.org/WAI/ARIA/apg/patterns/carousel/>`_.
-Each stack is a named group described as a carousel. Its caption provides
-the accessible name; without a caption, the name is "Scene walkthrough".
-Use a descriptive caption to distinguish stacks on the same page.
-Each scene is a named group described as a slide, using its caption or its
+Each deck is a named group described as a carousel. Its caption provides
+the accessible name; without a caption, the name is "Card walkthrough".
+Use a descriptive caption to distinguish decks on the same page.
+Each card is a named group described as a slide, using its caption or its
 position and total count, such as "2 of 5", as its accessible name.
 Static HTML uses named groups without carousel or slide descriptions.
 
 Navigation uses native buttons with Bootstrap chevron icons, accessible labels,
-and hover tooltips for first, previous, next, and last scene. Buttons are
+and hover tooltips for first, previous, next, and last card. Buttons are
 disabled at the corresponding endpoints. Keyboard users can
-Tab to the controls and activate them with Enter or Space. The scene count and
+Tab to the controls and activate them with Enter or Space. The card count and
 caption are announced after navigation; the status is not a focus target.
-The current scene's full caption appears beside the navigation controls,
-or below them in narrow layouts. The scene count appears below the buttons.
-For stacks with multiple scenes, the count is a native dropdown labelled
-"Choose scene". Each option includes its scene number, total count, and caption.
+The current card's full caption appears beside the navigation controls,
+or below them in narrow layouts. The card count appears below the buttons.
+For decks with multiple cards, the count is a native dropdown labelled
+"Choose card". Each option includes its card number, total count, and caption.
 Captions in the dropdown are limited to 24 characters, including an ellipsis
 when shortened. The dropdown stays within the width of the navigation buttons;
 the browser may clip its displayed text further to fit. Full captions remain
-available as accessible option names, tooltips, and the current scene caption.
-Choosing an option displays that scene immediately and keeps focus on the
+available as accessible option names, tooltips, and the current card caption.
+Choosing an option displays that card immediately and keeps focus on the
 dropdown. Buttons and document links keep the selected option synchronized.
-Single-scene stacks show the count as text.
+Single-card decks show the count as text.
 
 If navigation disables the focused button, focus moves to an available previous
 or next button.
 
-Use a scene's ``:name:`` to link directly to it with a Sphinx reference.
-Document links to named scenes or their content reveal the destination scene,
-including when it belongs to another stack.
+Use a card's ``:name:`` to link directly to it with a Sphinx reference.
+Document links to named cards or their content reveal the destination card,
+including when it belongs to another deck.
 Each named occurrence retains its own Sphinx reference target. Object keys
 are separate from document names; use different ``:name:`` values when naming
-occurrences of the same object in different scenes.
+occurrences of the same object in different cards.
 
 Fallback behavior
 -----------------
 
-HTML without JavaScript shows every scene in order and hides the navigation
-controls. Text and PDF show every scene, with captions, code, arrays, pointer
-positions, and graph descriptions or diagrams. Each scene is independently
-renderable. Reduced-motion preferences require no special settings because
-navigation changes scenes immediately.
+HTML without JavaScript shows every card in order and hides the navigation
+controls. Text and PDF show every card, with captions, code, arrays, pointer
+positions, and graph descriptions or diagrams. Each card is independently
+rendered. Reduced-motion preferences require no special settings because
+navigation changes cards immediately.
 
 Examples
 --------
@@ -117,15 +115,15 @@ This example unfolds a join expression into concatenation and its final value,
 using ordinary code blocks for each authored expression.
 
 .. tb-group::
-   :name: stack-join-tabs
+   :name: deck-join-tabs
 
    .. tb-tab:: Source
 
       .. code-block:: rst
 
-         .. tb-stack::
+         .. tb-deck::
 
-            .. tb-scene::
+            .. tb-card::
 
                Join the words with a space between them.
 
@@ -134,7 +132,7 @@ using ordinary code blocks for each authored expression.
                   words = ["Hello", "world"]
                   message = " ".join(words)
 
-            .. tb-scene::
+            .. tb-card::
 
                Substitute the list of words.
 
@@ -142,7 +140,7 @@ using ordinary code blocks for each authored expression.
 
                   message = " ".join(["Hello", "world"])
 
-            .. tb-scene::
+            .. tb-card::
 
                Insert the separator between the two strings.
 
@@ -150,7 +148,7 @@ using ordinary code blocks for each authored expression.
 
                   message = "Hello" + " " + "world"
 
-            .. tb-scene::
+            .. tb-card::
 
                The concatenated strings form the final message.
 
@@ -160,9 +158,9 @@ using ordinary code blocks for each authored expression.
 
    .. tb-tab:: Rendered
 
-      .. tb-stack::
+      .. tb-deck::
 
-         .. tb-scene::
+         .. tb-card::
 
             Join the words with a space between them.
 
@@ -171,7 +169,7 @@ using ordinary code blocks for each authored expression.
                words = ["Hello", "world"]
                message = " ".join(words)
 
-         .. tb-scene::
+         .. tb-card::
 
             Substitute the list of words.
 
@@ -179,7 +177,7 @@ using ordinary code blocks for each authored expression.
 
                message = " ".join(["Hello", "world"])
 
-         .. tb-scene::
+         .. tb-card::
 
             Insert the separator between the two strings.
 
@@ -187,7 +185,7 @@ using ordinary code blocks for each authored expression.
 
                message = "Hello" + " " + "world"
 
-         .. tb-scene::
+         .. tb-card::
 
             The concatenated strings form the final message.
 
@@ -198,22 +196,22 @@ using ordinary code blocks for each authored expression.
 Example 2: Increment each array element
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The pointer marks the current element. Each scene repeats the complete array
-and pointer declaration. The final scene uses ``values.end`` to show that the
+The pointer marks the current element. Each card repeats the complete array
+and pointer declaration. The final card uses ``values.end`` to show that the
 traversal has finished; the end position does not designate an element.
 
 .. tb-group::
-   :name: stack-increment-tabs
+   :name: deck-increment-tabs
 
    .. tb-tab:: Source
 
       .. code-block:: rst
 
-         .. tb-stack::
+         .. tb-deck::
             :name: array-increment
             :caption: Add one to every element
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Start at the first element.
 
                .. tb-array:: values
@@ -224,7 +222,7 @@ traversal has finished; the end position does not designate an element.
                .. tb-pointer:: current
                   :at: values.begin
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Increment 2 to 3 and advance to the second element.
 
                .. tb-array:: values
@@ -235,7 +233,7 @@ traversal has finished; the end position does not designate an element.
                .. tb-pointer:: current
                   :at: values.slot[1]
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Increment 4 to 5 and advance to the third element.
 
                .. tb-array:: values
@@ -246,7 +244,7 @@ traversal has finished; the end position does not designate an element.
                .. tb-pointer:: current
                   :at: values.slot[2]
 
-            .. tb-scene::
+            .. tb-card::
                :name: array-increment-done
                :caption: Increment 6 to 7. The pointer is now at the end.
 
@@ -259,11 +257,11 @@ traversal has finished; the end position does not designate an element.
 
    .. tb-tab:: Rendered
 
-      .. tb-stack::
+      .. tb-deck::
          :name: array-increment
          :caption: Add one to every element
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Start at the first element.
 
             .. tb-array:: values
@@ -274,7 +272,7 @@ traversal has finished; the end position does not designate an element.
             .. tb-pointer:: current
                :at: values.begin
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Increment 2 to 3 and advance to the second element.
 
             .. tb-array:: values
@@ -285,7 +283,7 @@ traversal has finished; the end position does not designate an element.
             .. tb-pointer:: current
                :at: values.slot[1]
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Increment 4 to 5 and advance to the third element.
 
             .. tb-array:: values
@@ -296,7 +294,7 @@ traversal has finished; the end position does not designate an element.
             .. tb-pointer:: current
                :at: values.slot[2]
 
-         .. tb-scene::
+         .. tb-card::
             :name: array-increment-done
             :caption: Increment 6 to 7. The pointer is now at the end.
 
@@ -315,17 +313,17 @@ Example 2a: Increment graph array element
 Very similar to the previous example, but using a :ref:`tb-graph`
 
 .. tb-group::
-   :name: stack-increment-tabs-graph-array
+   :name: deck-increment-tabs-graph-array
 
    .. tb-tab:: Source
 
       .. code-block:: rst
 
-         .. tb-stack::
+         .. tb-deck::
             :name: array-graph-increment
             :caption: Add one to every element
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Start at the first element.
 
                .. tb-graph:: data
@@ -341,7 +339,7 @@ Very similar to the previous example, but using a :ref:`tb-graph`
                .. tb-pointer:: current
                   :at: data.node[a]
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Increment 2 to 3 and advance to the second element.
 
                .. tb-graph:: data
@@ -357,7 +355,7 @@ Very similar to the previous example, but using a :ref:`tb-graph`
                .. tb-pointer:: current
                   :at: data.node[b]
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Increment 4 to 5 and advance to the third element.
 
                .. tb-graph:: data
@@ -373,7 +371,7 @@ Very similar to the previous example, but using a :ref:`tb-graph`
                .. tb-pointer:: current
                   :at: data.node[c]
 
-            .. tb-scene::
+            .. tb-card::
                :name: array-increment-done
                :caption: Increment 6 to 7. The pointer is now at the end.
 
@@ -391,11 +389,11 @@ Very similar to the previous example, but using a :ref:`tb-graph`
 
    .. tb-tab:: Rendered
 
-      .. tb-stack::
+      .. tb-deck::
          :name: array-graph-increment
          :caption: Add one to every element
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Start at the first element.
 
             .. tb-graph:: data
@@ -411,7 +409,7 @@ Very similar to the previous example, but using a :ref:`tb-graph`
             .. tb-pointer:: current
                :at: data.node[a]
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Increment 2 to 3 and advance to the second element.
 
             .. tb-graph:: data
@@ -427,7 +425,7 @@ Very similar to the previous example, but using a :ref:`tb-graph`
             .. tb-pointer:: current
                :at: data.node[b]
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Increment 4 to 5 and advance to the third element.
 
             .. tb-graph:: data
@@ -443,7 +441,7 @@ Very similar to the previous example, but using a :ref:`tb-graph`
             .. tb-pointer:: current
                :at: data.node[c]
 
-         .. tb-scene::
+         .. tb-card::
             :name: array-graph-increment-done
             :caption: Increment 6 to 7. The pointer is now at the end.
 
@@ -464,7 +462,7 @@ Example 3: Min heap insertion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Ellipses identify the parent and child involved in each comparison or swap.
-The outline follows the node keys in each scene, including after they change
+The outline follows the node keys in each card, including after they change
 positions. Highlighted nodes show the values exchanged in that step.
 
 .. tb-group::
@@ -474,12 +472,12 @@ positions. Highlighted nodes show the values exchanged in that step.
 
       .. code-block:: rst
 
-         .. tb-stack::
+         .. tb-deck::
             :name: percolate-up
             :caption: Insert a new value into a min heap and restore the heap
                       property.
 
-            .. tb-scene::
+            .. tb-card::
                :caption: New element pushed onto heap
 
                If the new value is less than its parent, it must be moved into a valid
@@ -502,7 +500,7 @@ positions. Highlighted nodes show the values exchanged in that step.
                   c -right-> g['g']
 
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Make the first move
 
                First we swap the value at position 'b' with the value at position 'e'.
@@ -523,7 +521,7 @@ positions. Highlighted nodes show the values exchanged in that step.
                   c -left-> f['f']
                   c -right-> g['g']
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Make the next move
 
                The value at position 'd' is still larger than 'b', so we are not done.
@@ -544,7 +542,7 @@ positions. Highlighted nodes show the values exchanged in that step.
                   c -left-> f['f']
                   c -right-> g['g']
 
-            .. tb-scene::
+            .. tb-card::
                :caption: Percolate up is done
 
                Now that 'a' is less than 'b' and all of the children of 'b' are greater
@@ -566,12 +564,12 @@ positions. Highlighted nodes show the values exchanged in that step.
 
    .. tb-tab:: Rendered
 
-      .. tb-stack::
+      .. tb-deck::
          :name: percolate-up
          :caption: Insert a new value into a min heap and restore the heap
                    property.
 
-         .. tb-scene::
+         .. tb-card::
             :caption: New element pushed onto heap
 
             If the new value is less than its parent, it must be moved into a valid
@@ -594,7 +592,7 @@ positions. Highlighted nodes show the values exchanged in that step.
                c -right-> g['g']
 
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Make the first move
 
             First we swap the value at position 'b' with the value at position 'e'.
@@ -615,7 +613,7 @@ positions. Highlighted nodes show the values exchanged in that step.
                c -left-> f['f']
                c -right-> g['g']
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Make the next move
 
             The value at position 'd' is still larger than 'b', so we are not done.
@@ -636,7 +634,7 @@ positions. Highlighted nodes show the values exchanged in that step.
                c -left-> f['f']
                c -right-> g['g']
 
-         .. tb-scene::
+         .. tb-card::
             :caption: Percolate up is done
 
             Now that 'a' is less than 'b' and all of the children of 'b' are greater
@@ -660,9 +658,9 @@ Example 4: Pre-order traversal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This example prints the tree in pre-order: the current value, then the left
-subtree, then the right subtree. Each scene summarizes a meaningful step;
+subtree, then the right subtree. Each card summarizes a meaningful step;
 highlighted lines show its operations, and the pointer identifies the current
-call's ``node`` parameter. Scenes show every printed value and the returns to
+call's ``node`` parameter. Cards show every printed value and the returns to
 callers that begin a right subtree.
 Program output appears between the code and tree and retains everything printed
 so far. The final ``print(root);`` line in the listing represents the caller.
@@ -670,7 +668,7 @@ so far. The final ``print(root);`` line in the listing represents the caller.
 Every leaf has two null child pointers, drawn as arrows to ``{invisible}``
 endpoints. The two child calls for the first leaf, k, demonstrate the base case:
 ``node = nullptr`` makes the condition true, and ``return;`` ends the call
-without printing. Later scenes summarize these repeated base-case calls while
+without printing. Later cards summarize these repeated base-case calls while
 preserving the order of visits and accumulated output.
 
 This example uses a named tree style with arrowheads. Add it to your existing
@@ -680,11 +678,11 @@ This example uses a named tree style with arrowheads. Add it to your existing
 
    tb_graph_styles["print-tree"] = {"base": "tree", "arrows": "vee"}
 
-.. tb-stack::
+.. tb-deck::
    :name: pre-order-anim
    :caption: Print every tree value using pre-order traversal
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Call print(root)
 
       Start at the root. Before advancing, predict which value prints first.
@@ -745,7 +743,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[root]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit a: print the root first
 
       The root is not null, so print a. Then call print(node->left) to enter b;
@@ -808,7 +806,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[root]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit b: print before descending left
 
       The call for b prints b, then enters its left child h. The call for a
@@ -871,7 +869,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[b]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit h: continue down the left subtree
 
       Print h, then enter its left child k. Each descent starts a new call with
@@ -934,10 +932,10 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[h]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit k: a leaf still makes two child calls
 
-      Print k. Both child pointers are null; the next two scenes show how the
+      Print k. Both child pointers are null; the next two cards show how the
       base case ends those calls without printing another value.
 
       .. code-block:: cpp
@@ -997,7 +995,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[k]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Check k.left and return from print(nullptr)
 
       The left-child call receives nullptr. The condition is true, so return
@@ -1061,7 +1059,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
          :at: tree.node[k_left_null]
          :label: node = nullptr
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Check k.right and return from print(nullptr)
 
       The call for k now calls print(node->right). Its argument is also
@@ -1125,7 +1123,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
          :at: tree.node[k_right_null]
          :label: node = nullptr
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Resume h and enter its right subtree
 
       After print(k) returns, node is h again. Its left subtree is complete, so
@@ -1189,7 +1187,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[h]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit i: finish the right subtree of h
 
       Print i. As with k, both null-child calls return without printing; their
@@ -1253,7 +1251,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[i]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Resume b and enter its right subtree
 
       The entire subtree rooted at h is complete. Execution resumes with node
@@ -1316,7 +1314,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[b]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit d: print before descending left
 
       Print d, then enter its left child j. The right child e must wait until
@@ -1379,7 +1377,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[d]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit j: finish the left subtree of d
 
       Print j. Its two null-child calls return without printing, and print(j)
@@ -1442,7 +1440,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[j]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Resume d and enter its right subtree
 
       After print(j) returns, node is d again. Call print(node->right) to enter
@@ -1505,7 +1503,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[d]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit e: complete the subtree rooted at b
 
       Print e. Both null-child calls return without printing. The completed
@@ -1568,7 +1566,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[e]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Resume a and enter its right subtree
 
       The whole left subtree of a is complete. Execution resumes with node
@@ -1632,7 +1630,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[root]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit c: print before descending left
 
       Print c, then enter its left child f. The right subtree follows only
@@ -1695,7 +1693,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[c]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit f: finish the left subtree of c
 
       Print f. Both null-child calls return without printing, and print(f)
@@ -1758,7 +1756,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[f]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Resume c and enter its right subtree
 
       After print(f) returns, node is c again. Call print(node->right) to enter
@@ -1821,7 +1819,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[c]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Visit g: print the last value
 
       Print g. Its two null-child calls return without printing. All tree
@@ -1884,7 +1882,7 @@ This example uses a named tree style with arrowheads. Add it to your existing
       .. tb-pointer:: node
          :at: tree.node[g]
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Return to the caller: traversal is complete
 
       The calls return from g to c and then to a. The call for a finishes and

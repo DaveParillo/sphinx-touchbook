@@ -269,7 +269,7 @@ Indicators annotate targets without adding semantic nodes or relationships.
 Their targets follow node identity rather than the displayed value or index.
 
 Tree styles, including book styles based on ``tree``, support multiple
-indicators and scene pointers. They may point to different nodes or share
+indicators and card pointers. They may point to different nodes or share
 a target, including the root or an internal node. Labels sharing a target
 sit side by side, each with its own arrow. Each label group occupies a gap
 between the target's children, reusing the tree's
@@ -372,7 +372,7 @@ An array uses rectangular cells regardless of the scalar node shape.
 Annotations select concrete cells with ``graph.node[root].slot[0]``.
 Highlights require the graph key. Indicators and overlays also accept the
 local form ``.node[root].slot[0]``. A reference to the entire array node is
-not an annotation target. Scene pointers use the same qualified cell
+not an annotation target. Card pointers use the same qualified cell
 references. Scalars retain their existing ``graph.node[key]`` references.
 Each graph has one diagram and one text description covering all its nodes.
 
@@ -725,7 +725,7 @@ The default ellipse groups the parent and child being compared. Their thicker
 borders identify both values. Use ``:overlay-layer: background`` to place the
 outline behind the graph, or ``:overlay-padding: 12`` to leave more space
 around it.
-See :ref:`tb-stack` Example 3 for outlines that follow swapped nodes.
+See :ref:`tb-deck` Example 3 for outlines that follow swapped nodes.
 
 .. tb-group::
 

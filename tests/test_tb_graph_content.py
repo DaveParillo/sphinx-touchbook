@@ -133,13 +133,13 @@ def test_native_table_rendering_cell_bounds_and_overlay_geometry(style, fill_str
 
 
 @pytest.mark.parametrize("builder", ["html", "text", "latex"])
-def test_structured_scene_across_builders(tmp_path, builder):
+def test_structured_card_across_builders(tmp_path, builder):
     source = '''Structured graph
 ================
 
-.. tb-stack::
+.. tb-deck::
 
-   .. tb-scene::
+   .. tb-card::
       :caption: Split the array
 
       .. tb-graph:: g
@@ -164,10 +164,10 @@ def test_structured_scene_across_builders(tmp_path, builder):
         soup = BeautifulSoup((out / "index.html").read_text(), "html.parser")
         assert len(soup.find_all("tb-graph")) == 1
         assert len(soup.select("tb-graph details")) == 1
-        model = json.loads(soup.find("tb-stack").find("script").string)
-        scene = model["scenes"][0]["objects"]
-        assert scene[0]["nodes"][0]["content"]["values"] == [54, 26]
-        assert scene[1]["position"]["type"] == "cell"
+        model = json.loads(soup.find("tb-deck").find("script").string)
+        card = model["cards"][0]["objects"]
+        assert card[0]["nodes"][0]["content"]["values"] == [54, 26]
+        assert card[1]["position"]["type"] == "cell"
         assert list((out / "_images").glob("*.svg"))
         output = soup.get_text(" ")
     elif builder == "text":

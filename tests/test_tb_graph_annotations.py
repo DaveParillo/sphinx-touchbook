@@ -174,7 +174,7 @@ def test_viewport_transforms(transform, point):
 
 @pytest.mark.skipif(not shutil.which("dot"), reason="Graphviz is not installed")
 @pytest.mark.parametrize("builder", ["html", "text", "latex"])
-def test_annotated_scene_across_builders(tmp_path, builder):
+def test_annotated_card_across_builders(tmp_path, builder):
     if builder == "latex" and not shutil.which("rsvg-convert"):
         pytest.skip("librsvg is not installed")
     content = graph_source("a[8] -> b[3]", "   :style: tree\n"
@@ -182,20 +182,20 @@ def test_annotated_scene_across_builders(tmp_path, builder):
                            "   :overlay: a b\n"
                            "             a :overlay-shape: rectangle :overlay-layer: background :overlay-padding: 4\n"
                            "             b :overlay-shape: circle", "tree")
-    source = ("Annotated scenes\n================\n\n.. tb-stack::\n\n"
-              "   .. tb-scene::\n      :caption: Compare\n\n"
+    source = ("Annotated cards\n================\n\n.. tb-deck::\n\n"
+              "   .. tb-card::\n      :caption: Compare\n\n"
               + "\n".join("      " + line for line in content.splitlines()))
     out, _ = build_sphinx(tmp_path, builder, source)
     if builder == "html":
         soup = BeautifulSoup((out / "index.html").read_text(), "html.parser")
-        assert len(soup.find_all("tb-graph")) == len(soup.find_all("tb-scene")) == 1
+        assert len(soup.find_all("tb-graph")) == len(soup.find_all("tb-card")) == 1
         result = soup.find("tb-graph").get_text()
         asset = out / soup.find("tb-graph").find("img")["src"]
         assert "annotated" in asset.name
         assert ET.parse(asset).find(f".//{tag('ellipse')}[@data-targets='a b']") is not None
-        model = json.loads(soup.find("tb-stack").find("script").string)
-        assert model["scenes"][0]["objects"][0]["annotations"][0]["targets"] == ["a", "b"]
-        assert len(model["scenes"][0]["objects"][0]["annotations"]) == 3
+        model = json.loads(soup.find("tb-deck").find("script").string)
+        assert model["cards"][0]["objects"][0]["annotations"][0]["targets"] == ["a", "b"]
+        assert len(model["cards"][0]["objects"][0]["annotations"]) == 3
         root = ET.parse(asset).getroot()
         assert root.find(f".//{tag('circle')}[@data-targets='b']") is not None
         assert root.find(f".//{tag('rect')}[@data-targets='a']") is not None

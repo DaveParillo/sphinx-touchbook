@@ -16,7 +16,7 @@ from sphinx_touchbook.generators.common import (
     html_additional_targets, html_class_attr, latex_targets,
 )
 from sphinx_touchbook.generators.click import keyed_graph_svg, keyed_target_html
-from sphinx_touchbook.generators.stack import graph_pointer_indicators
+from sphinx_touchbook.generators.deck import graph_pointer_indicators
 from sphinx_touchbook.generators.graph_array import (
     array_dot, array_origin, cell_dimensions, measurement_dot,
 )

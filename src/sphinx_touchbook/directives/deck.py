@@ -1,4 +1,4 @@
-"""Parse instructional stacks, complete scenes, and local references."""
+"""Parse instructional decks, complete cards, and local references."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from sphinx_touchbook.directives.array import KEY, validate_key
 from sphinx_touchbook.directives.positions import resolve_target
 from sphinx_touchbook.directives.common import assign_node_id
 from sphinx_touchbook.nodes import (
-    TbStackNode, TbSceneNode, TbPointerNode, TbArrayNode, TbGraphNode, is_scene_object,
+    TbDeckNode, TbCardNode, TbPointerNode, TbArrayNode, TbGraphNode, is_card_object,
 )
 
 COMMON_OPTIONS = {
@@ -21,7 +21,7 @@ COMMON_OPTIONS = {
 }
 
 def resolve_position(reference, objects):
-    """Resolve an explicit position in this scene."""
+    """Resolve an explicit position in this card."""
     if reference == "none":
         return None
     match = re.fullmatch(rf"({KEY})\.(.+)", reference)
@@ -30,26 +30,26 @@ def resolve_position(reference, objects):
     key, position = match.groups()
     target = objects.get(key)
     if target is None:
-        raise ValueError(f"Unknown scene object {key!r} in {reference!r}.")
+        raise ValueError(f"Unknown card object {key!r} in {reference!r}.")
     return resolve_target(reference, target, position)
 
 
-def normalize_scene(scene, document=None):
+def normalize_card(card, document=None):
     objects = {}
-    for descendant in scene.findall():
-        if descendant is scene:
+    for descendant in card.findall():
+        if descendant is card:
             continue
-        if isinstance(descendant, (TbStackNode, TbSceneNode)):
-            raise ValueError("Scenes cannot contain nested scenes or stacks.")
-        if is_scene_object(descendant):
-            if descendant.parent is not scene:
-                raise ValueError("Scene objects must be immediate children of tb-scene.")
+        if isinstance(descendant, (TbDeckNode, TbCardNode)):
+            raise ValueError("Cards cannot contain nested cards or decks.")
+        if is_card_object(descendant):
+            if descendant.parent is not card:
+                raise ValueError("Card objects must be immediate children of tb-card.")
             key = descendant["key"]
             if key is None:
-                raise ValueError("Arrays and graphs inside a scene require an object key.")
-            validate_key(key, kind="scene object")
+                raise ValueError("Arrays and graphs inside a card require an object key.")
+            validate_key(key, kind="card object")
             if key in objects:
-                raise ValueError(f"Duplicate scene object key {key!r}.")
+                raise ValueError(f"Duplicate card object key {key!r}.")
             if not descendant["ids"] and document is not None:
                 document.set_id(descendant)
             objects[key] = descendant
@@ -61,57 +61,57 @@ def normalize_scene(scene, document=None):
             raise ValueError(f"pointer {pointer['key']!r}: {error}") from error
 
 
-def validate_stack(stack):
-    if not stack.children or any(not isinstance(child, TbSceneNode) for child in stack.children):
-        raise ValueError("tb-stack requires one or more immediate tb-scene directives and no other content.")
+def validate_deck(deck):
+    if not deck.children or any(not isinstance(child, TbCardNode) for child in deck.children):
+        raise ValueError("tb-deck requires one or more immediate tb-card directives and no other content.")
     types, modes = {}, {}
-    for number, scene in enumerate(stack.children, 1):
-        scene["number"] = number
-        for item in scene.children:
-            if not is_scene_object(item):
+    for number, card in enumerate(deck.children, 1):
+        card["number"] = number
+        for item in card.children:
+            if not is_card_object(item):
                 continue
             key = item["key"]
             if key in types and types[key] is not type(item):
-                raise ValueError(f"Scene {number}: object {key!r} changes type across scenes.")
+                raise ValueError(f"Card {number}: object {key!r} changes type across cards.")
             types[key] = type(item)
             if isinstance(item, TbArrayNode) and item["elements"]:
                 if key in modes and modes[key] != item["mode"]:
-                    raise ValueError(f"Scene {number}: array {key!r} mixes keyed and unkeyed modes across scenes.")
+                    raise ValueError(f"Card {number}: array {key!r} mixes keyed and unkeyed modes across cards.")
                 modes[key] = item["mode"]
-    for scene in stack.children:
-        for item in scene.children:
+    for card in deck.children:
+        for item in card.children:
             if isinstance(item, TbArrayNode) and not item["elements"]:
                 item["mode"] = modes.get(item["key"], "unkeyed")
 
 
-class TbSceneDirective(Directive):
+class TbCardDirective(Directive):
     has_content = True
     option_spec = COMMON_OPTIONS
 
     def run(self):
-        node = TbSceneNode()
+        node = TbCardNode()
         node.source, node.line = self.state.document.current_source, self.lineno
         assign_node_id(self, node)
         node["caption"] = self.options.get("caption", "")
-        if isinstance(self.state.parent, TbStackNode):
+        if isinstance(self.state.parent, TbDeckNode):
             node["number"] = len(self.state.parent.children) + 1
         self.state.nested_parse(self.content, self.content_offset, node)
         if errors := [message for message in node.findall(nodes.system_message) if message["level"] >= 3]:
             return errors
         try:
-            normalize_scene(node, self.state.document)
+            normalize_card(node, self.state.document)
         except ValueError as error:
-            context = f"scene {node['number']}" if "number" in node else "tb-scene"
+            context = f"card {node['number']}" if "number" in node else "tb-card"
             return [self.state_machine.reporter.error(f"{context}: {error}", line=self.lineno)]
         return [node]
 
 
-class TbStackDirective(Directive):
+class TbDeckDirective(Directive):
     has_content = True
     option_spec = COMMON_OPTIONS
 
     def run(self):
-        node = TbStackNode()
+        node = TbDeckNode()
         node.source, node.line = self.state.document.current_source, self.lineno
         assign_node_id(self, node)
         node["caption"] = self.options.get("caption", "")
@@ -119,7 +119,7 @@ class TbStackDirective(Directive):
         if errors := [message for message in node.findall(nodes.system_message) if message["level"] >= 3]:
             return errors
         try:
-            validate_stack(node)
+            validate_deck(node)
         except ValueError as error:
             return [self.state_machine.reporter.error(str(error), line=self.lineno)]
         return [node]
@@ -137,8 +137,8 @@ class TbPointerDirective(Directive):
         key = self.arguments[0]
         try:
             validate_key(key, kind="pointer")
-            if not isinstance(self.state.parent, TbSceneNode):
-                raise ValueError("tb-pointer requires an immediate tb-scene parent.")
+            if not isinstance(self.state.parent, TbCardNode):
+                raise ValueError("tb-pointer requires an immediate tb-card parent.")
             if "at" not in self.options:
                 raise ValueError("tb-pointer requires :at:.")
         except ValueError as error:

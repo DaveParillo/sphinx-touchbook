@@ -11,16 +11,16 @@ from __future__ import annotations
 
 from docutils import nodes
 
-class TbStackNode(nodes.General, nodes.Element):
-    """An ordered sequence of complete instructional scenes."""
+class TbDeckNode(nodes.General, nodes.Element):
+    """An ordered sequence of complete instructional cards."""
 
 
-class TbSceneNode(nodes.General, nodes.Element):
-    """A complete, independently renderable scene and local object scope."""
+class TbCardNode(nodes.General, nodes.Element):
+    """A complete, independently renderable card and local object scope."""
 
 
 class TbPointerNode(nodes.General, nodes.Element):
-    """A pointer or bounded iterator with a resolved scene-local position."""
+    """A pointer or bounded iterator with a resolved card-local position."""
 
 
 class TbArrayNode(nodes.General, nodes.Element):
@@ -31,7 +31,7 @@ class TbGraphNode(nodes.General, nodes.Element):
     """Semantic node for a complete directed graph."""
 
 
-def is_scene_object(node):
+def is_card_object(node):
     """Recognize semantic object keys independently of directive type."""
     return isinstance(node, nodes.Element) and (
         "key" in node or isinstance(node, (TbArrayNode, TbGraphNode, TbPointerNode))

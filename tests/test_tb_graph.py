@@ -20,7 +20,7 @@ import pytest
 
 from sphinx_touchbook.directives.graph import TbGraphDirective
 from sphinx_touchbook.generators.graph import graph_description, graph_dot
-from sphinx_touchbook.nodes import TbGraphNode, TbPointerNode, TbSceneNode
+from sphinx_touchbook.nodes import TbGraphNode, TbPointerNode, TbCardNode
 from sphinx_touchbook.graph_styles import resolve_graph_styles
 from sphinx_touchbook.generators import graph as graph_generator
 from sphinx_touchbook.generators.graph_array import cell_dimensions, measurement_dot
@@ -349,14 +349,14 @@ def test_multiple_tree_annotations_avoid_nodes(orientation):
             "c -left-> f[5]\nc -right-> g['a wide leaf']")
     node = next(parse_rst(graph_source(body, "   :style: tree", "tree")).findall(TbGraphNode))
     node["style"].update({"orientation": orientation, "node-spacing": spacing, "level-spacing": spacing})
-    scene = TbSceneNode()
-    scene += node
-    # Annotate every node, mixing a local indicator with scene pointers and
+    card = TbCardNode()
+    card += node
+    # Annotate every node, mixing a local indicator with card pointers and
     # giving each shared target several arrows through the same reserved gap.
     node["indicators"] = [{"key": f'head_{item["key"]}', "target": item["key"]} for item in node["nodes"]]
     for item in node["nodes"]:
         for index in range(count - 1):
-            scene += TbPointerNode(label=f'current_{item["key"]}_{index}', position={
+            card += TbPointerNode(label=f'current_{item["key"]}_{index}', position={
                 "type": "node", "object": "tree", "key": item["key"],
             })
     result = subprocess.run([shutil.which("dot"), "-Tplain"], input=graph_dot(node),
@@ -375,7 +375,7 @@ def test_tree_combines_multiple_pointers_and_indicators_across_builders(tmp_path
     content += ("\n.. tb-pointer:: current\n   :at: tree.node[b]\n"
                 "\n.. tb-pointer:: other\n   :at: tree.node[b]\n"
                 "\n.. tb-pointer:: next\n   :at: tree.node[d]\n")
-    source = "Tree annotations\n================\n\n.. tb-scene::\n\n" + indent(content, "   ")
+    source = "Tree annotations\n================\n\n.. tb-card::\n\n" + indent(content, "   ")
     out, _ = build_sphinx(tmp_path, builder, source, config=(
         f'tb_graph_styles = {{"custom": {{"base": "tree", "orientation": {orientation!r}}}}}\n'))
     if builder == "html":
@@ -416,9 +416,9 @@ def test_array_indicators_render_labels_arrows_and_text_targets(tmp_path, builde
    :show-indices:
    :indicators: head=.begin current=values.slot[1] another=values.node[b] tail=c finish=.end
    :highlight: values.node[b]""", "values")
-    source = "Indicators\n==========\n\n.. tb-scene::\n\n" + indent(
+    source = "Indicators\n==========\n\n.. tb-card::\n\n" + indent(
         source.split("\n\n", 1)[1] + "\n.. tb-pointer:: boundary\n   :at: values.end\n", "   ")
-    source += "\n.. tb-scene::\n\n" + indent(
+    source += "\n.. tb-card::\n\n" + indent(
         graph_source("", "   :style: custom-array\n   :indicators: empty_end=.end", "empty")
         + "\n.. tb-pointer:: empty_begin\n   :at: empty.begin\n", "   ")
     config = f'tb_graph_styles = {{"custom-array": {{"base": "array", "orientation": {orientation!r}}}}}\n'
@@ -433,7 +433,7 @@ def test_array_indicators_render_labels_arrows_and_text_targets(tmp_path, builde
         assert len(empty_shapes) == 1 and "stroke-dasharray" in empty_shapes[0].attrib
         assert len(empty_svg.findall('.//s:g[@class="edge"]', ns)) == 2
         assert "Empty array" in graphs[1].get_text()
-        result = graph.find_parent("tb-scene").get_text()
+        result = graph.find_parent("tb-card").get_text()
         svg = ET.parse(out / graph.find("img")["src"]).getroot()
         ns = {"s": "http://www.w3.org/2000/svg"}
         edges = svg.findall('.//s:g[@class="edge"]', ns)

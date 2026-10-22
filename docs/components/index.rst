@@ -25,8 +25,8 @@ Visualizations    - :doc:`tb-array`
                   - :doc:`tb-graph`
                   - :doc:`tb-pointer`
 Containers        - :doc:`tb-group`
-                  - :doc:`tb-stack`
-                  - :doc:`tb-scene`
+                  - :doc:`tb-deck`
+                  - :doc:`tb-card`
                   - :doc:`tb-reveal`
                   - :doc:`tb-video`
 Assessments       - :doc:`tb-blank`
@@ -58,6 +58,6 @@ Assessments       - :doc:`tb-blank`
    tb-parsons
    tb-pointer
    tb-reveal
-   tb-scene
-   tb-stack
+   tb-card
+   tb-deck
    tb-video

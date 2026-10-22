@@ -4,8 +4,8 @@ tb-pointer
 ==========
 
 The ``tb-pointer`` directive draws a labelled arrow identifying an element,
-node, or boundary in a :ref:`tb-scene`. Its required argument is the pointer's
-object key. Each scene explicitly declares the target; labels such as
+node, or boundary in a :ref:`tb-card`. Its required argument is the pointer's
+object key. Each card explicitly declares the target; labels such as
 "current", "cursor", or "iterator" communicate its meaning in the lesson.
 
 Synopsis
@@ -19,8 +19,8 @@ The general format of the ``tb-pointer`` directive is:
       :at: position-reference
       :optional parameter: value
 
-The pointer body is empty. Place the declaration directly inside a scene.
-``:at:`` is required. Targets can be declared later in the same scene.
+The pointer body is empty. Place the declaration directly inside a card.
+``:at:`` is required. Targets can be declared later in the same card.
 
 Options
 -------
@@ -76,7 +76,7 @@ Pointer descriptions identify the target, its current value, and its displayed
 array index when applicable. Visual arrow symbols are hidden from assistive
 technology; equivalent text descriptions remain available.
 Use :ref:`tb-array` options ``range`` and ``range-label`` to mark a region
-independently of a pointer. A scene or activity defines each pointer position;
+independently of a pointer. A card or activity defines each pointer position;
 pointers do not enforce traversal rules or evaluate expressions.
 
 Fallback behavior
@@ -98,7 +98,7 @@ Example 1: Point to a keyed item
 
       .. code-block:: rst
 
-         .. tb-scene::
+         .. tb-card::
 
             .. tb-pointer:: current
                :at: values.item[second]
@@ -111,7 +111,7 @@ Example 1: Point to a keyed item
 
    .. tb-tab:: Rendered
 
-      .. tb-scene::
+      .. tb-card::
 
          .. tb-pointer:: current
             :at: values.item[second]
@@ -131,7 +131,7 @@ Example 2: Mark the end boundary
 
       .. code-block:: rst
 
-         .. tb-scene::
+         .. tb-card::
 
             .. tb-array:: values
                :orientation: vertical
@@ -143,7 +143,7 @@ Example 2: Mark the end boundary
 
    .. tb-tab:: Rendered
 
-      .. tb-scene::
+      .. tb-card::
 
          .. tb-array:: values
             :orientation: vertical
@@ -153,7 +153,7 @@ Example 2: Mark the end boundary
          .. tb-pointer:: current
             :at: values.end
 
-For a complete traversal example, see :ref:`tb-stack`.
+For a complete traversal example, see :ref:`tb-deck`.
 
 Example 3: Point to a graph node
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -169,7 +169,7 @@ horizontally and places the pointer below its target node.
 
       .. code-block:: rst
 
-         .. tb-scene::
+         .. tb-card::
 
             .. tb-pointer:: current
                :at: network.node[b]
@@ -181,7 +181,7 @@ horizontally and places the pointer below its target node.
 
    .. tb-tab:: Rendered
 
-      .. tb-scene::
+      .. tb-card::
 
          .. tb-pointer:: current
             :at: network.node[b]
@@ -204,7 +204,7 @@ has its own arrow below its target.
 
       .. code-block:: rst
 
-         .. tb-scene::
+         .. tb-card::
 
             .. tb-graph:: tree
                :style: tree
@@ -222,7 +222,7 @@ has its own arrow below its target.
 
    .. tb-tab:: Rendered
 
-      .. tb-scene::
+      .. tb-card::
 
          .. tb-graph:: tree
             :style: tree
@@ -251,7 +251,7 @@ positions, such as ``:indicators: first=.begin finish=.end``.
 
       .. code-block:: rst
 
-         .. tb-scene::
+         .. tb-card::
 
             .. tb-graph:: values
                :style: array
@@ -268,7 +268,7 @@ positions, such as ``:indicators: first=.begin finish=.end``.
 
    .. tb-tab:: Rendered
 
-      .. tb-scene::
+      .. tb-card::
 
          .. tb-graph:: values
             :style: array
