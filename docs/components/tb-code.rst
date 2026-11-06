@@ -4,8 +4,9 @@ tb-code
 =======
 
 The ``tb-code`` directive creates a runnable source-code block.
-In HTML, readers can send code to a remote server and optionally
-edit the source before running it again.
+In HTML, readers can run code through Jobe or in the browser and optionally
+edit the source before running it again. Browser execution supports SQLite,
+JavaScript console exercises, and HTML previews with CSS and JavaScript.
 
 Synopsis
 --------
@@ -90,6 +91,14 @@ Options
    runs. Hidden support files must use ``:readonly:`` or Sphinx emits a build
    warning. Binary files are attached as read-only base64 content.
 
+   Files declared with ``:hidden:`` are omitted from the attachment list but
+   remain available during execution. If all attached files are hidden,
+   the attachment heading is also omitted.
+
+   For browser SQLite, attach at most one binary ``.db``, ``.sqlite``, or
+   ``.sqlite3`` file as the seed database. Each Run uses a fresh copy.
+   HTML and browser JavaScript do not accept file attachments.
+
 **files-endpoint**
    ``String``. Optional. Jobe-compatible ``files`` endpoint used to upload
    support files before a run. Defaults to ``tb_code_files_endpoint``.
@@ -161,7 +170,7 @@ Options
 
 **run-after**
    ``String``. Optional. One or more named code fragments appended to the
-   current source only when code is sent to the execution service.
+   current source only when code runs.
    The appended source is not shown in the static listing, editor, or source
    version history.
 
@@ -175,7 +184,7 @@ Options
 
 **run-before**
    ``String``. Optional. One or more named code fragments prepended to the
-   current source only when code is sent to the execution service.
+   current source only when code runs.
    The prepended source is not shown in the static listing, editor, or source
    version history.
 
@@ -189,6 +198,14 @@ Options
 
 **run-label**
    ``String``. Optional. Label for the HTML run button.
+
+**runner**
+   ``jobe`` or ``browser``. Optional. Selects the execution environment.
+   Defaults to ``tb_code_default_runner``, which is ``jobe``.
+   Existing JavaScript blocks therefore continue to use Node.js through Jobe.
+   Use ``browser`` with ``sql``, ``sqlite``, ``sqlite3``, ``javascript``,
+   ``js``, ``html``, or ``html5``.
+   Browser runs do not accept standard input or execution arguments.
 
 **show-compiler-explorer**
    ``Boolean``. Optional. If present, HTML adds a button that opens the
@@ -259,11 +276,20 @@ Sphinx configuration options
 ``tb_code_default_language``
    ``String``. Default source language. The project default is ``python3``.
 
+``tb_code_default_runner``
+   ``jobe`` or ``browser``. Default execution environment. The project default
+   is ``jobe``. A block's ``runner`` option overrides this setting.
+
 ``tb_code_language_map``
    ``dict``. Optional aliases from author-facing language names to Jobe
    language identifiers. Use this when authors prefer a name that differs from
    the Jobe server's language ID, or when you want ``tb-code`` to match
    language names used elsewhere in the book.
+
+   The built-in map already includes ``python`` to ``python3``, ``c++`` to
+   ``cpp``, and ``js`` and ``javascript`` to ``nodejs``. Omit this setting
+   when those aliases meet your needs. A custom dictionary replaces the
+   built-in map; it does not extend it.
   
    For example, ``{"python": "python3", "c++": "cpp", "js": "nodejs"}`` lets
    authors write ``.. tb-code:: python``, ``.. tb-code:: c++``, or ``..
@@ -277,7 +303,15 @@ Sphinx configuration options
    such as ``cpp``. Values are dictionaries containing ``compileargs``,
    ``linkargs``, ``runargs``, or ``interpreterargs`` lists. If both an
    author-facing name and its mapped Jobe ID have defaults, the author-facing
-   name takes precedence.
+   name selects the entire profile; entries are not merged field by field.
+   An explicitly empty profile also takes precedence.
+
+   Usually, define one profile under the mapped language ID. For example,
+   a single ``cpp`` entry supplies defaults for both ``cpp`` and ``c++``
+   blocks when using the built-in map. Separate alias profiles are only
+   needed when those spellings should intentionally use different defaults.
+   Explicit block arguments replace the corresponding profile arguments.
+   An empty block argument clears that default argument list.
 
 ``tb_code_compiler_explorer_defaults``
    ``dict``. Per-language Compiler Explorer settings. Each entry needs a
@@ -302,6 +336,9 @@ Sphinx configuration options
    ``show-tutor`` and ``show-compiler-explorer`` may also be set here to show
    their buttons by default for eligible blocks.
 
+   Explicit block options override these defaults. Tool flags enable their
+   buttons when present; otherwise the project default applies.
+
    .. code-block:: python
 
       tb_code_block_defaults = {
@@ -310,7 +347,6 @@ Sphinx configuration options
           "class": ["touchbook-code"],
       }
 
-   Directive options override matching values from ``tb_code_block_defaults``.
    Avoid setting ``name`` in this dictionary because reference names should be
    unique per block.
 
@@ -329,6 +365,51 @@ Sphinx configuration options
 ``tb_code_revision_label``
    ``String``. Default label for the source version slider.
    The project default is ``Source version``.
+
+Project settings are validated before documents are read. Unknown dictionary
+keys and invalid value types report the setting that needs correction.
+Malformed execution arguments in a block report that block's source location.
+Compiler Explorer profiles missing a language or compiler still report a
+warning on blocks that request the tool.
+
+Browser execution
+-----------------
+
+Serve interactive pages over HTTP or HTTPS. The JavaScript uses native modules;
+opening HTML directly through ``file://`` provides the static code listings.
+
+SQLite and JavaScript console exercises run in fresh workers on each Run.
+SQLite uses a bundled copy of sql.js; no CDN or Jobe requests are needed.
+Database changes, variables, and timers are discarded when a run finishes.
+Use ``run-before`` for schema and sample-data setup that should repeat each run.
+There is no shared database or saved execution state.
+
+SQLite supports multiple statements and result sets, empty result tables,
+``NULL`` values, and exact 64-bit integers. Integer values outside JavaScript's
+safe integer range are displayed as decimal strings. BLOB values display their
+byte length. Errors include any results completed before the failing statement.
+
+Workers stop after 10 seconds. Stop also terminates the current worker.
+SQL results are limited to 1,000 rows, 100 statements, and 1,000,000 bytes of
+collected headings and row data. On truncation, remaining statements are not
+executed. Seed databases are limited to 16 MiB. SQLite's own allocation ceiling
+is 64 MiB; this is not an upfront allocation or a limit on total browser memory.
+JavaScript console output is limited to 1,000 messages and 1,000,000 bytes.
+
+JavaScript console exercises support ``console.log``, ``console.info``,
+``console.warn``, ``console.error``, ``console.debug``, and ``console.clear``.
+Top-level ``await`` is supported. Await asynchronous work before the source
+returns; pending timers are discarded when the worker ends. Workers have no
+document DOM. For DOM exercises, use an HTML block containing scripts.
+
+HTML runs create a fresh sandboxed preview. Inline styles, scripts, and event
+handlers work inside it. The preview cannot access the textbook's DOM or
+storage. External resource loads and form submissions are disabled. Use inline
+CSS and JavaScript and data URLs for images. Console messages and script errors
+appear below the preview. A new Run replaces the previous preview.
+
+HTML scripts remain active for interaction. Unlike workers, previews have no
+reliable execution deadline: an infinite loop can make the page unresponsive.
 
 Service contract
 ----------------
@@ -366,12 +447,15 @@ initialized from those values.
 The current input values are used when the reader presses Run.
 These runtime inputs are separate from the source version history.
 
-When ``files`` is configured, each attached file is uploaded to the configured
+With the Jobe runner, each attached file is uploaded to the configured
 Jobe ``files`` endpoint before the run request is sent. A visible ``tb-file``
 is the single editor for its content; the compact attachment link in
 ``tb-code`` navigates to that listing. The run request then uses Jobe's
 ``file_list`` field to map each uploaded file identifier to the filename
 visible inside the execution workspace.
+
+For Jobe, Stop cancels the browser request. A job already submitted to the
+server may continue running within the server's own limits.
 
 When ``run-before`` or ``run-after`` is configured, those named fragments are
 combined with the current source only for the execution request. They are not
@@ -391,6 +475,11 @@ The no-JS HTML fallback is a normal Sphinx-highlighted code listing. HTML adds
 native ``button`` controls, a ``textarea`` editor, a source version slider,
 optional runtime text inputs, a polite status region, and a described
 focusable output area.
+
+Stop is available while a run is pending. SQL results use native tables with
+captions and column headers. Empty results and ``NULL`` values have explicit
+text. The HTML preview has a programmatic title and retains native keyboard
+interaction within its sandbox.
 
 The edit button is a toggle. When the editor is opened, its label changes from
 ``tb_code_edit_label`` to ``tb_code_hide_edit_label`` and ``aria-expanded`` is
@@ -436,17 +525,15 @@ Example 2: Python defaults
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Python usually does not require compile or link arguments, but defaults can
-still be set in ``conf.py``. The example below maps ``python`` to Jobe's
-``python3`` language identifier and provides an interpreter argument default.
+still be set in ``conf.py``. The built-in map resolves ``python`` to Jobe's
+``python3`` language identifier, so one profile provides interpreter defaults
+for both spellings.
 
 .. rubric:: ``conf.py``
 
 .. code-block:: python
 
    tb_code_default_language = "python3"
-   tb_code_language_map = {
-       "python": "python3",
-   }
    tb_code_language_defaults = {
        "python3": {
            "interpreterargs": ["-B"],
@@ -745,17 +832,13 @@ Example 7: C++
 ~~~~~~~~~~~~~~
 
 For C++, use ``compileargs`` for compiler flags and ``linkargs`` for linker
-flags. The language map lets authors write ``c++`` while sending Jobe the
-``cpp`` language identifier.
+flags. The built-in language map lets authors write ``c++`` while sending
+Jobe the ``cpp`` language identifier. One profile covers both spellings.
 
 .. rubric:: ``conf.py``
 
 .. code-block:: python
 
-   tb_code_language_map = {
-       "c++": "cpp",
-       "cpp": "cpp",
-   }
    tb_code_language_defaults = {
        "cpp": {
            "compileargs": ["-Wall", "-Wextra", "-pedantic", "-std=c++11"],
@@ -851,3 +934,124 @@ flags. The language map lets authors write ``c++`` while sending Jobe the
            }
            return 0;
          }
+
+
+Example 8: Browser SQLite
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Every Run recreates the database. Edit the query or sample rows and run again.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-code:: sql
+            :runner: browser
+
+            CREATE TABLE fruit (name TEXT, price NUMERIC);
+            INSERT INTO fruit VALUES ('apple', 1.25), ('orange', 0.95);
+            SELECT name, price FROM fruit ORDER BY price;
+
+   .. tb-tab:: Rendered
+
+      .. tb-code:: sql
+         :runner: browser
+
+         CREATE TABLE fruit (name TEXT, price NUMERIC);
+         INSERT INTO fruit VALUES ('apple', 1.25), ('orange', 0.95);
+         SELECT name, price FROM fruit ORDER BY price;
+
+
+Example 9: Browser JavaScript
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This console exercise runs in the browser, with no Node.js or Jobe request.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-code:: javascript
+            :runner: browser
+
+            const values = [1, 2, 3];
+            await Promise.resolve();
+            console.log(values.map(value => value * value));
+
+   .. tb-tab:: Rendered
+
+      .. tb-code:: javascript
+         :runner: browser
+
+         const values = [1, 2, 3];
+         await Promise.resolve();
+         console.log(values.map(value => value * value));
+
+
+Example 10: HTML preview
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The preview runs HTML, inline CSS, and JavaScript inside a separate sandbox.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-code:: html
+            :runner: browser
+
+            <style>button { padding: 0.5rem; }</style>
+            <button onclick="this.textContent = 'Clicked'">Click me</button>
+
+   .. tb-tab:: Rendered
+
+      .. tb-code:: html
+         :runner: browser
+
+         <style>button { padding: 0.5rem; }</style>
+         <button onclick="this.textContent = 'Clicked'">Click me</button>
+
+
+Example 11: SQLite seed database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Declare a binary database with ``tb-file`` and attach it by filename. This
+example uses the small fruit database supplied with the guide. Its content is
+embedded in the page, so Run needs no database download.
+
+.. tb-group::
+
+   .. tb-tab:: Source
+
+      .. code-block:: rst
+
+         .. tb-file:: examples/fruit.sqlite3
+            :filename: code-fruit.sqlite3
+            :hidden:
+
+         .. tb-code:: sql
+            :runner: browser
+            :files: code-fruit.sqlite3
+
+            SELECT name, price FROM fruit ORDER BY name;
+
+   .. tb-tab:: Rendered
+
+      .. tb-file:: examples/fruit.sqlite3
+         :filename: code-fruit.sqlite3
+         :hidden:
+
+      .. tb-code:: sql
+         :runner: browser
+         :files: code-fruit.sqlite3
+
+         SELECT name, price FROM fruit ORDER BY name;
+
+The original file is never changed. Repeated runs always load the original
+seed, so updates in one run do not affect another run or another code block.

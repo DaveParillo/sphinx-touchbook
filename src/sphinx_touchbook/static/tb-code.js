@@ -1,7 +1,9 @@
-class TbCode extends HTMLElement {
-  static languagesByEndpoint = new Map();
-  static languagePreloadsByEndpoint = new Map();
+import { createRunner } from "./tb-code/runners.js";
+import { cleanArgumentList, cleanParameters, splitArguments } from "./tb-code/arguments.js";
+import { tutorLanguage, tutorLanguageLabel, tutorUrl, compilerExplorerUrl } from "./tb-code/tools.js";
+import { renderOutput } from "./tb-code/output.js";
 
+class TbCode extends HTMLElement {
   connectedCallback() {
     if (this.dataset.enhanced === "true") {
       return;
@@ -27,7 +29,18 @@ class TbCode extends HTMLElement {
     this.revisions = [this.source];
     this.revisionIndex = 0;
     this.renderControls();
-    this.preloadSupportedLanguages();
+    try {
+      this.runner = createRunner(this.config);
+      this.runner.preload?.();
+    } catch (error) {
+      this.showError(error.message);
+    }
+  }
+
+  disconnectedCallback() {
+    this.controller?.abort();
+    this.cleanupOutput?.();
+    this.cleanupOutput = null;
   }
 
   readConfig() {
@@ -55,15 +68,15 @@ class TbCode extends HTMLElement {
     this.tutorButton = document.createElement("button");
     this.tutorButton.type = "button";
     this.tutorButton.className = "tb-code__button tb-code__external-button tb-code__tutor-button";
-    this.configureExternalButton(this.tutorButton, `Show in ${this.tutorLanguageLabel()} Tutor`);
+    this.configureExternalButton(this.tutorButton, `Show in ${tutorLanguageLabel(this.config)} Tutor`);
     // Bootstrap Icons mortarboard-fill (MIT); license in bootstrap-icons-LICENSE.txt.
     const tutorIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     tutorIcon.setAttribute("viewBox", "0 0 16 16");
     tutorIcon.setAttribute("aria-hidden", "true");
     tutorIcon.innerHTML = '<path d="M8.211 2.047a.5.5 0 0 0-.422 0l-7.5 3.5a.5.5 0 0 0 .025.917l7.5 3a.5.5 0 0 0 .372 0L14 7.14V13a1 1 0 0 0-1 1v2h3v-2a1 1 0 0 0-1-1V6.739l.686-.275a.5.5 0 0 0 .025-.917z"/><path d="M4.176 9.032a.5.5 0 0 0-.656.327l-.5 1.7a.5.5 0 0 0 .294.605l4.5 1.8a.5.5 0 0 0 .372 0l4.5-1.8a.5.5 0 0 0 .294-.605l-.5-1.7a.5.5 0 0 0-.656-.327L8 10.466z"/>';
     this.tutorButton.append(tutorIcon);
-    this.tutorButton.hidden = !this.canShowTutor();
-    this.tutorButton.addEventListener("click", () => this.openTutor());
+    this.tutorButton.hidden = !(this.config.showTutor && tutorLanguage(this.config));
+    this.tutorButton.addEventListener("click", () => this.openExternal(tutorUrl(this.config, this.executionSource(this.currentSource()))));
 
     this.compilerExplorerButton = document.createElement("button");
     this.compilerExplorerButton.type = "button";
@@ -83,7 +96,7 @@ class TbCode extends HTMLElement {
     }
     this.compilerExplorerButton.append(compilerExplorerIcon);
     this.compilerExplorerButton.hidden = !this.config.compilerExplorer;
-    this.compilerExplorerButton.addEventListener("click", () => this.openCompilerExplorer());
+    this.compilerExplorerButton.addEventListener("click", () => this.openExternal(compilerExplorerUrl(this.config, this.executionSource(this.currentSource()))));
 
     this.editButton = document.createElement("button");
     this.editButton.type = "button";
@@ -94,7 +107,13 @@ class TbCode extends HTMLElement {
     this.editButton.setAttribute("aria-controls", `${this.safeId()}-editor`);
     this.editButton.addEventListener("click", () => this.toggleEditor());
 
-    controls.append(this.runButton, this.editButton, this.tutorButton, this.compilerExplorerButton);
+    this.stopButton = document.createElement("button");
+    this.stopButton.type = "button";
+    this.stopButton.className = "tb-code__button";
+    this.stopButton.textContent = "Stop";
+    this.stopButton.hidden = true;
+    this.stopButton.addEventListener("click", () => this.controller?.abort());
+    controls.append(this.runButton, this.stopButton, this.editButton, this.tutorButton, this.compilerExplorerButton);
 
     const editorLabel = document.createElement("label");
     editorLabel.className = "tb-code__editor-label tb-code__visually-hidden";
@@ -149,7 +168,7 @@ class TbCode extends HTMLElement {
       this.runtimeInputs.appendChild(stdinField.wrapper);
     }
 
-    const runargs = this.cleanArgumentList(this.config.parameters?.runargs || []);
+    const runargs = cleanArgumentList(this.config.parameters?.runargs || []);
     if (runargs.length > 0) {
       const runargsField = this.createRuntimeInput(
         "runargs",
@@ -162,10 +181,7 @@ class TbCode extends HTMLElement {
 
     this.attachedFiles = document.createElement("div");
     this.attachedFiles.className = "tb-code__attached-files";
-    this.attachedFiles.hidden = !this.hasAttachedFiles();
-    if (this.hasAttachedFiles()) {
-      this.renderAttachedFiles();
-    }
+    this.renderAttachedFiles();
 
     this.status = document.createElement("div");
     this.status.className = "tb-code__status";
@@ -178,9 +194,11 @@ class TbCode extends HTMLElement {
     outputLabel.id = `${this.safeId()}-output-label`;
     outputLabel.textContent = "Program output";
 
-    this.output = document.createElement("pre");
+    this.output = document.createElement("div");
     this.output.className = "tb-code__output";
     this.output.tabIndex = 0;
+    this.output.setAttribute("role", "group");
+    this.output.setAttribute("aria-label", "Execution results");
     this.output.setAttribute("aria-describedby", outputLabel.id);
 
     this.append(
@@ -211,15 +229,11 @@ class TbCode extends HTMLElement {
   }
 
   hasRuntimeInputs() {
-    return this.hasConfiguredStdin() || this.cleanArgumentList(this.config.parameters?.runargs || []).length > 0;
+    return this.hasConfiguredStdin() || cleanArgumentList(this.config.parameters?.runargs || []).length > 0;
   }
 
   hasConfiguredStdin() {
     return Object.hasOwn(this.config, "stdin");
-  }
-
-  hasAttachedFiles() {
-    return this.attachedFileConfigs().length > 0;
   }
 
   attachedFileConfigs() {
@@ -227,12 +241,16 @@ class TbCode extends HTMLElement {
   }
 
   renderAttachedFiles() {
+    const files = this.attachedFileConfigs().filter((file) => !file.hidden);
+    this.attachedFiles.hidden = files.length === 0;
+    if (!files.length) return;
+
     const heading = document.createElement("div");
     heading.className = "tb-code__attached-files-label";
     heading.textContent = "Attached files";
     this.attachedFiles.appendChild(heading);
 
-    for (const file of this.attachedFileConfigs()) {
+    for (const file of files) {
       const wrapper = document.createElement("div");
       wrapper.className = "tb-code__attached-file";
 
@@ -387,59 +405,38 @@ class TbCode extends HTMLElement {
   }
 
   async runCode() {
-    const endpoint = this.config.endpoint;
-    if (!endpoint) {
-      this.showError("No execution endpoint is configured.");
-      return;
-    }
-
-    const source = this.currentSource();
-    const executionSource = this.executionSource(source);
-    const languageId = this.config.jobeLanguage || this.config.language || "python3";
-    const payload = {
-      run_spec: {
-        language_id: languageId,
-        sourcecode: executionSource,
-        parameters: this.runtimeParameters(),
-      },
-    };
-    if (this.stdinInput) {
-      payload.run_spec.input = this.stdinInput.value;
-    } else if (this.hasConfiguredStdin()) {
-      payload.run_spec.input = this.config.stdin;
-    }
-
-    this.setBusy(true, "Checking language support...");
+    if (this.controller) return;
+    const controller = new AbortController();
+    this.controller = controller;
+    this.setBusy(true, "Running...");
+    this.cleanupOutput?.();
+    this.cleanupOutput = null;
     try {
-      const supportedLanguages = await this.fetchSupportedLanguages();
-      if (supportedLanguages && !supportedLanguages.has(languageId)) {
-        this.showError(`The execution service does not currently report support for ${languageId}.`);
-        return;
-      }
-
-      this.status.textContent = "Running...";
-      const fileList = await this.uploadRuntimeFiles();
-      if (fileList.length > 0) {
-        payload.run_spec.file_list = fileList;
-      }
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        throw new Error(`Execution service returned ${response.status}.`);
-      }
-      const result = await response.json();
-      this.renderResult(result);
+      this.runner ||= createRunner(this.config);
+      const request = {
+        source: this.executionSource(this.currentSource()),
+        parameters: this.runtimeParameters(),
+        files: this.runtimeFiles(),
+      };
+      if (this.hasConfiguredStdin()) request.input = this.stdinInput?.value ?? this.config.stdin;
+      const onStatus = (message) => { this.status.textContent = message; };
+      const result = await this.runner.run(request, { signal: controller.signal, onStatus });
+      if (controller.signal.aborted || !this.isConnected) return;
+      this.cleanupOutput = renderOutput(this.output, result, { onStatus });
+      this.status.textContent = result.status;
     } catch (error) {
-      this.showError(error.message || "Unable to run the program.");
+      if (this.isConnected) {
+        this.showError(error.name === "AbortError" ? "Run cancelled." : error.message || "Unable to run the program.");
+        if (error.name === "AbortError") this.status.textContent = "Run cancelled.";
+      }
     } finally {
+      this.controller = null;
       this.setBusy(false);
     }
+  }
+
+  openExternal(url) {
+    if (url) window.open(url, "_blank", "noopener");
   }
 
   currentSource() {
@@ -465,108 +462,10 @@ class TbCode extends HTMLElement {
     return value.map((fragment) => String(fragment));
   }
 
-  canShowTutor() {
-    return Boolean(this.config.showTutor) && Boolean(this.tutorLanguage());
-  }
-
-  tutorLanguage() {
-    const candidates = [this.config.jobeLanguage, this.config.language]
-      .filter(Boolean)
-      .map((language) => String(language).toLowerCase());
-    for (const language of candidates) {
-      if (["python", "python3", "py"].includes(language)) {
-        return "3";
-      }
-      if (["cpp", "c++"].includes(language)) {
-        return "cpp";
-      }
-      if (language === "c") {
-        return "c";
-      }
-      if (language === "java") {
-        return "java";
-      }
-      if (["javascript", "js", "node", "nodejs"].includes(language)) {
-        return "js";
-      }
-    }
-    return "";
-  }
-
-  tutorLanguageLabel() {
-    const tutorLanguage = this.tutorLanguage();
-    const labels = {
-      "3": "Python",
-      "c": "C",
-      "cpp": "C++",
-      "java": "Java",
-      "js": "JavaScript",
-    };
-    return labels[tutorLanguage] || "Python";
-  }
-
-  openTutor() {
-    const tutorLanguage = this.tutorLanguage();
-    if (!tutorLanguage) {
-      return;
-    }
-    const source = this.executionSource(this.currentSource());
-    const url = `https://pythontutor.com/visualize.html#code=${encodeURIComponent(source)}&curInstr=0&mode=display&py=${encodeURIComponent(tutorLanguage)}`;
-    window.open(url, "_blank", "noopener");
-  }
-
-  openCompilerExplorer() {
-    const profile = this.config.compilerExplorer;
-    if (!profile) {
-      return;
-    }
-    const compileargs = this.cleanArgumentList(this.config.parameters?.compileargs || []);
-    const state = {
-      sessions: [{
-        id: 1,
-        language: profile.language,
-        source: this.compilerExplorerSource(),
-        compilers: [{
-          id: profile.compiler,
-          options: profile.options ?? compileargs.join(" "),
-        }],
-      }],
-    };
-    // CE accepts JSON in base64; escape non-ASCII so btoa receives ASCII data.
-    const json = JSON.stringify(state).replace(/[\u007f-\uffff]/g, (character) =>
-      `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`);
-    const url = `https://godbolt.org/clientstate/${encodeURIComponent(btoa(json))}`;
-    window.open(url, "_blank", "noopener");
-  }
-
-  compilerExplorerSource() {
-    const source = this.executionSource(this.currentSource());
-    if (this.config.compilerExplorer?.language !== "java") {
-      return source;
-    }
-    // CE compiles its single-file Java editor as example.java. A public
-    // top-level type with another name cannot compile under that filename.
-    return source.replace(
-      /^public[ \t]+(?=(?:(?:abstract|final|sealed|non-sealed|strictfp)[ \t]+)*(?:class|interface|enum|record|@interface)[ \t]+)/gm,
-      "",
-    );
-  }
-
-  cleanParameters(parameters) {
-    const cleaned = {};
-    for (const [key, value] of Object.entries(parameters)) {
-      const cleanedValue = this.cleanArgumentList(value);
-      if (cleanedValue.length > 0) {
-        cleaned[key] = cleanedValue;
-      }
-    }
-    return cleaned;
-  }
-
   runtimeParameters() {
-    const parameters = this.cleanParameters(this.config.parameters || {});
+    const parameters = cleanParameters(this.config.parameters || {});
     if (this.runargsInput) {
-      const runargs = this.splitArguments(this.runargsInput.value);
+      const runargs = splitArguments(this.runargsInput.value);
       if (runargs.length > 0) {
         parameters.runargs = runargs;
       } else {
@@ -577,24 +476,12 @@ class TbCode extends HTMLElement {
   }
 
   runtimeFiles() {
-    return this.attachedFileConfigs().map((file) => {
-      const content = file.is_text
-        ? this.sourceFileContent(file)
-        : this.base64FromDataUrl(file.data_url || "");
-      const runtimeFile = {
-        id: this.fileIdentifier(file.filename, content),
-        filename: file.filename,
-        mime_type: file.mime_type || "text/plain",
-      };
-      if (file.is_text) {
-        runtimeFile.encoding = "text";
-        runtimeFile.content = content;
-      } else {
-        runtimeFile.encoding = "base64";
-        runtimeFile.content = content;
-      }
-      return runtimeFile;
-    });
+    return this.attachedFileConfigs().map((file) => ({
+      filename: file.filename,
+      mime_type: file.mime_type || "application/octet-stream",
+      encoding: file.is_text ? "text" : "base64",
+      content: file.is_text ? this.sourceFileContent(file) : file.data_url || "",
+    }));
   }
 
   sourceFileContent(file) {
@@ -605,206 +492,19 @@ class TbCode extends HTMLElement {
     return file.content || "";
   }
 
-  async uploadRuntimeFiles() {
-    const files = this.runtimeFiles();
-    if (files.length === 0) {
-      return [];
-    }
-    const endpoint = this.fileUploadEndpoint();
-    if (!endpoint) {
-      throw new Error("No execution file endpoint is configured.");
-    }
-    const fileList = [];
-    for (const file of files) {
-      await this.uploadRuntimeFile(endpoint, file);
-      fileList.push([file.id, file.filename]);
-    }
-    return fileList;
-  }
-
-  async uploadRuntimeFile(endpoint, file) {
-    const base64Content = file.encoding === "base64" ? file.content : this.base64EncodeText(file.content);
-    const response = await fetch(`${endpoint}${file.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify({ file_contents: base64Content }),
-    });
-    if (!response.ok) {
-      throw new Error(`Execution service could not upload ${file.filename}.`);
-    }
-  }
-
-  fileUploadEndpoint() {
-    if (this.config.filesEndpoint) {
-      return this.config.filesEndpoint.endsWith("/") ? this.config.filesEndpoint : `${this.config.filesEndpoint}/`;
-    }
-    if (!this.config.endpoint) {
-      return "";
-    }
-    return this.config.endpoint.replace(/runs\/?$/, "files/");
-  }
-
-  fileIdentifier(filename, content) {
-    const hashInput = `${filename}\u0000${content}`;
-    let hash = 2166136261;
-    for (let index = 0; index < hashInput.length; index += 1) {
-      hash ^= hashInput.charCodeAt(index);
-      hash = Math.imul(hash, 16777619);
-    }
-    return `tbfile${(hash >>> 0).toString(36)}${content.length.toString(36)}`;
-  }
-
-  base64EncodeText(value) {
-    const bytes = new TextEncoder().encode(value);
-    let binary = "";
-    for (const byte of bytes) {
-      binary += String.fromCharCode(byte);
-    }
-    return btoa(binary);
-  }
-
-  base64FromDataUrl(value) {
-    const marker = ";base64,";
-    const index = value.indexOf(marker);
-    if (index === -1) {
-      return value;
-    }
-    return value.slice(index + marker.length);
-  }
-
-  cleanArgumentList(value) {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-    return value.map((item) => String(item)).filter((item) => item.length > 0);
-  }
-
-  splitArguments(value) {
-    const args = [];
-    let current = "";
-    let quote = null;
-    let escaped = false;
-
-    for (const character of value.trim()) {
-      if (escaped) {
-        current += character;
-        escaped = false;
-      } else if (character === "\\") {
-        escaped = true;
-      } else if (quote) {
-        if (character === quote) {
-          quote = null;
-        } else {
-          current += character;
-        }
-      } else if (character === '"' || character === "'") {
-        quote = character;
-      } else if (/\s/.test(character)) {
-        if (current) {
-          args.push(current);
-          current = "";
-        }
-      } else {
-        current += character;
-      }
-    }
-
-    if (escaped) {
-      current += "\\";
-    }
-    if (current) {
-      args.push(current);
-    }
-    return args;
-  }
-
-  async fetchSupportedLanguages() {
-    if (this.config.validateLanguage === false || !this.config.languagesEndpoint) {
-      return null;
-    }
-    if (TbCode.languagesByEndpoint.has(this.config.languagesEndpoint)) {
-      return TbCode.languagesByEndpoint.get(this.config.languagesEndpoint);
-    }
-    if (TbCode.languagePreloadsByEndpoint.has(this.config.languagesEndpoint)) {
-      return TbCode.languagePreloadsByEndpoint.get(this.config.languagesEndpoint);
-    }
-    return this.loadSupportedLanguages(2500);
-  }
-
-  preloadSupportedLanguages() {
-    if (this.config.validateLanguage === false || !this.config.languagesEndpoint) {
-      return;
-    }
-    if (TbCode.languagesByEndpoint.has(this.config.languagesEndpoint)) {
-      return;
-    }
-    if (TbCode.languagePreloadsByEndpoint.has(this.config.languagesEndpoint)) {
-      return;
-    }
-
-    const preload = this.loadSupportedLanguages(15000).finally(() => {
-      TbCode.languagePreloadsByEndpoint.delete(this.config.languagesEndpoint);
-    });
-    TbCode.languagePreloadsByEndpoint.set(this.config.languagesEndpoint, preload);
-  }
-
-  async loadSupportedLanguages(timeoutMs) {
-    try {
-      const response = await this.fetchWithTimeout(
-        this.config.languagesEndpoint,
-        { headers: { "Accept": "application/json" } },
-        timeoutMs,
-      );
-      if (!response.ok) {
-        return null;
-      }
-      const payload = await response.json();
-      const languageIds = Array.isArray(payload)
-        ? payload.map((entry) => Array.isArray(entry) ? entry[0] : entry)
-        : [];
-      const languages = new Set(languageIds.filter(Boolean));
-      TbCode.languagesByEndpoint.set(this.config.languagesEndpoint, languages);
-      return languages;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  async fetchWithTimeout(url, options, timeoutMs) {
-    if (typeof AbortController === "undefined") {
-      return fetch(url, options);
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      return await fetch(url, { ...options, signal: controller.signal });
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  renderResult(result) {
-    const stdout = result.stdout || "";
-    const stderr = result.stderr || "";
-    const cmpinfo = result.cmpinfo || "";
-    const output = [stdout, stderr, cmpinfo].filter(Boolean).join("\n");
-    this.output.textContent = output || "(no output)";
-    this.status.textContent = result.outcome === 15 ? "Run complete." : `Run finished with outcome ${result.outcome}.`;
-  }
-
   showError(message) {
-    this.output.textContent = message;
+    this.cleanupOutput?.();
+    this.cleanupOutput = renderOutput(this.output, { kind: "text", text: message });
     this.status.textContent = "Run failed.";
   }
 
   setBusy(isBusy, message) {
+    const stopFocused = document.activeElement === this.stopButton;
     this.runButton.disabled = isBusy;
+    this.stopButton.hidden = !isBusy;
     this.runButton.setAttribute("aria-busy", String(isBusy));
     this.status.textContent = isBusy ? (message || "Running...") : this.status.textContent;
+    if (!isBusy && stopFocused && this.isConnected) this.runButton.focus();
   }
 
   safeId() {

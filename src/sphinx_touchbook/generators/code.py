@@ -25,6 +25,15 @@ def _node_id(node: TbCodeNode) -> str:
     return node["ids"][0]
 
 
+def _highlight_language(node: TbCodeNode) -> str:
+    language = node["language"]
+    if node.get("runner") == "browser":
+        return {"sqlite": "sql", "sqlite3": "sql", "html5": "html"}.get(
+            language.lower(), language
+        )
+    return language
+
+
 def _file_href(self: HTML5Translator, file_info: dict[str, object]) -> str | None:
     if file_info.get("hidden"):
         return None
@@ -40,6 +49,7 @@ def _config(self: HTML5Translator, node: TbCodeNode) -> dict[str, object]:
     code_options = node.get("code_block_options", {})
     highlight_args = code_options.get("highlight_args", {})
     config = {
+        "runner": node["runner"],
         "language": node["language"],
         "jobeLanguage": node["jobe_language"],
         "source": node["source"],
@@ -77,7 +87,7 @@ def _highlight_html(self: HTML5Translator, node: TbCodeNode) -> str:
     opts = self.config.highlight_options.get(node["language"], {})
     return self.highlighter.highlight_block(
         node["source"],
-        node["language"],
+        _highlight_language(node),
         opts=opts,
         linenos=linenos,
         force=code_options.get("force", False),
@@ -93,7 +103,7 @@ def _highlight_latex(self: LaTeXTranslator, node: TbCodeNode) -> str:
     opts = self.config.highlight_options.get(node["language"], {})
     hlcode = self.highlighter.highlight_block(
         node["source"],
-        node["language"],
+        _highlight_language(node),
         opts=opts,
         linenos=code_options.get("linenos", False),
         location=node,
@@ -133,7 +143,7 @@ def visit_tb_code_latex(self: LaTeXTranslator, node: TbCodeNode) -> None:
         raise nodes.SkipNode
     latex_targets(self, node)
     if self.config.tb_pdf_tagging:
-        tagged_listing(self, node['source'], node['language'], node['caption'],
+        tagged_listing(self, node['source'], _highlight_language(node), node['caption'],
                        node.get('code_block_options'), node)
         raise nodes.SkipNode
     if node["caption"]:

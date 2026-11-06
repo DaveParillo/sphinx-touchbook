@@ -15,6 +15,20 @@ from sphinx_touchbook.directives.file import TbFileDirective, validate_filename,
 from sphinx_touchbook.nodes import TbFileNode
 
 
+@pytest.mark.parametrize("extension", ["db", "sqlite", "sqlite3"])
+def test_sqlite_attachments_are_binary_on_all_platforms(tmp_path, extension):
+    filename = f"seed.{extension}"
+    payload = b"SQLite format 3\0\xff\x80"
+    app, _outdir = build_sphinx_app(tmp_path, "html", {
+        "index.rst": f"Title\n=====\n\n.. tb-file:: {filename}\n   :filename: {filename}\n",
+        filename: payload,
+    })
+    node = next(app.env.get_doctree("index").findall(TbFileNode))
+    assert node["mime_type"] == "application/vnd.sqlite3"
+    assert node["is_text"] is False
+    assert node["editable"] is False
+
+
 def parse_rst(source: str):
     parser = Parser()
     settings = get_default_settings(Parser)

@@ -3,8 +3,8 @@ Copyright (C) 2026 Dave Parillo.
 
 A Touchbook directive to execute code in a web page.
 
-In HTML, readers can send code to a Jobe server and optionally edit the
-source before running it again.
+In HTML, readers can run code through Jobe or in the browser and optionally
+edit the source before running it again.
 
 See:
 https://daveparillo.github.io/sphinx-touchbook/
@@ -15,9 +15,6 @@ for details.
 
 from __future__ import annotations
 
-import ast
-import shlex
-
 from docutils.parsers.rst import Directive, directives
 from sphinx.directives.code import CodeBlock, dedent_lines, parse_line_num_spec
 
@@ -25,61 +22,13 @@ from sphinx_touchbook.directives.common import assign_node_id
 from sphinx_touchbook.directives.file import validate_filename
 from sphinx_touchbook.nodes import TbCodeNode
 
-DEFAULT_REST_API = "https://delicate-frost-8843.fly.dev/jobe/index.php/restapi"
-DEFAULT_ENDPOINT = f"{DEFAULT_REST_API}/runs/"
-DEFAULT_LANGUAGES_ENDPOINT = f"{DEFAULT_REST_API}/languages"
-DEFAULT_FILES_ENDPOINT = f"{DEFAULT_REST_API}/files/"
-DEFAULT_LANGUAGE = "python3"
-DEFAULT_LANGUAGE_MAP = {
-    "python": "python3",
-    "py": "python3",
-    "python3": "python3",
-    "cpp": "cpp",
-    "c++": "cpp",
-    "c": "c",
-    "java": "java",
-    "js": "nodejs",
-    "javascript": "nodejs",
-    "node": "nodejs",
-    "nodejs": "nodejs",
-    "octave": "octave",
-    "pascal": "pascal",
-    "php": "php",
-}
-DEFAULT_LANGUAGE_DEFAULTS: dict[str, dict[str, list[str]]] = {}
-DEFAULT_COMPILER_EXPLORER_DEFAULTS: dict[str, dict[str, str]] = {}
-DEFAULT_CODE_BLOCK_OPTIONS: dict[str, object] = {}
-CODE_BLOCK_OPTION_NAMES = set(CodeBlock.option_spec)
-
-
-def _config(directive):
-    env = getattr(directive.state.document.settings, "env", None)
-    return getattr(env, "config", None)
-
-
-def _config_value(config, name: str, default):
-    return getattr(config, name, default) if config is not None else default
-
-
-def _as_arg_list(value) -> list[str]:
-    if value is None:
-        return []
-    if isinstance(value, (list, tuple)):
-        return [str(item) for item in value]
-    if isinstance(value, str):
-        stripped = value.strip()
-        if not stripped:
-            return []
-        try:
-            parsed = ast.literal_eval(stripped)
-        except (SyntaxError, ValueError):
-            return shlex.split(stripped)
-        if isinstance(parsed, (list, tuple)):
-            return [str(item) for item in parsed]
-        if isinstance(parsed, str):
-            return [parsed]
-        return [str(parsed)]
-    return [str(value)]
+# Re-export defaults for existing imports from this module.
+from sphinx_touchbook.code_config import (
+    DEFAULT_REST_API, DEFAULT_ENDPOINT, DEFAULT_LANGUAGES_ENDPOINT,
+    DEFAULT_FILES_ENDPOINT, DEFAULT_LANGUAGE, DEFAULT_LANGUAGE_MAP,
+    DEFAULT_LANGUAGE_DEFAULTS, DEFAULT_COMPILER_EXPLORER_DEFAULTS,
+    DEFAULT_CODE_BLOCK_OPTIONS, resolve_code_settings,
+)
 
 
 def _parse_include_specs(value: str | None) -> list[tuple[str, str]]:
@@ -120,83 +69,36 @@ def _parse_run_fragment_names(value: str | None) -> list[str]:
     return names
 
 
-def _language_defaults(config, language: str, jobe_language: str) -> dict[str, object]:
-    defaults = _config_value(config, "tb_code_language_defaults", DEFAULT_LANGUAGE_DEFAULTS)
-    if language in defaults:
-        return defaults[language]
-    return defaults.get(jobe_language, {})
-
-
-def _code_block_defaults(config) -> dict[str, object]:
-    defaults = _config_value(config, "tb_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS)
-    return {key: value for key, value in dict(defaults).items() if key in CODE_BLOCK_OPTION_NAMES}
-
-
-def _merged_code_block_options(config, options: dict[str, object]) -> dict[str, object]:
-    merged = _code_block_defaults(config)
-    for name in CODE_BLOCK_OPTION_NAMES:
-        if name in options:
-            merged[name] = options[name]
-    return merged
-
-
-def _as_bool_flag(value: object) -> bool:
-    if isinstance(value, str):
-        return value.strip().lower() not in {"", "0", "false", "no", "off"}
-    return bool(value)
-
-
-def _as_class_list(value: object) -> list[str]:
-    if value is None:
-        return []
-    if isinstance(value, str):
-        return directives.class_option(value)
-    if isinstance(value, (list, tuple)):
-        classes: list[str] = []
-        for item in value:
-            classes.extend(directives.class_option(str(item)))
-        return classes
-    return directives.class_option(str(value))
-
-
-def _as_optional_int(value: object) -> int | None:
-    if value in (None, ""):
-        return None
-    return int(value)
-
-
-def _as_int(value: object) -> int:
-    return int(value)
-
-
-def _normalize_code_block_options(directive, source: str, options: dict[str, object]) -> tuple[str, dict[str, object]]:
-    linenos_value = options.get("linenos")
+def _prepare_listing(
+    directive, source: str, options: dict[str, object]
+) -> tuple[str, dict[str, object]]:
+    """Apply source-dependent Sphinx listing options after settings resolution."""
     normalized: dict[str, object] = {
-        "classes": _as_class_list(options.get("class")),
-        "force": _as_bool_flag(options.get("force")),
-        "linenos": (
-            "linenos" in options
-            and (linenos_value is None or _as_bool_flag(linenos_value))
-        ) or "lineno-start" in options,
+        "classes": list(options.get("class", [])),
+        "force": options.get("force", False),
+        "linenos": options.get("linenos", False) or "lineno-start" in options,
         "highlight_args": {},
     }
 
     if "dedent" in options:
-        dedent = _as_optional_int(options.get("dedent"))
+        dedent = options["dedent"]
         lines = source.splitlines(True)
-        source = "".join(dedent_lines(lines, dedent, location=directive.state_machine.get_source_and_line(directive.lineno)))
+        location = directive.state_machine.get_source_and_line(directive.lineno)
+        source = "".join(dedent_lines(lines, dedent, location=location))
 
     if "emphasize-lines" in options:
         linespec = str(options["emphasize-lines"])
         try:
             nlines = len(source.splitlines())
             hl_lines = parse_line_num_spec(linespec, nlines)
-            normalized["highlight_args"]["hl_lines"] = [line + 1 for line in hl_lines if line < nlines]
+            normalized["highlight_args"]["hl_lines"] = [
+                line + 1 for line in hl_lines if line < nlines
+            ]
         except ValueError as err:
             directive.state.document.reporter.warning(err, line=directive.lineno)
 
     if "lineno-start" in options:
-        normalized["highlight_args"]["linenostart"] = _as_int(options["lineno-start"])
+        normalized["highlight_args"]["linenostart"] = options["lineno-start"]
 
     return source, normalized
 
@@ -211,6 +113,7 @@ class TbCodeDirective(Directive):
     option_spec = {
         **CodeBlock.option_spec,
         "language": directives.unchanged,
+        "runner": directives.unchanged,
         "endpoint": directives.uri,
         "files-endpoint": directives.uri,
         "stdin": directives.unchanged,
@@ -236,14 +139,17 @@ class TbCodeDirective(Directive):
         self.assert_has_content()
         node = TbCodeNode()
         assign_node_id(self, node)
-        language = self.options.get("language") or (self.arguments[0] if self.arguments else None)
-        config = _config(self)
-        language_map = dict(_config_value(config, "tb_code_language_map", DEFAULT_LANGUAGE_MAP))
-        node["language"] = language or _config_value(config, "tb_code_default_language", DEFAULT_LANGUAGE)
-        node["jobe_language"] = language_map.get(node["language"], node["language"])
-        language_defaults = _language_defaults(config, node["language"], node["jobe_language"])
-        code_block_options = _merged_code_block_options(config, self.options)
-        source, normalized_code_block_options = _normalize_code_block_options(
+        env = getattr(self.state.document.settings, "env", None)
+        config = getattr(env, "config", None)
+        try:
+            settings = resolve_code_settings(config, self.options, self.arguments)
+        except ValueError as error:
+            raise self.error(str(error)) from error
+        node.attributes.update(settings.attributes)
+        for warning in settings.warnings:
+            self.state.document.reporter.warning(warning, line=self.lineno)
+        code_block_options = settings.listing_options
+        source, normalized_code_block_options = _prepare_listing(
             self,
             "\n".join(self.content),
             code_block_options,
@@ -256,70 +162,6 @@ class TbCodeDirective(Directive):
         node["run_after"] = []
         node["file_specs"] = _parse_file_specs(self.options.get("files"))
         node["files"] = []
-        node["hidden"] = "hidden" in self.options
-        # ``show-tutor`` is a flag, so it is not part of the standard
-        # ``code-block`` option set merged above.  Still honor the project
-        # default when configured, while allowing the directive flag to
-        # enable it for an individual block.
-        block_defaults = _config_value(config, "tb_code_block_defaults", DEFAULT_CODE_BLOCK_OPTIONS)
-        show_tutor_default = dict(block_defaults).get("show-tutor", False)
-        node["show_tutor"] = "show-tutor" in self.options or _as_bool_flag(show_tutor_default)
-        show_ce_default = dict(block_defaults).get("show-compiler-explorer", False)
-        show_ce = "show-compiler-explorer" in self.options or _as_bool_flag(show_ce_default)
-        node["compiler_explorer"] = None
-        if show_ce and not node["hidden"]:
-            ce_defaults = _config_value(
-                config, "tb_code_compiler_explorer_defaults", DEFAULT_COMPILER_EXPLORER_DEFAULTS
-            )
-            profile = ce_defaults.get(node["language"], ce_defaults.get(node["jobe_language"]))
-            if not isinstance(profile, dict) or not profile.get("language") or not profile.get("compiler"):
-                self.state.document.reporter.warning(
-                    "tb-code :show-compiler-explorer: needs a language and compiler in "
-                    "tb_code_compiler_explorer_defaults",
-                    line=self.lineno,
-                )
-            else:
-                node["compiler_explorer"] = {
-                    "language": str(profile["language"]),
-                    "compiler": str(profile["compiler"]),
-                }
-                if "options" in profile:
-                    node["compiler_explorer"]["options"] = str(profile["options"])
         node["caption"] = code_block_options.get("caption")
         node["code_block_options"] = normalized_code_block_options
-        node["endpoint"] = self.options.get("endpoint") or _config_value(
-            config,
-            "tb_code_default_endpoint",
-            DEFAULT_ENDPOINT,
-        )
-        node["files_endpoint"] = self.options.get("files-endpoint") or _config_value(
-            config,
-            "tb_code_files_endpoint",
-            DEFAULT_FILES_ENDPOINT,
-        )
-        node["languages_endpoint"] = _config_value(
-            config,
-            "tb_code_languages_endpoint",
-            DEFAULT_LANGUAGES_ENDPOINT,
-        )
-        node["validate_language"] = _config_value(config, "tb_code_validate_language", True)
-        if "stdin" in self.options:
-            node["stdin"] = self.options["stdin"]
-        node["parameters"] = {}
-        for name in ("compileargs", "linkargs", "runargs", "interpreterargs"):
-            value = self.options[name] if name in self.options else language_defaults.get(name)
-            node["parameters"][name] = _as_arg_list(value)
-        node["readonly"] = "readonly" in self.options
-        node["run_label"] = self.options.get("run-label") or _config_value(config, "tb_code_run_label", "Run")
-        node["edit_label"] = self.options.get("edit-label") or _config_value(config, "tb_code_edit_label", "Edit")
-        node["hide_edit_label"] = self.options.get("hide-edit-label") or _config_value(
-            config,
-            "tb_code_hide_edit_label",
-            "Hide editor",
-        )
-        node["revision_label"] = self.options.get("revision-label") or _config_value(
-            config,
-            "tb_code_revision_label",
-            "Source version",
-        )
         return [node]

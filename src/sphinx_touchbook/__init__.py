@@ -24,17 +24,19 @@ from .generators.array import (
     visit_tb_array_text,
 )
 from .directives.blank import TbBlankDirective
-from .directives.code import (
+from .code_config import (
+    configure_code,
     DEFAULT_CODE_BLOCK_OPTIONS,
     DEFAULT_COMPILER_EXPLORER_DEFAULTS,
     DEFAULT_ENDPOINT,
     DEFAULT_FILES_ENDPOINT,
     DEFAULT_LANGUAGE,
+    DEFAULT_RUNNER,
     DEFAULT_LANGUAGE_DEFAULTS,
     DEFAULT_LANGUAGE_MAP,
     DEFAULT_LANGUAGES_ENDPOINT,
-    TbCodeDirective,
 )
+from .directives.code import TbCodeDirective
 from .directives.choice import DEFAULT_FORCE_MULTIPLE, DEFAULT_RANDOM, TbChoiceDirective
 from .directives.click import (
     DEFAULT_SHOW_HINTS,
@@ -401,6 +403,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_code_languages_endpoint", DEFAULT_LANGUAGES_ENDPOINT, "html")
     app.add_config_value("tb_code_validate_language", True, "html")
     app.add_config_value("tb_code_default_language", DEFAULT_LANGUAGE, "env")
+    app.add_config_value("tb_code_default_runner", DEFAULT_RUNNER, "env")
     app.add_config_value("tb_code_language_map", DEFAULT_LANGUAGE_MAP, "env")
     app.add_config_value("tb_code_language_defaults", DEFAULT_LANGUAGE_DEFAULTS, "env")
     app.add_config_value("tb_code_compiler_explorer_defaults", DEFAULT_COMPILER_EXPLORER_DEFAULTS, "env")
@@ -409,6 +412,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_config_value("tb_code_edit_label", "Edit", "html")
     app.add_config_value("tb_code_hide_edit_label", "Hide editor", "html")
     app.add_config_value("tb_code_revision_label", "Source version", "html")
+    app.connect("config-inited", configure_code)
     app.add_config_value("tb_choice_random", DEFAULT_RANDOM, "env")
     app.add_config_value("tb_choice_force_multiple", DEFAULT_FORCE_MULTIPLE, "env")
     app.add_config_value("tb_click_show_hints", DEFAULT_SHOW_HINTS, "html")
@@ -677,7 +681,7 @@ def setup(app: Sphinx) -> dict[str, object]:
     app.add_js_file("tb-reveal.js", loading_method="defer")
     app.add_js_file("tb-deck.js", loading_method="defer")
     app.add_js_file("tb-group.js", loading_method="defer")
-    app.add_js_file("tb-code.js", loading_method="defer")
+    app.add_js_file("tb-code.js", type="module")
     app.add_js_file("tb-blank.js", loading_method="defer")
     app.add_js_file("tb-choice.js", loading_method="defer")
     app.add_js_file("tb-click.js", loading_method="defer")

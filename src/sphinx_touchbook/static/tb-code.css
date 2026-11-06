@@ -170,5 +170,43 @@ tb-code [hidden] {
   min-height: 3rem;
   overflow: auto;
   padding: 0.75rem;
+}
+
+.tb-code__text-output,
+.tb-code__preview-console {
+  margin: 0;
   white-space: pre-wrap;
+}
+
+.tb-code__sql-table {
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+}
+
+.tb-code__sql-table :is(th, td) {
+  border: 1px solid var(--color-background-border, #999);
+  padding: 0.35rem 0.6rem;
+  text-align: start;
+  white-space: pre-wrap;
+}
+
+.tb-code__sql-table caption {
+  font-weight: 700;
+  text-align: start;
+}
+
+.tb-code__sql-null {
+  font-style: italic;
+}
+
+.tb-code__preview {
+  background: white;
+  border: 1px solid var(--color-background-border, #999);
+  box-sizing: border-box;
+  height: 20rem;
+  width: 100%;
+}
+
+.tb-code__preview-console {
+  margin-top: 0.75rem;
 }

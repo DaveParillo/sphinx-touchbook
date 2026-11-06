@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>tb-code browser checks</title>
+<body>
+<h1>tb-code browser checks</h1>
+<pre id="results">Running…</pre>
+<script type="module">
+  import "../../_static/tb-code.js";
+  window.runnerCheck = { status: "running", passed: [] };
+  const summary = document.getElementById("results");
+  const check = (condition, message) => { if (!condition) throw new Error(message); };
+  const wait = async (condition, timeout = 15000) => {
+    const deadline = performance.now() + timeout;
+    while (!condition()) {
+      if (performance.now() > deadline) throw new Error("Browser check timed out");
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+  };
+  function example(language, source, files = []) {
+    const element = document.createElement("tb-code");
+    element.setAttribute("language", language);
+    const figure = document.createElement("figure");
+    figure.className = "tb-code__fallback";
+    const listing = document.createElement("pre");
+    listing.textContent = source;
+    figure.append(listing);
+    const config = document.createElement("script");
+    config.type = "application/json";
+    config.className = "tb-code__config";
+    config.textContent = JSON.stringify({ runner: "browser", language, source, parameters: {}, files,
+      endpoint: "/must-not-contact-jobe", languagesEndpoint: "/must-not-discover-jobe", validateLanguage: true });
+    element.append(figure, config);
+    document.body.append(element);
+    return element;
+  }
+  const status = element => element.querySelector(".tb-code__status").textContent;
+  async function run(element) {
+    element.querySelector("button").click();
+    await wait(() => !element.querySelector("button").disabled);
+    return element.querySelector(".tb-code__output").textContent;
+  }
+  async function test(name, task) {
+    await task();
+    window.runnerCheck.passed.push(name);
+    summary.textContent = JSON.stringify(window.runnerCheck, null, 2);
+  }
+  try {
+    await test("SQLite worker, nested asset paths, empty headers, and fresh runs", async () => {
+      const sql = example("sql", "CREATE TABLE t(x); INSERT INTO t VALUES ('semi;colon'); SELECT * FROM t; SELECT x FROM t WHERE 0;");
+      check((await run(sql)).includes("semi;colon"), "SQLite query returned no data");
+      check(sql.querySelectorAll("table").length === 2, "Missing SQL result table");
+      check(sql.querySelectorAll("table")[1].textContent.includes("No rows returned."), "Missing empty result");
+      check(status(sql) === "Run complete.", status(sql));
+      check((await run(sql)).includes("semi;colon"), "Database was not reset");
+      sql.remove();
+    });
+    await test("SQLite seed attachment", async () => {
+      const configPage = new DOMParser().parseFromString(
+        await (await fetch("../../components/tb-code.html")).text(), "text/html");
+      const configs = Array.from(configPage.querySelectorAll("script.tb-code__config"), item => JSON.parse(item.textContent));
+      const seeded = configs.find(config => config.language === "sql" && config.files.length);
+      check(seeded, "Missing buildable seed example");
+      const sql = example("sql", "UPDATE fruit SET price=99; SELECT price FROM fruit;", seeded.files);
+      check((await run(sql)).includes("99"), "Seed database was not loaded");
+      sql.querySelector(".tb-code__editor").value = "SELECT price FROM fruit;";
+      Array.from(sql.querySelectorAll("button")).find(button => button.textContent === "Edit").click();
+      check(!(await run(sql)).includes("99"), "Seed mutation survived another run");
+      sql.remove();
+    });
+    await test("JavaScript worker console and top-level await", async () => {
+      const js = example("javascript", 'await Promise.resolve(); console.log("worker", 2 + 2);');
+      check((await run(js)) === "worker 4", "Missing JavaScript console output");
+      check(status(js) === "Run complete.", status(js));
+      js.remove();
+    });
+    await test("JavaScript errors preserve preceding console output", async () => {
+      const js = example("js", 'console.log("before"); throw new Error("example failure");');
+      const output = await run(js);
+      check(output.includes("before") && output.includes("example failure"), output);
+      check(status(js) === "Run failed.", status(js));
+      js.remove();
+    });
+    await test("Stop terminates a busy JavaScript worker", async () => {
+      const js = example("js", "while (true) {}");
+      js.querySelector("button").click();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const stop = Array.from(js.querySelectorAll("button")).find(button => button.textContent === "Stop");
+      check(!stop.hidden, "Stop button is hidden");
+      stop.click();
+      await wait(() => status(js) === "Run cancelled.");
+      check(!js.querySelector("button").disabled, "Run remains disabled");
+      js.remove();
+    });
+    await test("Worker execution deadline", async () => {
+      const js = example("js", "await new Promise(() => {});");
+      check((await run(js)).includes("timed out"), "Missing worker deadline");
+      js.remove();
+    });
+    await test("HTML scripts, events, console, sandbox, and fresh previews", async () => {
+      const html = example("html", `<button onclick="console.log('clicked')">Click me</button>
+        <script>document.querySelector('button').click();
+        try { parent.document.body; console.log('parent accessible'); }
+        catch { console.log('parent blocked'); }<\/script>`);
+      await run(html);
+      await wait(() => html.querySelector(".tb-code__preview-console")?.textContent.includes("parent blocked"));
+      check(html.querySelector(".tb-code__preview-console").textContent.includes("clicked"), "HTML click handler did not run");
+      const first = html.querySelector("iframe");
+      check(first.contentDocument === null, "Preview can access the parent origin");
+      await run(html);
+      check(html.querySelector("iframe") !== first, "Preview was reused");
+      html.remove();
+    });
+    window.runnerCheck.status = "passed";
+  } catch (error) {
+    window.runnerCheck.status = "failed";
+    window.runnerCheck.error = String(error.stack || error);
+  }
+  summary.textContent = JSON.stringify(window.runnerCheck, null, 2);
+</script>
+</body>
+</html>

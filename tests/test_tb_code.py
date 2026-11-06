@@ -5,11 +5,12 @@ from pathlib import Path
 
 import pytest
 from bs4 import BeautifulSoup
+from docutils import nodes
 from docutils.frontend import get_default_settings
 from docutils.parsers.rst import Parser, directives
 from docutils.utils import new_document
 from sphinx.application import Sphinx
-from sphinx.errors import ExtensionError
+from sphinx.errors import ConfigError, ExtensionError
 
 from sphinx_touchbook.directives.code import DEFAULT_ENDPOINT, DEFAULT_FILES_ENDPOINT, DEFAULT_LANGUAGES_ENDPOINT, TbCodeDirective
 from sphinx_touchbook.nodes import TbCodeNode
@@ -120,6 +121,22 @@ def test_directive_parses_semantic_node_defaults():
     assert node["run_after"] == []
     assert node["show_tutor"] is False
     assert node["compiler_explorer"] is None
+
+
+def test_project_configuration_is_validated_before_reading_blocks(tmp_path):
+    with pytest.raises(ConfigError, match="tb_code_language_defaults.*compilearg"):
+        build_sphinx(
+            tmp_path, "html", "Title\n=====\n\nNo runnable blocks.\n",
+            conf_extra="tb_code_language_defaults = {'cpp': {'compilearg': []}}",
+        )
+
+
+def test_malformed_block_arguments_report_the_source_location():
+    document = parse_rst('.. tb-code::\n   :runargs: "unclosed\n\n   print(1)\n')
+    messages = list(document.findall(nodes.system_message))
+    assert any("tb-code option 'runargs': No closing quotation" in item.astext()
+               for item in messages)
+    assert messages[0]["line"] == 1
 
 
 def test_compiler_explorer_defaults_use_language_alias_and_emit_html_config(tmp_path):
@@ -1002,32 +1019,45 @@ Title
     assert "Hello" in latex
 
 
-def test_web_component_contract():
-    source = Path("src/sphinx_touchbook/static/tb-code.js").read_text(encoding="utf-8")
-    assert 'customElements.define("tb-code", TbCode)' in source
-    assert "fetchWithTimeout" in source
-    assert "AbortController" in source
-    assert "languagePreloadsByEndpoint" in source
-    assert "this.preloadSupportedLanguages();" in source
-    assert source.index("this.renderControls();") < source.index("this.preloadSupportedLanguages();")
-    assert "Checking language support..." in source
-    assert source.index("this.setBusy(true") < source.index("await this.fetchSupportedLanguages()")
-    assert "run_spec" in source
-    assert "language_id" in source
-    assert "sourcecode" in source
-    assert "toggleEditor" in source
-    assert "hideEditLabel" in source
-    assert "captureCurrentRevision" in source
-    assert "loadRevision" in source
-    assert "revisionSlider.type = \"range\"" in source
-    assert "createRuntimeInput" in source
-    assert "runtimeParameters" in source
-    assert "splitArguments" in source
-    assert "tb-code__runtime-input" in source
-    assert 'role", "status"' in source
-    assert 'aria-atomic", "true"' in source
-    assert 'aria-describedby", outputLabel.id' in source
-    assert 'aria-labelledby", outputLabel.id' not in source
+def test_browser_runner_config_and_module_assets_are_built(tmp_path):
+    outdir = build_sphinx(
+        tmp_path, "html",
+        "Title\n=====\n\n.. tb-code:: html\n   :runner: browser\n\n   <p>Hello</p>\n",
+    )
+    soup = BeautifulSoup((outdir / "index.html").read_text(), "html.parser")
+    element = soup.find("tb-code")
+    config = json.loads(element.find("script", class_="tb-code__config").string)
+    assert config["runner"] == "browser"
+    assert config["language"] == "html"
+    assert "<p>Hello</p>" in element.find("figure").get_text()
+    assert len(soup.find_all("tb-code")) == 1
+    script = soup.find("script", src=lambda value: value and value.split("?")[0] == "_static/tb-code.js")
+    assert script["type"] == "module"
+    assets = outdir / "_static" / "tb-code"
+    for filename in ("jobe.js", "runners.js", "browser.js", "sqlite.js",
+                     "javascript-worker.js", "sqlite-worker.js", "sqlite-engine.js",
+                     "tools.js", "output.js", "output-sql.js", "output-html.js"):
+        assert (assets / filename).is_file()
+    assert (assets / "vendor/sql-wasm.wasm").read_bytes().startswith(b"\0asm")
+    assert (assets / "vendor/sql.js-LICENSE.txt").is_file()
+
+
+@pytest.mark.parametrize("builder", ["html", "text", "latex"])
+@pytest.mark.parametrize("language", ["sql", "sqlite", "sqlite3", "html5"])
+def test_browser_aliases_preserve_static_fallbacks(tmp_path, builder, language):
+    source = "<p>Hello</p>" if language == "html5" else "SELECT 1;"
+    outdir = build_sphinx(
+        tmp_path, builder,
+        f"Title\n=====\n\n.. tb-code:: {language}\n   :runner: browser\n\n   {source}\n",
+    )
+    if builder == "html":
+        soup = BeautifulSoup((outdir / "index.html").read_text(), "html.parser")
+        assert source in soup.find("figure", class_="tb-code__fallback").get_text()
+    else:
+        output = ((outdir / "index.txt").read_text() if builder == "text"
+                  else read_latex_output(outdir))
+        assert ("Hello" if language == "html5" else "SELECT") in output
+        assert "sqlite-worker" not in output
 
 
 def test_hidden_controls_have_theme_independent_css():

@@ -71,6 +71,8 @@ def _source_path(directive: Directive, raw_path: str) -> Path:
 
 
 def _mime_type(filename: str, source_path: Path | None) -> str:
+    if Path(filename).suffix.lower() in {".db", ".sqlite", ".sqlite3"}:
+        return "application/vnd.sqlite3"
     guessed, _encoding = mimetypes.guess_type(str(source_path or filename))
     return guessed or "text/plain"
 

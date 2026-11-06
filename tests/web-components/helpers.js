@@ -2,6 +2,10 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 export async function loadComponentScript(scriptName) {
+  if (scriptName === "tb-code.js") {
+    await import("../../src/sphinx_touchbook/static/tb-code.js");
+    return;
+  }
   const source = await readFile(resolve("src/sphinx_touchbook/static", scriptName), "utf8");
   window.eval(source);
 }

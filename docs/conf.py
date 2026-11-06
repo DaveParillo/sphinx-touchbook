@@ -57,7 +57,6 @@ tb_code_block_defaults = {
 tb_code_compiler_explorer_defaults = {
     'python': {'language': 'python', 'compiler': 'python314'},
     'cpp': {'language': 'c++', 'compiler': 'g153'},
-    'c++': {'language': 'c++', 'compiler': 'g153'},
     'java': {'language': 'java', 'compiler': 'java1702'},
 }
 

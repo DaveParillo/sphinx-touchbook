@@ -1,4 +1,5 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { JobeRunner } from "../../src/sphinx_touchbook/static/tb-code/jobe.js";
 import { change, click, input, keydown, loadComponentScript } from "./helpers.js";
 
 beforeAll(async () => {
@@ -8,10 +9,11 @@ beforeAll(async () => {
 beforeEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
-  const TbCode = customElements.get("tb-code");
-  TbCode.languagesByEndpoint?.clear?.();
-  TbCode.languagePreloadsByEndpoint?.clear?.();
+  JobeRunner.languagesByEndpoint.clear();
+  JobeRunner.languagePreloadsByEndpoint.clear();
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 function appendCode(config = {}) {
   const data = {
@@ -350,6 +352,7 @@ describe("tb-code Web Component", () => {
     expect(tutor.getAttribute("aria-label")).toBe("Show in C++ Tutor");
     expect(Array.from(element.querySelectorAll("button.tb-code__button")).map((button) => button.textContent)).toEqual([
       "Run",
+      "Stop",
       "Edit source",
       "",
       "",
@@ -704,6 +707,30 @@ describe("tb-code Web Component", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it("omits hidden attachments from the display while uploading all runtime files", async () => {
+    const fetchMock = vi.fn(async (_url, options) => {
+      if (options.method === "PUT") return { ok: true, status: 204 };
+      expect(JSON.parse(options.body).run_spec.file_list.map((file) => file[1]))
+        .toEqual(["setup.txt", "input.txt"]);
+      return { ok: true, json: async () => ({ outcome: 15, stdout: "done" }) };
+    });
+    globalThis.fetch = fetchMock;
+    const element = appendCode({ filesEndpoint: "https://example.test/files/", files: [
+      { filename: "setup.txt", is_text: true, content: "hidden setup", hidden: true, href: "#setup" },
+      { filename: "input.txt", is_text: true, content: "visible input", hidden: false, href: "#input" },
+    ] });
+    const attachments = element.querySelector(".tb-code__attached-files");
+    expect(attachments.hidden).toBe(false);
+    expect(attachments.querySelector(".tb-code__attached-files-label").textContent).toBe("Attached files");
+    expect(attachments.querySelectorAll(".tb-code__attached-file")).toHaveLength(1);
+    expect(attachments.querySelector("a").textContent).toBe("input.txt");
+    expect(attachments.textContent).not.toContain("setup.txt");
+    click(runButton(element));
+    await flushPromises();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(element.querySelector(".tb-code__status").textContent).toBe("Run complete.");
+  });
+
   it.each([true, false])("reuses an unresolved language preload when Run is pressed (supported=%s)", async (supported) => {
     let resolveLanguages;
     const languagesResponse = new Promise((resolve) => {
@@ -789,5 +816,60 @@ describe("tb-code Web Component", () => {
     expect(output.textContent).toBe("Execution service returned 500.");
     expect(status.textContent).toBe("Run failed.");
     expect(run.disabled).toBe(false);
+  });
+
+  it("runs browser SQL with hidden fragments and a seed without JOBE discovery or uploads", async () => {
+    let worker;
+    vi.stubGlobal("Worker", class {
+      constructor() { worker = this; this.postMessage = vi.fn(); this.terminate = vi.fn(); }
+    });
+    globalThis.fetch = vi.fn();
+    const element = appendCode({ runner: "browser", language: "sql", validateLanguage: true,
+      source: "SELECT x FROM t;", runBefore: ["CREATE TABLE t(x);"], runAfter: ["SELECT 2;"],
+      files: [{ filename: "seed.db", hidden: true, is_text: false, data_url: "data:application/vnd.sqlite3;base64,AA==" }],
+    });
+    const attachments = element.querySelector(".tb-code__attached-files");
+    expect(attachments.hidden).toBe(true);
+    expect(attachments.childElementCount).toBe(0);
+    click(runButton(element));
+    expect(worker.postMessage.mock.calls[0][0]).toMatchObject({
+      source: "CREATE TABLE t(x);\nSELECT x FROM t;\nSELECT 2;",
+      files: [{ filename: "seed.db", encoding: "base64", content: "data:application/vnd.sqlite3;base64,AA==" }],
+    });
+    worker.onmessage({ data: { result: { kind: "sql", results: [{ columns: ["x"], values: [[1]] }],
+      messages: [], status: "Run complete." } } });
+    await flushPromises();
+    expect(element.querySelector("table th").textContent).toBe("x");
+    expect(element.querySelector("table td").textContent).toBe("1");
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(displayedSource(element).textContent).toBe("SELECT x FROM t;");
+  });
+
+  it("stops browser runs and cleans up on disconnect without duplicating controls on reconnect", async () => {
+    const workers = [];
+    vi.stubGlobal("Worker", class {
+      constructor() { this.postMessage = vi.fn(); this.terminate = vi.fn(); workers.push(this); }
+    });
+    const element = appendCode({ runner: "browser", language: "javascript" });
+    click(runButton(element));
+    const stop = codeButton(element, "Stop");
+    expect(stop.hidden).toBe(false);
+    stop.focus();
+    click(stop);
+    await flushPromises();
+    expect(workers[0].terminate).toHaveBeenCalledOnce();
+    expect(element.querySelector(".tb-code__status").textContent).toBe("Run cancelled.");
+    expect(document.activeElement).toBe(runButton(element));
+    expect(stop.hidden).toBe(true);
+    click(runButton(element));
+    element.remove();
+    await flushPromises();
+    expect(workers[1].terminate).toHaveBeenCalledOnce();
+    document.body.append(element);
+    expect(element.querySelectorAll(".tb-code__controls")).toHaveLength(1);
+    click(runButton(element));
+    workers[2].onmessage({ data: { result: { kind: "text", text: "reconnected", status: "Run complete." } } });
+    await flushPromises();
+    expect(element.querySelector(".tb-code__output").textContent).toBe("reconnected");
   });
 });
